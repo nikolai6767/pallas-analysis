@@ -3,16 +3,16 @@
  * See LICENSE in top-level directory.
  */
 /** @file
- * The main file of HTF. Here are defined the most basic elements of the trace
+ * The main file of Pallas. Here are defined the most basic elements of the trace
  * (Tokens, Events, Sequences and Loops), as well as Threads, representing an execution stream.
  */
 #pragma once
 
 #include <pthread.h>
-#include "htf_config.h"
-#include "htf_dbg.h"
-#include "htf_linked_vector.h"
-#include "htf_timestamp.h"
+#include "pallas_config.h"
+#include "pallas_dbg.h"
+#include "pallas_linked_vector.h"
+#include "pallas_timestamp.h"
 
 #ifdef __cplusplus
 #include <cstring>
@@ -27,7 +27,7 @@
 typedef uint8_t byte;
 
 #ifdef __cplusplus
-namespace htf {
+namespace pallas {
 #endif
 
 /*************************** Tokens **********************/
@@ -53,7 +53,7 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
  * TypeLoop = 'L'
  * 'U' otherwise
  */
-#define HTF_TOKEN_TYPE_C(t)        \
+#define PALLAS_TOKEN_TYPE_C(t)        \
   (t.type) == TypeInvalid    ? 'I' \
   : (t.type) == TypeEvent    ? 'E' \
   : (t.type) == TypeSequence ? 'S' \
@@ -63,7 +63,7 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
 /**
  * Useful macros
  */
-#define HTF_TOKEN_ID_INVALID 0x3fffffff
+#define PALLAS_TOKEN_ID_INVALID 0x3fffffff
 
 /**
  * Definition of the type for a token ID
@@ -71,7 +71,7 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
 typedef uint32_t TokenId;
 
 /**
- * Most basic element representing Events, Loops or Sequences in HTF.
+ * Most basic element representing Events, Loops or Sequences in Pallas.
  */
 typedef struct Token {
   enum TokenType type : 2; /**< Type of our Token. */
@@ -91,7 +91,7 @@ typedef struct Token {
    */
   Token() {
     type = TypeInvalid;
-    id = HTF_TOKEN_ID_INVALID;
+    id = PALLAS_TOKEN_ID_INVALID;
   }
 
  public:
@@ -110,92 +110,92 @@ typedef struct Token {
 #endif
 } Token;
 /** Creates a Token for an Event. */
-#define HTF_EVENT_ID(i) HTF(Token)(HTF(TypeEvent), i)
+#define PALLAS_EVENT_ID(i) PALLAS(Token)(PALLAS(TypeEvent), i)
 /** Creates a Token for a Sequence. */
-#define HTF_SEQUENCE_ID(i) HTF(Token)(HTF(TypeSequence), i)
+#define PALLAS_SEQUENCE_ID(i) PALLAS(Token)(PALLAS(TypeSequence), i)
 /** Creates a Token for a Loop. */
-#define HTF_LOOP_ID(i) HTF(Token)(HTF(TypeLoop), i)
+#define PALLAS_LOOP_ID(i) PALLAS(Token)(PALLAS(TypeLoop), i)
 
 /*************************** Events **********************/
 /**
  * Enumeration of event types
  */
 enum EventType {
-  HTF_BLOCK_START,
-  HTF_BLOCK_END,
-  HTF_SINGLETON,
+  PALLAS_BLOCK_START,
+  PALLAS_BLOCK_END,
+  PALLAS_SINGLETON,
 };
 
 /**
- * Enumeration of the different events that are recorded by HTF
+ * Enumeration of the different events that are recorded by Pallas
  */
 enum Record {
-  HTF_EVENT_BUFFER_FLUSH = 0,                      /**< Event record identifier for the BufferFlush event. */
-  HTF_EVENT_MEASUREMENT_ON_OFF = 1,                /**< Event record identifier for the MeasurementOnOff event. */
-  HTF_EVENT_ENTER = 2,                             /**< Event record identifier for the Enter event. */
-  HTF_EVENT_LEAVE = 3,                             /**< Event record identifier for the Leave event. */
-  HTF_EVENT_MPI_SEND = 4,                          /**< Event record identifier for the MpiSend event. */
-  HTF_EVENT_MPI_ISEND = 5,                         /**< Event record identifier for the MpiIsend event. */
-  HTF_EVENT_MPI_ISEND_COMPLETE = 6,                /**< Event record identifier for the MpiIsendComplete event. */
-  HTF_EVENT_MPI_IRECV_REQUEST = 7,                 /**< Event record identifier for the MpiIrecvRequest event. */
-  HTF_EVENT_MPI_RECV = 8,                          /**< Event record identifier for the MpiRecv event. */
-  HTF_EVENT_MPI_IRECV = 9,                         /**< Event record identifier for the MpiIrecv event. */
-  HTF_EVENT_MPI_REQUEST_TEST = 10,                 /**< Event record identifier for the MpiRequestTest event. */
-  HTF_EVENT_MPI_REQUEST_CANCELLED = 11,            /**< Event record identifier for the MpiRequestCancelled event. */
-  HTF_EVENT_MPI_COLLECTIVE_BEGIN = 12,             /**< Event record identifier for the MpiCollectiveBegin event. */
-  HTF_EVENT_MPI_COLLECTIVE_END = 13,               /**< Event record identifier for the MpiCollectiveEnd event. */
-  HTF_EVENT_OMP_FORK = 14,                         /**< Event record identifier for the OmpFork event. */
-  HTF_EVENT_OMP_JOIN = 15,                         /**< Event record identifier for the OmpJoin event. */
-  HTF_EVENT_OMP_ACQUIRE_LOCK = 16,                 /**< Event record identifier for the OmpAcquireLock event. */
-  HTF_EVENT_OMP_RELEASE_LOCK = 17,                 /**< Event record identifier for the OmpReleaseLock event. */
-  HTF_EVENT_OMP_TASK_CREATE = 18,                  /**< Event record identifier for the OmpTaskCreate event. */
-  HTF_EVENT_OMP_TASK_SWITCH = 19,                  /**< Event record identifier for the OmpTaskSwitch event. */
-  HTF_EVENT_OMP_TASK_COMPLETE = 20,                /**< Event record identifier for the OmpTaskComplete event. */
-  HTF_EVENT_METRIC = 21,                           /**< Event record identifier for the Metric event. */
-  HTF_EVENT_PARAMETER_STRING = 22,                 /**< Event record identifier for the ParameterString event. */
-  HTF_EVENT_PARAMETER_INT = 23,                    /**< Event record identifier for the ParameterInt event. */
-  HTF_EVENT_PARAMETER_UNSIGNED_INT = 24,           /**< Event record identifier for the ParameterUnsignedInt event. */
-  HTF_EVENT_THREAD_FORK = 25,                      /**< Event record identifier for the ThreadFork event. */
-  HTF_EVENT_THREAD_JOIN = 26,                      /**< Event record identifier for the ThreadJoin event. */
-  HTF_EVENT_THREAD_TEAM_BEGIN = 27,                /**< Event record identifier for the ThreadTeamBegin event. */
-  HTF_EVENT_THREAD_TEAM_END = 28,                  /**< Event record identifier for the ThreadTeamEnd event. */
-  HTF_EVENT_THREAD_ACQUIRE_LOCK = 29,              /**< Event record identifier for the ThreadAcquireLock event. */
-  HTF_EVENT_THREAD_RELEASE_LOCK = 30,              /**< Event record identifier for the ThreadReleaseLock event. */
-  HTF_EVENT_THREAD_TASK_CREATE = 31,               /**< Event record identifier for the ThreadTaskCreate event. */
-  HTF_EVENT_THREAD_TASK_SWITCH = 32,               /**< Event record identifier for the ThreadTaskSwitch event. */
-  HTF_EVENT_THREAD_TASK_COMPLETE = 33,             /**< Event record identifier for the ThreadTaskComplete event. */
-  HTF_EVENT_THREAD_CREATE = 34,                    /**< Event record identifier for the ThreadCreate event. */
-  HTF_EVENT_THREAD_BEGIN = 35,                     /**< Event record identifier for the ThreadBegin event. */
-  HTF_EVENT_THREAD_WAIT = 36,                      /**< Event record identifier for the ThreadWait event. */
-  HTF_EVENT_THREAD_END = 37,                       /**< Event record identifier for the ThreadEnd event. */
-  HTF_EVENT_IO_CREATE_HANDLE = 38,                 /**< Event record identifier for the IoCreateHandle event. */
-  HTF_EVENT_IO_DESTROY_HANDLE = 39,                /**< Event record identifier for the IoDestroyHandle event. */
-  HTF_EVENT_IO_SEEK = 41,                          /**< Event record identifier for the IoSeek event. */
-  HTF_EVENT_IO_CHANGE_STATUS_FLAGS = 42,           /**< Event record identifier for the IoChangeStatusFlags event. */
-  HTF_EVENT_IO_DELETE_FILE = 43,                   /**< Event record identifier for the IoDeleteFile event. */
-  HTF_EVENT_IO_OPERATION_BEGIN = 44,               /**< Event record identifier for the IoOperationBegin event. */
-  HTF_EVENT_IO_DUPLICATE_HANDLE = 40,              /**< Event record identifier for the IoDuplicateHandle event. */
-  HTF_EVENT_IO_OPERATION_TEST = 45,                /**< Event record identifier for the IoOperationTest event. */
-  HTF_EVENT_IO_OPERATION_ISSUED = 46,              /**< Event record identifier for the IoOperationIssued event. */
-  HTF_EVENT_IO_OPERATION_COMPLETE = 47,            /**< Event record identifier for the IoOperationComplete event. */
-  HTF_EVENT_IO_OPERATION_CANCELLED = 48,           /**< Event record identifier for the IoOperationCancelled event. */
-  HTF_EVENT_IO_ACQUIRE_LOCK = 49,                  /**< Event record identifier for the IoAcquireLock event. */
-  HTF_EVENT_IO_RELEASE_LOCK = 50,                  /**< Event record identifier for the IoReleaseLock event. */
-  HTF_EVENT_IO_TRY_LOCK = 51,                      /**< Event record identifier for the IoTryLock event. */
-  HTF_EVENT_PROGRAM_BEGIN = 52,                    /**< Event record identifier for the ProgramBegin event. */
-  HTF_EVENT_PROGRAM_END = 53,                      /**< Event record identifier for the ProgramEnd event. */
-  HTF_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54,  /**< Event record identifier for the NonBlockingCollectiveRequest
+  PALLAS_EVENT_BUFFER_FLUSH = 0,                      /**< Event record identifier for the BufferFlush event. */
+  PALLAS_EVENT_MEASUREMENT_ON_OFF = 1,                /**< Event record identifier for the MeasurementOnOff event. */
+  PALLAS_EVENT_ENTER = 2,                             /**< Event record identifier for the Enter event. */
+  PALLAS_EVENT_LEAVE = 3,                             /**< Event record identifier for the Leave event. */
+  PALLAS_EVENT_MPI_SEND = 4,                          /**< Event record identifier for the MpiSend event. */
+  PALLAS_EVENT_MPI_ISEND = 5,                         /**< Event record identifier for the MpiIsend event. */
+  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,                /**< Event record identifier for the MpiIsendComplete event. */
+  PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                 /**< Event record identifier for the MpiIrecvRequest event. */
+  PALLAS_EVENT_MPI_RECV = 8,                          /**< Event record identifier for the MpiRecv event. */
+  PALLAS_EVENT_MPI_IRECV = 9,                         /**< Event record identifier for the MpiIrecv event. */
+  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                 /**< Event record identifier for the MpiRequestTest event. */
+  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,            /**< Event record identifier for the MpiRequestCancelled event. */
+  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,             /**< Event record identifier for the MpiCollectiveBegin event. */
+  PALLAS_EVENT_MPI_COLLECTIVE_END = 13,               /**< Event record identifier for the MpiCollectiveEnd event. */
+  PALLAS_EVENT_OMP_FORK = 14,                         /**< Event record identifier for the OmpFork event. */
+  PALLAS_EVENT_OMP_JOIN = 15,                         /**< Event record identifier for the OmpJoin event. */
+  PALLAS_EVENT_OMP_ACQUIRE_LOCK = 16,                 /**< Event record identifier for the OmpAcquireLock event. */
+  PALLAS_EVENT_OMP_RELEASE_LOCK = 17,                 /**< Event record identifier for the OmpReleaseLock event. */
+  PALLAS_EVENT_OMP_TASK_CREATE = 18,                  /**< Event record identifier for the OmpTaskCreate event. */
+  PALLAS_EVENT_OMP_TASK_SWITCH = 19,                  /**< Event record identifier for the OmpTaskSwitch event. */
+  PALLAS_EVENT_OMP_TASK_COMPLETE = 20,                /**< Event record identifier for the OmpTaskComplete event. */
+  PALLAS_EVENT_METRIC = 21,                           /**< Event record identifier for the Metric event. */
+  PALLAS_EVENT_PARAMETER_STRING = 22,                 /**< Event record identifier for the ParameterString event. */
+  PALLAS_EVENT_PARAMETER_INT = 23,                    /**< Event record identifier for the ParameterInt event. */
+  PALLAS_EVENT_PARAMETER_UNSIGNED_INT = 24,           /**< Event record identifier for the ParameterUnsignedInt event. */
+  PALLAS_EVENT_THREAD_FORK = 25,                      /**< Event record identifier for the ThreadFork event. */
+  PALLAS_EVENT_THREAD_JOIN = 26,                      /**< Event record identifier for the ThreadJoin event. */
+  PALLAS_EVENT_THREAD_TEAM_BEGIN = 27,                /**< Event record identifier for the ThreadTeamBegin event. */
+  PALLAS_EVENT_THREAD_TEAM_END = 28,                  /**< Event record identifier for the ThreadTeamEnd event. */
+  PALLAS_EVENT_THREAD_ACQUIRE_LOCK = 29,              /**< Event record identifier for the ThreadAcquireLock event. */
+  PALLAS_EVENT_THREAD_RELEASE_LOCK = 30,              /**< Event record identifier for the ThreadReleaseLock event. */
+  PALLAS_EVENT_THREAD_TASK_CREATE = 31,               /**< Event record identifier for the ThreadTaskCreate event. */
+  PALLAS_EVENT_THREAD_TASK_SWITCH = 32,               /**< Event record identifier for the ThreadTaskSwitch event. */
+  PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,             /**< Event record identifier for the ThreadTaskComplete event. */
+  PALLAS_EVENT_THREAD_CREATE = 34,                    /**< Event record identifier for the ThreadCreate event. */
+  PALLAS_EVENT_THREAD_BEGIN = 35,                     /**< Event record identifier for the ThreadBegin event. */
+  PALLAS_EVENT_THREAD_WAIT = 36,                      /**< Event record identifier for the ThreadWait event. */
+  PALLAS_EVENT_THREAD_END = 37,                       /**< Event record identifier for the ThreadEnd event. */
+  PALLAS_EVENT_IO_CREATE_HANDLE = 38,                 /**< Event record identifier for the IoCreateHandle event. */
+  PALLAS_EVENT_IO_DESTROY_HANDLE = 39,                /**< Event record identifier for the IoDestroyHandle event. */
+  PALLAS_EVENT_IO_SEEK = 41,                          /**< Event record identifier for the IoSeek event. */
+  PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,           /**< Event record identifier for the IoChangeStatusFlags event. */
+  PALLAS_EVENT_IO_DELETE_FILE = 43,                   /**< Event record identifier for the IoDeleteFile event. */
+  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,               /**< Event record identifier for the IoOperationBegin event. */
+  PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,              /**< Event record identifier for the IoDuplicateHandle event. */
+  PALLAS_EVENT_IO_OPERATION_TEST = 45,                /**< Event record identifier for the IoOperationTest event. */
+  PALLAS_EVENT_IO_OPERATION_ISSUED = 46,              /**< Event record identifier for the IoOperationIssued event. */
+  PALLAS_EVENT_IO_OPERATION_COMPLETE = 47,            /**< Event record identifier for the IoOperationComplete event. */
+  PALLAS_EVENT_IO_OPERATION_CANCELLED = 48,           /**< Event record identifier for the IoOperationCancelled event. */
+  PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                  /**< Event record identifier for the IoAcquireLock event. */
+  PALLAS_EVENT_IO_RELEASE_LOCK = 50,                  /**< Event record identifier for the IoReleaseLock event. */
+  PALLAS_EVENT_IO_TRY_LOCK = 51,                      /**< Event record identifier for the IoTryLock event. */
+  PALLAS_EVENT_PROGRAM_BEGIN = 52,                    /**< Event record identifier for the ProgramBegin event. */
+  PALLAS_EVENT_PROGRAM_END = 53,                      /**< Event record identifier for the ProgramEnd event. */
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54,  /**< Event record identifier for the NonBlockingCollectiveRequest
                                                     * event. */
-  HTF_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55, /**< Event record identifier for the NonBlockingCollectiveComplete
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55, /**< Event record identifier for the NonBlockingCollectiveComplete
                                                     * event. */
-  HTF_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
-  HTF_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
+  PALLAS_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
+  PALLAS_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
 
-  HTF_EVENT_MAX_ID /**< Max Event Record ID */
+  PALLAS_EVENT_MAX_ID /**< Max Event Record ID */
 };
 
 /**
- * Structure to store an event in HTF.
+ * Structure to store an event in PALLAS.
  */
 typedef struct Event {
   enum Record record;      /**< ID of the event recorded in the above enumeration of events. */
@@ -259,7 +259,7 @@ struct TokenCountMap : public std::map<Token, size_t> {
 #define DEFINE_Vector(type, name) C_CXX(byte, std::vector<type>) name C_CXX([VECTOR_SIZE], { std::vector<type>() })
 
 /**
- * Structure to store a sequence in HTF format.
+ * Structure to store a sequence in PALLAS format.
  */
 typedef struct Sequence {
   LinkedVector* durations CXX({new LinkedVector()}); /**< Vector of durations for these type of sequences. */
@@ -285,7 +285,7 @@ typedef struct Sequence {
 /*************************** Loop **********************/
 
 /**
- * Structure to store a Loop in HTF format.
+ * Structure to store a Loop in PALLAS format.
  */
 typedef struct Loop {
   Token repeated_token;               /**< Token of the Sequence being repeated. */
@@ -295,7 +295,7 @@ typedef struct Loop {
 } Loop;
 
 /**
- * Summary for an htf::Event.
+ * Summary for an pallas::Event.
  *
  * Contains the durations for each occurence of that event
  * as well as the number of occurences for that event,
@@ -317,32 +317,32 @@ typedef struct EventSummary {
 #endif
 } EventSummary;
 
-typedef uint32_t ThreadId;                                          /**< Reference for a htf::Thread. */
-#define HTF_THREAD_ID_INVALID ((HTF(ThreadId))HTF_UNDEFINED_UINT32) /**< Invalid ThreadId. */
-typedef uint32_t LocationGroupId;                                   /**< Reference for a htf::LocationGroup. */
-#define HTF_LOCATION_GROUP_ID_INVALID ((HTF(LocationGroupId))HTF_UNDEFINED_UINT32) /**< Invalid LocationGroupId. */
-#define HTF_MAIN_LOCATION_GROUP_ID ((HTF(LocationGroupId))HTF_LOCATION_GROUP_ID_INVALID - 1)
+typedef uint32_t ThreadId;                                          /**< Reference for a pallas::Thread. */
+#define PALLAS_THREAD_ID_INVALID ((PALLAS(ThreadId))PALLAS_UNDEFINED_UINT32) /**< Invalid ThreadId. */
+typedef uint32_t LocationGroupId;                                   /**< Reference for a pallas::LocationGroup. */
+#define PALLAS_LOCATION_GROUP_ID_INVALID ((PALLAS(LocationGroupId))PALLAS_UNDEFINED_UINT32) /**< Invalid LocationGroupId. */
+#define PALLAS_MAIN_LOCATION_GROUP_ID ((PALLAS(LocationGroupId))PALLAS_LOCATION_GROUP_ID_INVALID - 1)
 /**< Main LocationGroupId \todo What is that ?*/
 
 /** A reference for everything after that. */
 typedef uint32_t Ref;
 
-#define HTF_UNDEFINED_UINT8 ((uint8_t)(~((uint8_t)0u)))
-#define HTF_UNDEFINED_INT8 ((int8_t)(~(HTF_UNDEFINED_UINT8 >> 1)))
-#define HTF_UNDEFINED_UINT16 ((uint16_t)(~((uint16_t)0u)))
-#define HTF_UNDEFINED_INT16 ((int16_t)(~(HTF_UNDEFINED_UINT16 >> 1)))
-#define HTF_UNDEFINED_UINT32 ((uint32_t)(~((uint32_t)0u)))
-#define HTF_UNDEFINED_INT32 ((int32_t)(~(HTF_UNDEFINED_UINT32 >> 1)))
-#define HTF_UNDEFINED_UINT64 ((uint64_t)(~((uint64_t)0u)))
-#define HTF_UNDEFINED_INT64 ((int64_t)(~(HTF_UNDEFINED_UINT64 >> 1)))
-#define HTF_UNDEFINED_TYPE HTF_UNDEFINED_UINT8
+#define PALLAS_UNDEFINED_UINT8 ((uint8_t)(~((uint8_t)0u)))
+#define PALLAS_UNDEFINED_INT8 ((int8_t)(~(PALLAS_UNDEFINED_UINT8 >> 1)))
+#define PALLAS_UNDEFINED_UINT16 ((uint16_t)(~((uint16_t)0u)))
+#define PALLAS_UNDEFINED_INT16 ((int16_t)(~(PALLAS_UNDEFINED_UINT16 >> 1)))
+#define PALLAS_UNDEFINED_UINT32 ((uint32_t)(~((uint32_t)0u)))
+#define PALLAS_UNDEFINED_INT32 ((int32_t)(~(PALLAS_UNDEFINED_UINT32 >> 1)))
+#define PALLAS_UNDEFINED_UINT64 ((uint64_t)(~((uint64_t)0u)))
+#define PALLAS_UNDEFINED_INT64 ((int64_t)(~(PALLAS_UNDEFINED_UINT64 >> 1)))
+#define PALLAS_UNDEFINED_TYPE PALLAS_UNDEFINED_UINT8
 
-/** Reference for a htf::String */
+/** Reference for a pallas::String */
 typedef Ref StringRef;
 /** Invalid StringRef */
-#define HTF_STRING_REF_INVALID ((StringRef)HTF_UNDEFINED_UINT32)
+#define PALLAS_STRING_REF_INVALID ((StringRef)PALLAS_UNDEFINED_UINT32)
 /**
- * Define a String reference structure used by HTF format.
+ * Define a String reference structure used by PALLAS format.
  *
  * It has an ID and an associated char* with its length
  */
@@ -352,10 +352,10 @@ typedef struct String {
   int length;           /**< Length of #str.*/
 } String;
 
-/** Reference for a htf::Region */
+/** Reference for a pallas::Region */
 typedef Ref RegionRef;
 /** Invalid RegionRef */
-#define HTF_REGIONREF_INVALID ((RegionRef)HTF_UNDEFINED_UINT32)
+#define PALLAS_REGIONREF_INVALID ((RegionRef)PALLAS_UNDEFINED_UINT32)
 /**
  * Define a Region that has an ID and a description.
  */
@@ -365,11 +365,11 @@ typedef struct Region {
   /* TODO: add other information (eg. file, line number, etc.)  */
 } Region;
 
-/** Reference for an htf::Attribute. */
+/** Reference for an pallas::Attribute. */
 typedef Ref AttributeRef;
 
-/** Wrapper for enum htf::AttributeType. */
-typedef uint8_t htf_type_t;
+/** Wrapper for enum pallas::AttributeType. */
+typedef uint8_t pallas_type_t;
 
 /**
  * Define an Attribute of a function call.
@@ -378,7 +378,7 @@ typedef struct Attribute {
   AttributeRef attribute_ref; /**< Id of that Attribute. */
   StringRef name;             /**< Name of that Attribute. */
   StringRef description;      /**< Description of that Attribute. */
-  htf_type_t type;            /**< Type of that Attribute. */
+  pallas_type_t type;            /**< Type of that Attribute. */
 } Attribute;
 
 /**
@@ -387,20 +387,20 @@ typedef struct Attribute {
  * It can be a regular thread (eg. a pthread), or a GPU stream.
  */
 typedef struct Thread {
-  struct Archive* archive; /**< htf::Archive containing this Thread. */
+  struct Archive* archive; /**< pallas::Archive containing this Thread. */
   ThreadId id;             /**< Id of this Thread. */
 
   EventSummary* events;         /**< Array of events recorded in this Thread. */
   unsigned nb_allocated_events; /**< Size of #events. */
-  unsigned nb_events;           /**< Number of htf::EventSummary in #events. */
+  unsigned nb_events;           /**< Number of pallas::EventSummary in #events. */
 
-  Sequence** sequences;            /**< Array of htf::Sequence recorded in this Thread. */
+  Sequence** sequences;            /**< Array of pallas::Sequence recorded in this Thread. */
   unsigned nb_allocated_sequences; /**< Size of #sequences. */
-  unsigned nb_sequences;           /**< Number of htf::Sequence in #sequences. */
+  unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
-  Loop* loops;                 /**< Array of htf::Loop recorded in this Thread. */
+  Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Size of #loops. */
-  unsigned nb_loops;           /**< Number of htf::Loop in #loops. */
+  unsigned nb_loops;           /**< Number of pallas::Loop in #loops. */
 #ifdef __cplusplus
   TokenId getEventId(Event* e);
   [[nodiscard]] Event* getEvent(Token) const;
@@ -420,7 +420,7 @@ typedef struct Thread {
   void printAttributeRef(AttributeRef) const;
   void printLocation(Ref) const;
   void printRegion(RegionRef) const;
-  void printAttributeValue(const struct AttributeData* attr, htf_type_t type) const;
+  void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const;
   void printAttribute(const struct AttributeData* attr) const;
   void printAttributeList(const struct AttributeList* attribute_list) const;
   void printEventAttribute(const struct EventOccurence* es) const;
@@ -437,7 +437,7 @@ typedef struct Thread {
   Token getSequenceIdFromArray(Token* token_array, size_t array_len);
   /** Returns the duration for the given array.
    * You can choose to ignore the last token. */
-  htf_duration_t getSequenceDuration(Token* array, size_t size, bool ignoreLast = false);
+  pallas_duration_t getSequenceDuration(Token* array, size_t size, bool ignoreLast = false);
   void finalizeThread();
   /** Create a new Thread from an archive and an id. This is used when writing the trace. */
   void initThread(Archive* a, ThreadId id);
@@ -452,72 +452,72 @@ typedef struct Thread {
 } Thread;
 
 CXX(
-};) /* namespace htf */
+};) /* namespace pallas */
 #ifdef __cplusplus
 extern "C" {
 #endif
   /*************************** C Functions **********************/
   /** Allocates a new thread */
-  extern HTF(Thread) * htf_thread_new(void);
+  extern PALLAS(Thread) * pallas_thread_new(void);
   /**
    * Return the thread name of thread thread
    */
-  extern const char* htf_thread_get_name(HTF(Thread) * thread);
+  extern const char* pallas_thread_get_name(PALLAS(Thread) * thread);
 
   /**
    * Print the content of sequence seq_id
    */
-  extern void htf_print_sequence(HTF(Thread) * thread, HTF(Token) seq_id);
+  extern void pallas_print_sequence(PALLAS(Thread) * thread, PALLAS(Token) seq_id);
 
   /**
    * Print the subset of a repeated_token array
    */
-  extern void htf_print_token_array(HTF(Thread) * thread, HTF(Token) * token_array, int index_start, int index_stop);
+  extern void pallas_print_token_array(PALLAS(Thread) * thread, PALLAS(Token) * token_array, int index_start, int index_stop);
 
   /**
    * Print a repeated_token
    */
-  extern void htf_print_token(HTF(Thread) * thread, HTF(Token) token);
+  extern void pallas_print_token(PALLAS(Thread) * thread, PALLAS(Token) token);
 
   /**
    * Print an event
    */
-  extern void htf_print_event(HTF(Thread) * thread, HTF(Event) * e);
+  extern void pallas_print_event(PALLAS(Thread) * thread, PALLAS(Event) * e);
 
   /**
    * Return the loop whose id is loop_id
    *  - return NULL if loop_id is unknown
    */
-  extern struct HTF(Loop) * htf_get_loop(HTF(Thread) * thread_trace, HTF(Token) loop_id);
+  extern struct PALLAS(Loop) * pallas_get_loop(PALLAS(Thread) * thread_trace, PALLAS(Token) loop_id);
 
   /**
    * Return the sequence whose id is sequence_id
    * @returns NULL if sequence_id is unknown
    */
-  extern struct HTF(Sequence) * htf_get_sequence(HTF(Thread) * thread_trace, HTF(Token) seq_id);
+  extern struct PALLAS(Sequence) * pallas_get_sequence(PALLAS(Thread) * thread_trace, PALLAS(Token) seq_id);
 
   /**
    * Return the event whose id is event_id
    *  - return NULL if event_id is unknown
    */
-  extern struct HTF(Event) * htf_get_event(HTF(Thread) * thread_trace, HTF(Token) evt_id);
+  extern struct PALLAS(Event) * pallas_get_event(PALLAS(Thread) * thread_trace, PALLAS(Token) evt_id);
 
   /**
    * Get the nth token of a given Sequence.
    */
-  extern HTF(Token) htf_get_token(HTF(Thread) * trace, HTF(Token) sequence, int index);
-  // Says here that we shouldn't send a htf::Token, but that's because it doesn't know
-  // We made the htf_token type that matches it. This works as long as the C++ and C version
+  extern PALLAS(Token) pallas_get_token(PALLAS(Thread) * trace, PALLAS(Token) sequence, int index);
+  // Says here that we shouldn't send a pallas::Token, but that's because it doesn't know
+  // We made the pallas_token type that matches it. This works as long as the C++ and C version
   // of the struct both have the same elements. Don't care about the rest.
 
   /** Returns the size of the given sequence. */
-  extern size_t htf_sequence_get_size(HTF(Sequence) * sequence);
+  extern size_t pallas_sequence_get_size(PALLAS(Sequence) * sequence);
   /** Returns the nth token of the given sequence. */
-  extern HTF(Token) htf_sequence_get_token(HTF(Sequence) * sequence, int index);
+  extern PALLAS(Token) pallas_sequence_get_token(PALLAS(Sequence) * sequence, int index);
   /** Returns the number of similar loops. */
-  extern size_t htf_loop_count(HTF(Loop) * loop);
+  extern size_t pallas_loop_count(PALLAS(Loop) * loop);
   /** Returns the number of loops for the nth loop. */
-  extern size_t htf_loop_get_count(HTF(Loop) * loop, size_t index);
+  extern size_t pallas_loop_get_count(PALLAS(Loop) * loop, size_t index);
 
 
   /** Does a safe-ish realloc the the given buffer.
@@ -527,7 +527,7 @@ extern "C" {
    * This is better than a realloc because it moves the data around, but it is also slower.
    * Checks for error at malloc.
    */
-  extern void* htf_realloc(void* buffer, int cur_size, int new_size, size_t datatype_size);
+  extern void* pallas_realloc(void* buffer, int cur_size, int new_size, size_t datatype_size);
 
 #ifdef __cplusplus
 };
@@ -541,7 +541,7 @@ extern "C" {
  * Checks for error at malloc.
  */
 #define DOUBLE_MEMORY_SPACE(buffer, counter, datatype) do {		\
-    buffer = (datatype*) htf_realloc((void*)buffer, counter, (counter)*2, sizeof(datatype)); \
+    buffer = (datatype*) pallas_realloc((void*)buffer, counter, (counter)*2, sizeof(datatype)); \
     counter = (counter)*2;						\
   } while(0)
 
@@ -553,7 +553,7 @@ extern "C" {
  * Checks for error at malloc.
  */
 #define INCREMENT_MEMORY_SPACE(buffer, counter, datatype) do {		\
-  buffer = (datatype*) htf_realloc((void*)buffer, counter, (counter)+1, sizeof(datatype)); \
+  buffer = (datatype*) pallas_realloc((void*)buffer, counter, (counter)+1, sizeof(datatype)); \
   counter = (counter) + 1;						\
 } while(0)
 

@@ -3,8 +3,8 @@
 CUR_PATH=$(dirname  $(realpath $0))
 cd "$CUR_PATH"
 
-[ -n "$HTF_PRINT_PATH" ]    || export HTF_PRINT_PATH=htf_print
-[ -n "$HTF_INFO_PATH" ]    || export HTF_INFO_PATH=htf_info
+[ -n "$PALLAS_PRINT_PATH" ]    || export PALLAS_PRINT_PATH=pallas_print
+[ -n "$PALLAS_INFO_PATH" ]    || export PALLAS_INFO_PATH=pallas_info
 
 
 C_BLACK='\033[0;30m'
@@ -141,7 +141,7 @@ function trace_get_nb_event_of_type {
     trace_filename=$1
     event_type=$2
 
-    "$HTF_PRINT_PATH" "$trace_filename" 2>/dev/null |grep -E "^[[:space:]]+[[:digit:]]" |awk '{$1=""; $2=""}1' | grep -E "^[[:space:]]+$event_type" |wc -l
+    "$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |grep -E "^[[:space:]]+[[:digit:]]" |awk '{$1=""; $2=""}1' | grep -E "^[[:space:]]+$event_type" |wc -l
 }
 
 function trace_get_nb_function {
@@ -149,7 +149,7 @@ function trace_get_nb_function {
     event_type=$2
     function_name=$3
 
-    "$HTF_PRINT_PATH" "$trace_filename" 2>/dev/null |grep -E "^[[:space:]]+[[:digit:]]" |awk '{$1=""; $2=""}1' |grep -E "^[[:space:]]+$event_type" | grep -E "\($function_name\)" | wc -l
+    "$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |grep -E "^[[:space:]]+[[:digit:]]" |awk '{$1=""; $2=""}1' |grep -E "^[[:space:]]+$event_type" | grep -E "\($function_name\)" | wc -l
 }
 
 function trace_check_existence {
@@ -169,13 +169,13 @@ function trace_check_existence {
     fi
 }
 
-function trace_check_htf_print {
+function trace_check_pallas_print {
     trace_filename=$1
 
     ((nb_test++))
-    echo " > Checking if htf_print works"
+    echo " > Checking if pallas_print works"
 
-    if ! "$HTF_PRINT_PATH" "$trace_filename"  > /dev/null 2>&1 ; then
+    if ! "$PALLAS_PRINT_PATH" "$trace_filename"  > /dev/null 2>&1 ; then
 	print_error "Cannot parse trace '$trace_filename'"
 	((nb_failed++))
 	return 1
@@ -186,13 +186,13 @@ function trace_check_htf_print {
     fi
 }
 
-function trace_check_htf_info {
+function trace_check_pallas_info {
     trace_filename=$1
 
     ((nb_test++))
-    echo " > Checking if htf_info works"
+    echo " > Checking if pallas_info works"
 
-    if ! "$HTF_INFO_PATH" "$trace_filename" > /dev/null 2>&1 ; then
+    if ! "$PALLAS_INFO_PATH" "$trace_filename" > /dev/null 2>&1 ; then
 	print_error "Cannot parse trace '$trace_filename'"
 	((nb_failed++))
 	return 1
@@ -296,7 +296,7 @@ function trace_check_timestamp_order {
     ((nb_test++))
     echo " > Checking the order of timestamps for thread $thread_name"
 
-    timestamps=$("$HTF_PRINT_PATH" "$trace_filename" 2>/dev/null |grep "[[:space:]]$thread_name[[:space:]]" |awk '{print $1}')
+    timestamps=$("$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |grep "[[:space:]]$thread_name[[:space:]]" |awk '{print $1}')
     generated_timestamps=$(echo $timestamps | sed 's/ /\n/g')
     ordered_timestamp=$(echo $timestamps | sed 's/ /\n/g' |sort -n)
     if [ "$generated_timestamps" != "$ordered_timestamp" ]; then
@@ -317,7 +317,7 @@ function trace_check_timestamp_values {
     ((nb_test++))
     echo " > Checking the order of timestamps for thread $thread_name"
 
-    timestamps=$("$HTF_PRINT_PATH" "$trace_filename" 2>/dev/null |grep "[[:space:]]$thread_name[[:space:]]" |awk '{print $1}' | sed 's/0\.//' | perl -pe 's/ ^0+ //xg' |tr '\n' ' ')
+    timestamps=$("$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |grep "[[:space:]]$thread_name[[:space:]]" |awk '{print $1}' | sed 's/0\.//' | perl -pe 's/ ^0+ //xg' |tr '\n' ' ')
     nblines=$(echo $timestamps |wc -w)
     expected_timestamps=" "$(seq 1 $nblines |tr '\n' ' ')
 

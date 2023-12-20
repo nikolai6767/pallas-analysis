@@ -1,6 +1,6 @@
 BIN=libpthread_trace.so
-CFLAGS=-Wall -g `pkg-config --cflags htf`
-LDFLAGS=`pkg-config --libs htf`
+CFLAGS=-Wall -g `pkg-config --cflags pallas`
+LDFLAGS=`pkg-config --libs pallas`
 
 all: $(BIN)
 

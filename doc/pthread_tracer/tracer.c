@@ -7,28 +7,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_write.h"
 #include "tracer.h"
 
-static struct htf_archive trace;
+static struct pallas_archive trace;
 static LocationGroupId_t process_id;
-static _Thread_local struct htf_thread_writer* thread_writer = NULL;
+static _Thread_local struct pallas_thread_writer* thread_writer = NULL;
 static _Thread_local ThreadId_t thread_id;
 static _Thread_local int thread_rank;
 static _Atomic int nb_threads = 0;
-static struct htf_thread_writer** thread_writers = NULL;
+static struct pallas_thread_writer** thread_writers = NULL;
 static pthread_mutex_t lock;
 
 static int verbose = 0;
 static int initialized = 0;
 
-static htf_string_ref_t _register_string(char* str) {
-  static htf_string_ref_t next_ref = 0;
-  htf_string_ref_t ref = next_ref++;
+static pallas_string_ref_t _register_string(char* str) {
+  static pallas_string_ref_t next_ref = 0;
+  pallas_string_ref_t ref = next_ref++;
 
-  htf_archive_register_string(&trace, ref, str);
+  pallas_archive_register_string(&trace, ref, str);
   return ref;
 }
 
@@ -50,19 +50,19 @@ void _init_thread() {
 
   pthread_mutex_lock(&lock);
   thread_rank = nb_threads++;
-  thread_writer = malloc(sizeof(struct htf_thread_writer));
-  thread_writers = realloc(thread_writers, sizeof(struct htf_thread_writer*) * nb_threads);
+  thread_writer = malloc(sizeof(struct pallas_thread_writer));
+  thread_writers = realloc(thread_writers, sizeof(struct pallas_thread_writer*) * nb_threads);
   thread_writers[thread_rank] = thread_writer;
   pthread_mutex_unlock(&lock);
 
   char thread_name[20];
   snprintf(thread_name, 20, "thread_%d", thread_rank);
-  htf_string_ref_t thread_name_id = _register_string(thread_name);
+  pallas_string_ref_t thread_name_id = _register_string(thread_name);
 
   thread_id = _new_thread();
-  htf_write_define_location(&trace, thread_id, thread_name_id, process_id);
+  pallas_write_define_location(&trace, thread_id, thread_name_id, process_id);
 
-  htf_write_thread_open(&trace, thread_writer, thread_id);
+  pallas_write_thread_open(&trace, thread_writer, thread_id);
 }
 
 void enter_function(enum intercepted_function f, void* ptr) {
@@ -72,14 +72,14 @@ void enter_function(enum intercepted_function f, void* ptr) {
   if (thread_writer == NULL)
     _init_thread();
 
-  htf_record_enter(thread_writer, NULL, HTF_TIMESTAMP_INVALID, (int)f);
+  pallas_record_enter(thread_writer, NULL, PALLAS_TIMESTAMP_INVALID, (int)f);
 }
 
 void leave_function(enum intercepted_function f, void* ptr) {
   if (!initialized)
     return;
 
-  htf_record_leave(thread_writer, NULL, HTF_TIMESTAMP_INVALID, (int)f);
+  pallas_record_leave(thread_writer, NULL, PALLAS_TIMESTAMP_INVALID, (int)f);
 }
 
 void* get_callback(const char* fname) {
@@ -117,14 +117,14 @@ static void _tracer_init(void) {
   char program_name[1024];
   _get_trace_name(program_name);
 
-  htf_write_archive_open(&trace, program_name, "main", 0);
+  pallas_write_archive_open(&trace, program_name, "main", 0);
 
   process_id = _new_location_group();
-  htf_write_define_location_group(&trace, process_id, _register_string("Process"), HTF_LOCATION_GROUP_ID_INVALID);
+  pallas_write_define_location_group(&trace, process_id, _register_string("Process"), PALLAS_LOCATION_GROUP_ID_INVALID);
 
   for (int i = 0; i < NB_FUNCTIONS; i++) {
-    htf_string_ref_t string_ref = _register_string(function_names[i]);
-    htf_archive_register_region(&trace, i, string_ref);
+    pallas_string_ref_t string_ref = _register_string(function_names[i]);
+    pallas_archive_register_region(&trace, i, string_ref);
   }
 
   initialized = 1;
@@ -135,10 +135,10 @@ static void _tracer_conclude(void) {
   printf("[TRACER] finalizing write_events\n");
 
   for (int i = 0; i < nb_threads; i++) {
-    htf_write_thread_close(thread_writers[i]);
+    pallas_write_thread_close(thread_writers[i]);
   }
 
-  htf_write_archive_close(&trace);
+  pallas_write_archive_close(&trace);
 }
 
 /* -*-

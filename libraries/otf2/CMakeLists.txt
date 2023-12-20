@@ -30,7 +30,7 @@ target_compile_options(otf2-print
 
 target_link_libraries(otf2-print
         PRIVATE
-        htf
+        pallas
         otf2
 )
 
@@ -128,7 +128,7 @@ target_compile_options(otf2
 
 target_include_directories(otf2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} include)
 
-target_link_libraries(otf2 PRIVATE htf)
+target_link_libraries(otf2 PRIVATE pallas)
 
 install(TARGETS otf2 EXPORT OTF2LibTargets
         LIBRARY DESTINATION ${INSTALL_LIBDIR}

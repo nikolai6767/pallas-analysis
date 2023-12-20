@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_write.h"
 #include "otf2/OTF2_Archive.h"
 #include "otf2/otf2.h"
 
@@ -20,9 +20,9 @@ OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
                                 const OTF2_FileSubstrate fileSubstrate,
                                 const OTF2_Compression compression) {
   OTF2_Archive* archive = malloc(sizeof(OTF2_Archive));
-  archive->archive = htf_archive_new();
+  archive->archive = pallas_archive_new();
 
-  htf_write_archive_open(archive->archive, archivePath, archiveName, 0); /* TODO: add missing archive_id_t */
+  pallas_write_archive_open(archive->archive, archivePath, archiveName, 0); /* TODO: add missing archive_id_t */
 
   archive->globalDefWriter = NULL;
 
@@ -35,7 +35,7 @@ OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
 }
 
 OTF2_ErrorCode OTF2_Archive_Close(OTF2_Archive* archive) {
-  htf_write_archive_close(archive->archive);
+  pallas_write_archive_close(archive->archive);
   return OTF2_SUCCESS;
 }
 
@@ -184,10 +184,10 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
   archive->def_writers[index]->archive = archive->archive;
   archive->def_writers[index]->thread_writer = malloc(sizeof(struct ThreadWriter));
 
-  htf_write_thread_open(archive->archive, archive->def_writers[index]->thread_writer, location);
+  pallas_write_thread_open(archive->archive, archive->def_writers[index]->thread_writer, location);
 
 #if 0
-  htf_write_init_thread(&archive->trace,
+  pallas_write_init_thread(&archive->trace,
 			,
 			location,
 			index);
@@ -208,7 +208,7 @@ OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRe
       printf("\t->%d (.location=%lu, .writer=%p)\n", i, archive->evt_writers[i]->locationRef,
              archive->evt_writers[i]->thread_writer);
 
-      //      htf_assert(archive->evt_writers[i]->thread_writer->thread_trace.container);
+      //      pallas_assert(archive->evt_writers[i]->thread_writer->thread_trace.container);
       pthread_mutex_unlock(&archive->lock);
       return archive->evt_writers[i];
     }
@@ -219,7 +219,7 @@ OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRe
   printf("New EvtWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
          archive->evt_writers[index]->thread_writer);
 
-  //  htf_assert(archive->evt_writers[index]->thread_writer->thread_trace.container);
+  //  pallas_assert(archive->evt_writers[index]->thread_writer->thread_trace.container);
   pthread_mutex_unlock(&archive->lock);
   return archive->evt_writers[index];
 }
@@ -243,9 +243,9 @@ OTF2_DefWriter* OTF2_Archive_GetDefWriter(OTF2_Archive* archive, OTF2_LocationRe
 OTF2_GlobalDefWriter* OTF2_Archive_GetGlobalDefWriter(OTF2_Archive* archive) {
   if (!archive->globalDefWriter) {
     archive->globalDefWriter = malloc(sizeof(OTF2_GlobalDefWriter));
-    archive->globalDefWriter->archive = htf_archive_new();
+    archive->globalDefWriter->archive = pallas_archive_new();
 
-    htf_write_global_archive_open(archive->globalDefWriter->archive, archive->archive->dir_name,
+    pallas_write_global_archive_open(archive->globalDefWriter->archive, archive->archive->dir_name,
                                   archive->archive->trace_name);
   }
   return archive->globalDefWriter;
@@ -303,7 +303,7 @@ OTF2_MarkerReader* OTF2_Archive_GetMarkerReader(OTF2_Archive* archive) {
 
 OTF2_ErrorCode OTF2_Archive_CloseEvtWriter(OTF2_Archive* archive, OTF2_EvtWriter* writer) {
   //  NOT_IMPLEMENTED;
-  htf_write_thread_close(writer->thread_writer);
+  pallas_write_thread_close(writer->thread_writer);
   return OTF2_SUCCESS;
 }
 
@@ -323,7 +323,7 @@ OTF2_ErrorCode OTF2_Archive_CloseSnapWriter(OTF2_Archive* archive, OTF2_SnapWrit
 }
 
 OTF2_ErrorCode OTF2_Archive_CloseGlobalDefWriter(OTF2_Archive* archive, OTF2_GlobalDefWriter* writer) {
-  htf_write_global_archive_close(writer->archive);
+  pallas_write_global_archive_close(writer->archive);
   return OTF2_SUCCESS;
 }
 

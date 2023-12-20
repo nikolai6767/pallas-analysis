@@ -25,8 +25,8 @@
 
 /** A macro to help naming conventions in C/C++. First argument is only kept in C, second is only kept in C++. */
 #define C_CXX(c_name, cxx_name) C(c_name) CXX(cxx_name)
-/** Adds htf:: in front of the variables in C++. */
-#define HTF(something) CXX(htf::) something
+/** Adds pallas:: in front of the variables in C++. */
+#define PALLAS(something) CXX(pallas::) something
 
 #ifdef __cplusplus
 #include <pthread.h>
@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #endif
 #ifdef __cplusplus
-namespace htf {
+namespace pallas {
 #endif
 
 /**
@@ -55,55 +55,55 @@ enum CXX(class) DebugLevel {
 };
 #ifdef __cplusplus
 extern enum DebugLevel debugLevel;
-}; /* namespace htf */
+}; /* namespace pallas */
 extern "C" {
 #endif
 /** Initializes the DebugLevel using Env Variables. */
-extern void htf_debug_level_init();
+extern void pallas_debug_level_init();
 /** Sets the DebugLevel to the given level. */
-extern void htf_debug_level_set(enum HTF(DebugLevel) lvl);
+extern void pallas_debug_level_set(enum PALLAS(DebugLevel) lvl);
 /** Returns the DebugLevel. */
-extern enum HTF(DebugLevel) htf_debug_level_get();
+extern enum PALLAS(DebugLevel) pallas_debug_level_get();
 CXX(
 };)
 /** Stops the execution. */
-#define htf_abort() abort()
+#define pallas_abort() abort()
 /** Logs a formated message to the given filedescriptor if the given debugLevel is high enough. */
-#define _htf_log(fd, _debug_level_, format, ...)                        \
+#define _pallas_log(fd, _debug_level_, format, ...)                        \
   do {                                                                  \
-    if (C_CXX(htf_debug_level_get(), htf::debugLevel) >= _debug_level_) \
-      printf("[HTF - %lx] " format, pthread_self(), ##__VA_ARGS__);     \
+    if (C_CXX(pallas_debug_level_get(), pallas::debugLevel) >= _debug_level_) \
+      printf("[Pallas - %lx] " format, pthread_self(), ##__VA_ARGS__);     \
   } while (0)
 /** Logs a formated message to stdout if the given debugLevel is high enough. */
-#define htf_log(_debug_level_, format, ...) _htf_log(stdout, _debug_level_, format, ##__VA_ARGS__)
+#define pallas_log(_debug_level_, format, ...) _pallas_log(stdout, _debug_level_, format, ##__VA_ARGS__)
 /** Logs a formated message to stderr if the debugLevel is under Normal. */
-#define htf_warn(format, ...)                                                                                          \
+#define pallas_warn(format, ...)                                                                                          \
   do {                                                                                                                 \
-    _htf_log(stderr, C_CXX(Normal, htf::DebugLevel::Normal), "HTF warning in %s (%s:%d): " format, __func__, __FILE__, \
+    _pallas_log(stderr, C_CXX(Normal, pallas::DebugLevel::Normal), "Pallas warning in %s (%s:%d): " format, __func__, __FILE__, \
              __LINE__, ##__VA_ARGS__);                                                                                 \
   } while (0)
 /** Logs a formated message to stderr if the given debugLevel is under Error. */
-#define htf_error(format, ...)                                                                                     \
+#define pallas_error(format, ...)                                                                                     \
   do {                                                                                                             \
-    _htf_log(stderr, C_CXX(Error, htf::DebugLevel::Error), "HTF error in %s (%s:%d): " format, __func__, __FILE__, \
+    _pallas_log(stderr, C_CXX(Error, pallas::DebugLevel::Error), "Pallas error in %s (%s:%d): " format, __func__, __FILE__, \
              __LINE__, ##__VA_ARGS__);                                                                             \
-    htf_abort();                                                                                                   \
+    pallas_abort();                                                                                                   \
   } while (0)
 
 /** Asserts a condition whatever the build mode (ie. Debug or Release). */
-#define htf_assert_always(cond)	     \
+#define pallas_assert_always(cond)	     \
   do {                               \
     if (!(cond))                     \
-      htf_error("Assertion failed"); \
+      pallas_error("Assertion failed"); \
   } while (0)
 
 
 #ifdef NDEBUG
 /** Asserts a condition only if in Debug mode (if DEBUG is defined). */
-#define htf_assert(cond)
+#define pallas_assert(cond)
 #else
 /** Asserts a condition only if in Debug mode (if DEBUG is defined). */
-#define htf_assert(cond) htf_assert_always(cond)
+#define pallas_assert(cond) pallas_assert_always(cond)
 #endif
 
 /* -*-

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.0)
 
-project(HTF
+project(Pallas
         VERSION 0.1.0
         LANGUAGES CXX C
 )
@@ -85,7 +85,7 @@ if (ENABLE_SZ)
     endif ()
 endif (ENABLE_SZ)
 
-set(HTF_LIB_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
+set(PALLAS_LIB_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
 
 set(INSTALL_BINDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
 set(INSTALL_INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
@@ -93,7 +93,7 @@ set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(INSTALL_PKGCONFIG_DIR "${INSTALL_LIBDIR}/pkgconfig")
 
 # Subdirectory
-add_subdirectory(libraries/htf)
+add_subdirectory(libraries/pallas)
 if (ENABLE_OTF2)
     add_subdirectory(libraries/otf2)
 endif ()
@@ -108,6 +108,6 @@ include(PrintOpts)
 configure_file(config.json config.json COPYONLY)
 
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/htf.pc.in
-        ${CMAKE_CURRENT_BINARY_DIR}/htf.pc)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/htf.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pallas.pc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/pallas.pc)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pallas.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")

@@ -1,6 +1,6 @@
-# HTF
+# PALLAS
 
-HTF provides an interface to write and read trace data.
+PALLAS provides an interface to write and read trace data.
 
 ## Building
 
@@ -15,22 +15,22 @@ and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line.
 
 ## About
 
-HTF implements a subset of the [OTF2](https://www.vi-hps.org/projects/score-p) API.
+PALLAS implements a subset of the [OTF2](https://www.vi-hps.org/projects/score-p) API.
 It also implements the [Murmur3 hashing function](https://github.com/PeterScott/murmur3).
 
 ## Usage
 
-After compiling HTF, install [ezTrace](https://eztrace.gitlab.io/eztrace).
-Make sure you enable the relevant modules, and make sure to have the compiled HTF libs in your library path.
+After compiling PALLAS, install [ezTrace](https://eztrace.gitlab.io/eztrace).
+Make sure you enable the relevant modules, and make sure to have the compiled PALLAS libs in your library path.
 Then trace any program by running `mpirun -np N eztrace -t <your modules> <your programm>`.
 The trace file will be generated in the `<your programm>_trace` folder.
 
 ## Configuration
 
-A JSON Config file can be given to HTF with the CONFIG_FILE_PATH environment variable.
-If that variable is empty, HTF will try to load a config.json in the current directory.
+A JSON Config file can be given to PALLAS with the CONFIG_FILE_PATH environment variable.
+If that variable is empty, PALLAS will try to load a config.json in the current directory.
 If that file does not exist, a default config will be loaded.
-That file is a mirror image of the ParameterHandler class in `libraries/htf/src/ParameterHandler.h`
+That file is a mirror image of the ParameterHandler class in `libraries/pallas/src/ParameterHandler.h`
 An example config file is given here as config.json.
 
 Here are the configuration options with specific values:
@@ -62,17 +62,17 @@ Here are the default values for each of them:
 
 | JSON Name            | Env Variable Name | Default Value  |
 |----------------------|-------------------|----------------|
-| compressionAlgorithm | HTF_COMPRESSION   | None           |
-| encodingAlgorithm    | HTF_ENCODING      | None           |
-| loopFindingAlgorithm | HTF_LOOP_FINDING  | BasicTruncated |
-| zstdCompressionLevel | HTF_ZSTD_LVL      | 3              |
-| maxLoopLength        | HTF_LOOP_LENGTH   | 100            |
+| compressionAlgorithm | PALLAS_COMPRESSION   | None           |
+| encodingAlgorithm    | PALLAS_ENCODING      | None           |
+| loopFindingAlgorithm | PALLAS_LOOP_FINDING  | BasicTruncated |
+| zstdCompressionLevel | PALLAS_ZSTD_LVL      | 3              |
+| maxLoopLength        | PALLAS_LOOP_LENGTH   | 100            |
 
 ## Contributing
 
-Contribution to HTF are welcome. Just send us a pull request.
+Contribution to PALLAS are welcome. Just send us a pull request.
 
 ## License
-HTF is distributed under the terms of both the BSD 3-Clause license.
+PALLAS is distributed under the terms of both the BSD 3-Clause license.
 
 See [LICENSE](LICENSE) for details

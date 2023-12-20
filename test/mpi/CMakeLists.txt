@@ -10,7 +10,7 @@ enable_testing()
 
   add_compile_options(-Wall -Wextra -Wpedantic)	
   include_directories(${CMAKE_SOURCE_DIR}/src/)
-  link_libraries(htf)
+  link_libraries(pallas)
 
   add_executable(mpi_benchmark  mpi_benchmark.c)
   add_test(NAME mpi_benchmark COMMAND mpirun -np 2  ./mpi_benchmark)

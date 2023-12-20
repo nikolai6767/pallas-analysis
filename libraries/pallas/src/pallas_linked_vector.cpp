@@ -3,9 +3,9 @@
  * See LICENSE in top-level directory.
  */
 
-#include "htf/htf_linked_vector.h"
+#include "pallas/pallas_linked_vector.h"
 #include <cstring>
-using namespace htf;
+using namespace pallas;
 
 LinkedVector::LinkedVector() {
   first = new SubVector(defaultSize);
@@ -14,7 +14,7 @@ LinkedVector::LinkedVector() {
 
 uint64_t* LinkedVector::add(uint64_t val) {
   if (this->last->size >= this->last->allocated) {
-    htf_log(DebugLevel::Debug, "Adding a new tail to an array: %p\n", this);
+    pallas_log(DebugLevel::Debug, "Adding a new tail to an array: %p\n", this);
     last = new SubVector(defaultSize, last);
   }
   size++;
@@ -23,7 +23,7 @@ uint64_t* LinkedVector::add(uint64_t val) {
 
 uint64_t& LinkedVector::at(size_t pos) const {
   if (pos >= size) {
-    htf_error("Getting an element whose index (%lu) is bigger than vector size (%lu)\n", pos, size);
+    pallas_error("Getting an element whose index (%lu) is bigger than vector size (%lu)\n", pos, size);
   }
   struct SubVector* correct_sub = last;
   while (pos < correct_sub->starting_index) {

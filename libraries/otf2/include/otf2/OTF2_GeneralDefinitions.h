@@ -49,7 +49,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include "htf/htf.h"
+#include "pallas/pallas.h"
 
 /* ___ OTF2 library version information _____________________________________ */
 
@@ -95,9 +95,9 @@ extern "C" {
 #define OTF2_UNDEFINED_TYPE OTF2_UNDEFINED_UINT8
 
 /** @brief OTF2 time stamp. */
-typedef htf_timestamp_t OTF2_TimeStamp;
+typedef pallas_timestamp_t OTF2_TimeStamp;
 /** @brief Undefined value for @eref{OTF2_TimeStamp}. */
-#define OTF2_UNDEFINED_TIMESTAMP HTF_TIMESTAMP_INVALID
+#define OTF2_UNDEFINED_TIMESTAMP PALLAS_TIMESTAMP_INVALID
 
 /** @brief Type used to indicate a reference to a @eref{IoParadigm} definition */
 typedef uint8_t OTF2_IoParadigmRef;
@@ -107,7 +107,7 @@ typedef uint8_t OTF2_IoParadigmRef;
 /** @brief Type used to indicate a reference to a @eref{String} definition */
 typedef StringRef OTF2_StringRef;
 /** @brief The invalid value for a reference to a @eref{String} definition */
-#define OTF2_UNDEFINED_STRING ((OTF2_StringRef)HTF_STRINGREF_INVALID)
+#define OTF2_UNDEFINED_STRING ((OTF2_StringRef)PALLAS_STRINGREF_INVALID)
 
 /** @brief Type used to indicate a reference to a @eref{Attribute} definition */
 typedef uint32_t OTF2_AttributeRef;
@@ -132,7 +132,7 @@ typedef uint64_t OTF2_LocationRef;
 /** @brief Type used to indicate a reference to a @eref{Region} definition */
 typedef RegionRef OTF2_RegionRef;
 /** @brief The invalid value for a reference to a @eref{Region} definition */
-#define OTF2_UNDEFINED_REGION ((OTF2_RegionRef)HTF_REGIONREF_INVALID)
+#define OTF2_UNDEFINED_REGION ((OTF2_RegionRef)PALLAS_REGIONREF_INVALID)
 
 /** @brief Type used to indicate a reference to a @eref{Callsite} definition */
 typedef uint32_t OTF2_CallsiteRef;

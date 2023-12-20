@@ -4,8 +4,8 @@ includedir=@INSTALL_INCLUDEDIR@
 libdir=@INSTALL_LIBDIR@
 sharedlibdir=@INSTALL_LIBDIR@
 
-Name: htf
-Description: Hierarchical Trace Format library
+Name: Pallas
+Description: Pallas: Hierarchical Trace Format library
 Version: @CMAKE_PROJECT_VERSION@
 Cflags: -I@INSTALL_INCLUDEDIR@/
-Libs: -L@INSTALL_LIBDIR@ -lhtf
+Libs: -L@INSTALL_LIBDIR@ -lpallas

@@ -19,9 +19,9 @@
 #define __otf2_deprecated__
 #endif
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_write.h"
 
 struct OTF2_GlobalDefWriter_struct {
   struct Archive* archive;

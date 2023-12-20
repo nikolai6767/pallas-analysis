@@ -14,8 +14,8 @@
 #undef SZ
 #endif
 
-namespace htf {
-/** A set of various compression algorithms supported by HTF.*/
+namespace pallas {
+/** A set of various compression algorithms supported by Pallas.*/
 enum class CompressionAlgorithm {
   /** No Compression.*/
   None = 0,
@@ -49,14 +49,14 @@ enum class CompressionAlgorithm {
    * @param str the string.
    * @return Compression Algorithm that corresponds to the string.
    */
-  htf::CompressionAlgorithm compressionAlgorithmFromString(std::string str);
+  pallas::CompressionAlgorithm compressionAlgorithmFromString(std::string str);
 
   /** Returns whether a compression algorithm is lossy or not. */
   inline bool isLossy(CompressionAlgorithm alg) {
     return alg != CompressionAlgorithm::None && alg != CompressionAlgorithm::ZSTD;
   }
 
-  /** A set of various encoding algorithms supported by HTF */
+  /** A set of various encoding algorithms supported by Pallas */
 enum class EncodingAlgorithm {
   /** No encoding. */
   None,
@@ -83,9 +83,9 @@ enum class EncodingAlgorithm {
    * @param str the string.
    * @return EncodingAlgorithm that corresponds to the string.
    */
-  htf::EncodingAlgorithm encodingAlgorithmFromString(std::string str);
+  pallas::EncodingAlgorithm encodingAlgorithmFromString(std::string str);
   
-/** A set of various loop-finding algorithms used by HTF */
+/** A set of various loop-finding algorithms used by Pallas */
 enum class LoopFindingAlgorithm {
   /** No loop finding */
   None,
@@ -115,9 +115,9 @@ enum class LoopFindingAlgorithm {
    * @param str the string.
    * @return LoopFindingAlgorithm that corresponds to the string.
    */
-  htf::LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str);
+  pallas::LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str);
 
-  /** A set of various encoding algorithms supported by HTF */
+  /** A set of various encoding algorithms supported by Pallas */
 enum class TimestampStorage {
   /** Do not store timestamps. */
   None,
@@ -142,7 +142,7 @@ enum class TimestampStorage {
    * @param str the string.
    * @return TimestampStorage that corresponds to the string.
    */
-  htf::TimestampStorage timestampStorageFromString(std::string str);
+  pallas::TimestampStorage timestampStorageFromString(std::string str);
 
 
 /**
@@ -199,4 +199,4 @@ class ParameterHandler {
 
 /** Global ParameterHandler. This is supposed to be the only instance of that class. */
 extern const ParameterHandler parameterHandler;
-}  // namespace htf
+}  // namespace pallas

@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_write.h"
 
 static struct Archive* global_archive;
 static struct Archive* trace;
@@ -41,7 +41,7 @@ static StringRef _register_string(char* str) {
   static _Atomic StringRef next_ref = 0;
   StringRef ref = next_ref++;
 
-  htf_archive_register_string(global_archive, ref, str);
+  pallas_archive_register_string(global_archive, ref, str);
   return ref;
 }
 
@@ -58,8 +58,8 @@ static ThreadId _new_thread() {
   return id;
 }
 
-static htf_timestamp_t get_timestamp() {
-  htf_timestamp_t res = HTF_TIMESTAMP_INVALID;
+static pallas_timestamp_t get_timestamp() {
+  pallas_timestamp_t res = PALLAS_TIMESTAMP_INVALID;
 
   if(use_logical_clock) {
       static _Thread_local int next_ts = 1;
@@ -79,9 +79,9 @@ void* worker(void* arg __attribute__((unused))) {
   StringRef thread_name_id = _register_string(thread_name);
 
   ThreadId thread_id = _new_thread();
-  htf_write_define_location(global_archive, thread_id, thread_name_id, process_id);
+  pallas_write_define_location(global_archive, thread_id, thread_name_id, process_id);
 
-  htf_write_thread_open(trace, thread_writer, thread_id);
+  pallas_write_thread_open(trace, thread_writer, thread_id);
 
   struct timespec t1, t2;
   pthread_barrier_wait(&bench_start);
@@ -93,8 +93,8 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 L_f1 E_f2 L_f2 E_f3 L_f3 ...
        */
       for (int j = 0; j < nb_functions; j++) {
-        htf_record_enter(thread_writer, NULL, get_timestamp(), regions[j]);
-        htf_record_leave(thread_writer, NULL, get_timestamp(), regions[j]);
+        pallas_record_enter(thread_writer, NULL, get_timestamp(), regions[j]);
+        pallas_record_leave(thread_writer, NULL, get_timestamp(), regions[j]);
       }
       break;
 
@@ -103,10 +103,10 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 E_f2 E_f3 ... L_f3 L_f2 L_f1
        */
       for (int j = 0; j < nb_functions; j++) {
-        htf_record_enter(thread_writer, NULL, get_timestamp(), regions[j]);
+        pallas_record_enter(thread_writer, NULL, get_timestamp(), regions[j]);
       }
       for (int j = nb_functions - 1; j >= 0; j--) {
-        htf_record_leave(thread_writer, NULL, get_timestamp(), regions[j]);
+        pallas_record_leave(thread_writer, NULL, get_timestamp(), regions[j]);
       }
       break;
     default:
@@ -124,7 +124,7 @@ void* worker(void* arg __attribute__((unused))) {
 
   printf("T#%d: %d events in %lf s -> %lf ns per event\n", my_rank, nb_events, duration, duration_per_event * 1e9);
 
-  htf_write_thread_close(thread_writer);
+  pallas_write_thread_close(thread_writer);
   return NULL;
 }
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
   pthread_t tid[nb_threads];
   pthread_barrier_init(&bench_start, NULL, nb_threads + 1);
   pthread_barrier_init(&bench_stop, NULL, nb_threads + 1);
-  thread_writers = malloc(sizeof(struct htf_thread_writer*) * nb_threads);
+  thread_writers = malloc(sizeof(struct pallas_thread_writer*) * nb_threads);
 
   printf("nb_iter = %d\n", nb_iter);
   printf("nb_functions = %d\n", nb_functions);
@@ -188,15 +188,15 @@ int main(int argc, char** argv) {
   printf("pattern = %d\n", pattern);
   printf("---------------------\n");
 
-  global_archive = htf_archive_new();
-  trace = htf_archive_new();
-  htf_write_global_archive_open(global_archive, "write_benchmark_trace", "main");
-  htf_write_archive_open(trace, "write_benchmark_trace", "main", 0);
+  global_archive = pallas_archive_new();
+  trace = pallas_archive_new();
+  pallas_write_global_archive_open(global_archive, "write_benchmark_trace", "main");
+  pallas_write_archive_open(trace, "write_benchmark_trace", "main", 0);
 
   process_id = _new_location_group();
   process_name = _register_string("Process"),
 
-  htf_write_define_location_group(global_archive, process_id, process_name, HTF_LOCATION_GROUP_ID_INVALID);
+  pallas_write_define_location_group(global_archive, process_id, process_name, PALLAS_LOCATION_GROUP_ID_INVALID);
 
   regions = malloc(sizeof(RegionRef) * nb_functions);
   strings = malloc(sizeof(StringRef) * nb_functions);
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
     snprintf(region_names[i], 50, "function_%d", i);
     strings[i] = _register_string(region_names[i]);
     regions[i] = strings[i];
-    htf_archive_register_region(trace, regions[i], strings[i]);
+    pallas_archive_register_region(trace, regions[i], strings[i]);
   }
 
   for (int i = 0; i < nb_threads; i++)
@@ -229,8 +229,8 @@ int main(int argc, char** argv) {
 
   printf("TOTAL: %d events in %lf s -> %lf Me/s \n", nb_events, duration, events_per_second / 1e6);
 
-  htf_write_archive_close(trace);
-  htf_write_global_archive_close(global_archive);
+  pallas_write_archive_close(trace);
+  pallas_write_global_archive_close(global_archive);
   return EXIT_SUCCESS;
 }
 

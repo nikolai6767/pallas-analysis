@@ -9,7 +9,7 @@
 // This is actually the C port of the Murmur3 Hash algorithm, which I have further modified
 // So that it can hash efficiently the sequences.
 // The OG C implementation can be found here: https://github.com/PeterScott/murmur3
-#include "htf/htf_hash.h"
+#include "pallas/pallas_hash.h"
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
@@ -64,7 +64,7 @@ static FORCE_INLINE uint64_t fmix64(uint64_t k) {
 
 //-----------------------------------------------------------------------------
 
-namespace htf {
+namespace pallas {
 void hash32(const void* key, const size_t len, const uint32_t seed, uint32_t* out) {
   // Here's the issue: We'll be feeding it an array of Token
   // An Token is 32 bits long
@@ -72,7 +72,7 @@ void hash32(const void* key, const size_t len, const uint32_t seed, uint32_t* ou
   // But that might lead to some unforeseen consequences
   // Or ! We simply take that into account, and change the "true_len" variable
   // For now we'll try the second one, and see what it does.
-  const size_t true_len = len * (sizeof(htf::Token) / sizeof(uint8_t));
+  const size_t true_len = len * (sizeof(pallas::Token) / sizeof(uint8_t));
   const uint8_t* data = (const uint8_t*)key;
   const int nblocks = true_len / 4;
 
@@ -137,7 +137,7 @@ void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* ou
   // But that might lead to some unforeseen consequences
   // Or ! We simply take that into account, and change the "true_len" variable
   // For now we'll try the second one, and see what it does.
-  const size_t true_len = len * (sizeof(htf::Token) / sizeof(uint8_t));
+  const size_t true_len = len * (sizeof(pallas::Token) / sizeof(uint8_t));
   const uint8_t* data = (const uint8_t*)key;
   const int nblocks = true_len / 16;
   int i;
@@ -259,7 +259,7 @@ void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* ou
   ((uint64_t*)out)[0] = h1;
   //	((uint64_t*)out)[1] = h2;
 }
-}  // namespace htf
+}  // namespace pallas
 /* -*-
    mode: c;
    c-file-style: "k&r";

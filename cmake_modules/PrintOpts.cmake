@@ -1,4 +1,4 @@
-set(dep_message "\nConfiguration of HTF:\n"
+set(dep_message "\nConfiguration of Pallas:\n"
   "	General:\n"
   "		Install directory : ${CMAKE_INSTALL_PREFIX}\n"
   "		Compiler: C       : ${CMAKE_C_COMPILER} (${CMAKE_C_COMPILER_ID})\n"

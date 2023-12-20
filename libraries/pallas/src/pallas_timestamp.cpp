@@ -2,12 +2,12 @@
  * Copyright (C) Telecom SudParis
  * See LICENSE in top-level directory.
  */
-#include "htf/htf_timestamp.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas_timestamp.h"
+#include "pallas/pallas_write.h"
 
 #define NANOSECONDS(timestamp) std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp).count()
 
-htf_timestamp_t htf::ThreadWriter::getTimestamp() {
+pallas_timestamp_t pallas::ThreadWriter::getTimestamp() {
   Timepoint start = std::chrono::high_resolution_clock::now();
   if (NANOSECONDS(firstTimestamp.time_since_epoch()) == 0) {
     firstTimestamp = start;
@@ -15,24 +15,24 @@ htf_timestamp_t htf::ThreadWriter::getTimestamp() {
   return NANOSECONDS(start - firstTimestamp);
 }
 
-htf_timestamp_t htf::ThreadWriter::timestamp(htf_timestamp_t t) {
-  if (t == HTF_TIMESTAMP_INVALID)
+pallas_timestamp_t pallas::ThreadWriter::timestamp(pallas_timestamp_t t) {
+  if (t == PALLAS_TIMESTAMP_INVALID)
     return getTimestamp();
   return t;
 }
 
-void htf::ThreadWriter::completeDurations(htf_duration_t duration) {
+void pallas::ThreadWriter::completeDurations(pallas_duration_t duration) {
   for (auto it : incompleteDurations) {
     *it += duration;
   }
   incompleteDurations.resize(0);
 }
 
-void htf::ThreadWriter::addDurationToComplete(htf_duration_t* duration) {
+void pallas::ThreadWriter::addDurationToComplete(pallas_duration_t* duration) {
   incompleteDurations.push_back(duration);
 }
 
-// void htf_finish_timestamp() {
+// void pallas_finish_timestamp() {
 //   *timestampsToDelta.front() = 0;
 // }
 

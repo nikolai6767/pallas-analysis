@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "htf/htf.h"
+#include "pallas/pallas.h"
 #include "otf2/OTF2_EvtReader.h"
 #include "otf2/otf2.h"
 

@@ -7,19 +7,19 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ftrahay/htf:test
+    container: ftrahay/pallas:test
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Configure HTF
-        run: cmake  -B ${{github.workspace}}/build -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/htf/install -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_OTF2=ON -DENABLE_ZFP=ON -DENABLE_SZ=ON
-      - name: Build HTF
+      - name: Configure Pallas
+        run: cmake  -B ${{github.workspace}}/build -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/pallas/install -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_OTF2=ON -DENABLE_ZFP=ON -DENABLE_SZ=ON
+      - name: Build Pallas
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      - name: Install HTF
+      - name: Install Pallas
         run: |
           cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-          echo "${{github.workspace}}/htf/install/bin" >> $GITHUB_PATH
+          echo "${{github.workspace}}/pallas/install/bin" >> $GITHUB_PATH
 
       - name: Unit Test
         run: ctest -C ${{env.BUILD_TYPE}} --test-dir ${{github.workspace}}/build

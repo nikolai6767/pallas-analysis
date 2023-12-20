@@ -13,11 +13,11 @@ RUN apt install -y clang libomp-dev
 # Install StarPU
 RUN apt install -y libstarpu-dev pkgconf
 
-# Install HTF
+# Install Pallas
 
-RUN git clone https://github.com/trahay/Hierarchical-Trace-Format.git htf \
-&& (mkdir htf/build && \
-    cd htf/build && \
+RUN git clone https://github.com/trahay/Hierarchical-Trace-Format.git pallas \
+&& (mkdir pallas/build && \
+    cd pallas/build && \
     cmake .. \
     -DENABLE_OTF2=ON \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \

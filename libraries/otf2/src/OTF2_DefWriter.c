@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "htf/htf.h"
-#include "htf/htf_write.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_write.h"
 #include "otf2/OTF2_DefWriter.h"
 #include "otf2/otf2.h"
 
@@ -58,7 +58,7 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocationGroup(OTF2_DefWriter* writer,
   LocationGroupId lg_id = _otf_register_location_group(self);
   LocationGroupId parent_id = _otf_get_location_group_id(creatingLocationGroup);
 
-  htf_write_define_location_group(writer->archive, lg_id, name, parent_id);
+  pallas_write_define_location_group(writer->archive, lg_id, name, parent_id);
 
   return OTF2_SUCCESS;
 }
@@ -77,7 +77,7 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocation(OTF2_DefWriter* writer,
     if (writer->archive->id == 0)
       writer->archive->id = parent_id;
   }
-  htf_write_define_location(writer->archive, thread_id, name, parent_id);
+  pallas_write_define_location(writer->archive, thread_id, name, parent_id);
 
   return OTF2_SUCCESS;
 }

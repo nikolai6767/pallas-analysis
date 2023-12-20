@@ -23,14 +23,14 @@ nthread=4
 cd "$BUILD_DIR"
 run_and_check_command  "./${test_program}"  -n $niter -t $nthread
 # Then, check that the generated trace is OK
-trace_filename="${test_program}_trace/main.htf"
+trace_filename="${test_program}_trace/main.pallas"
 
 trace_check_existence "$trace_filename"
-trace_check_htf_print "$trace_filename"
+trace_check_pallas_print "$trace_filename"
 
 # TODO:
-# - check that htf_info works:
-#trace_check_htf_info "$trace_filename"
+# - check that pallas_info works:
+#trace_check_pallas_info "$trace_filename"
 
 trace_check_enter_leave_parity "$trace_filename"
 
@@ -43,14 +43,14 @@ trace_check_nb_function "$trace_filename" function_1 $(expr $niter \* $nthread)
 run_and_check_command  "./${test_program}"  -n $niter -t $nthread -l
 
 # Then, check that the generated trace is OK
-trace_filename="${test_program}_trace/main.htf"
+trace_filename="${test_program}_trace/main.pallas"
 
 trace_check_existence "$trace_filename"
-trace_check_htf_print "$trace_filename"
+trace_check_pallas_print "$trace_filename"
 
 # TODO:
-# - check that htf_info works:
-#trace_check_htf_info "$trace_filename"
+# - check that pallas_info works:
+#trace_check_pallas_info "$trace_filename"
 
 trace_check_enter_leave_parity "$trace_filename"
 

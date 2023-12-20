@@ -4,22 +4,22 @@
  *
  * This is a test for the computation of durations during sequence creation.
  */
-#include "htf/htf.h"
-#include "htf/htf_write.h"
-using namespace htf;
+#include "pallas/pallas.h"
+#include "pallas/pallas_write.h"
+using namespace pallas;
 
-static htf_timestamp_t ts = 0;
-static htf_timestamp_t step = 1;
-static htf_timestamp_t get_timestamp() {
+static pallas_timestamp_t ts = 0;
+static pallas_timestamp_t step = 1;
+static pallas_timestamp_t get_timestamp() {
   ts += step;
   return ts;
 }
 
 static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
-  htf_log(DebugLevel::Max, "Searching for event {.id=%d}\n", id);
+  pallas_log(DebugLevel::Max, "Searching for event {.id=%d}\n", id);
 
   while (id > thread_trace->nb_allocated_events) {
-    htf_warn("Doubling mem space of events for thread trace %p\n", (void*)thread_trace);
+    pallas_warn("Doubling mem space of events for thread trace %p\n", (void*)thread_trace);
     DOUBLE_MEMORY_SPACE(thread_trace->events, thread_trace->nb_allocated_events, struct EventSummary);
   }
   if (thread_trace->nb_events < id + 1) {
@@ -29,7 +29,7 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
 
 static void init_dummy_event(ThreadWriter* thread_writer, int id) {
   check_event_allocation(&thread_writer->thread_trace, id);
-  thread_writer->storeEvent(HTF_SINGLETON, id, get_timestamp(), nullptr);
+  thread_writer->storeEvent(PALLAS_SINGLETON, id, get_timestamp(), nullptr);
 }
 
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
@@ -91,14 +91,14 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     std::cout << std::endl;
 
     if (sequence_number > 0) {
-      htf_assert_always(s->tokens.size() == sequence_number + 1);
-      htf_assert_always(s->durations->size == INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
+      pallas_assert_always(s->tokens.size() == sequence_number + 1);
+      pallas_assert_always(s->durations->size == INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
       for (auto t : *s->durations) {
-        htf_assert_always(t == s->size());
+        pallas_assert_always(t == s->size());
       }
     } else {
-      //      htf_assert_always(s->tokens.size() == )
-      //      htf_assert_always(s->durations->back() == )
+      //      pallas_assert_always(s->tokens.size() == )
+      //      pallas_assert_always(s->durations->back() == )
     }
   }
 

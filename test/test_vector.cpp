@@ -3,25 +3,25 @@
  * See LICENSE in top-level directory.
  */
 
-#include "htf/htf_dbg.h"
-#include "htf/htf_linked_vector.h"
+#include "pallas/pallas_dbg.h"
+#include "pallas/pallas_linked_vector.h"
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    htf_error("Not enough arguments ! 1 argument required.\n");
+    pallas_error("Not enough arguments ! 1 argument required.\n");
   }
   if (argc > 2) {
-    htf_error("Too many arguments ! 1 argument required.\n");
+    pallas_error("Too many arguments ! 1 argument required.\n");
   }
   size_t TEST_SIZE = std::stoi(argv[1]);
 
-  htf::LinkedVector vector = htf::LinkedVector();
+  pallas::LinkedVector vector = pallas::LinkedVector();
 
   for (size_t i = 0; i < TEST_SIZE; i++) {
     vector.add(i);
   }
 
-  htf_assert_always(vector.size == TEST_SIZE);
+  pallas_assert_always(vector.size == TEST_SIZE);
   return EXIT_SUCCESS;
 }
 

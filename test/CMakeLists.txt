@@ -5,7 +5,7 @@ enable_testing()
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wno-sign-compare)
 include_directories(${CMAKE_SOURCE_DIR}/src/)
-link_libraries(htf)
+link_libraries(pallas)
 configure_file(../config.json config.json COPYONLY)
 
 #####################################################

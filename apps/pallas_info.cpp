@@ -5,12 +5,12 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_read.h"
-#include "htf/htf_storage.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_read.h"
+#include "pallas/pallas_storage.h"
 
-using namespace htf;
+using namespace pallas;
 void print_sequence(Thread* t, Sequence* s) {
   printf("{");
   for (unsigned i = 0; i < s->size(); i++) {
@@ -19,7 +19,7 @@ void print_sequence(Thread* t, Sequence* s) {
       Loop* l = t->getLoop(token);
       token = l->repeated_token;
     }
-    printf("%c%x", HTF_TOKEN_TYPE_C(token), token.id);
+    printf("%c%x", PALLAS_TOKEN_TYPE_C(token), token.id);
     if (i < s->size() - 1)
       printf(", ");
   }
@@ -27,17 +27,17 @@ void print_sequence(Thread* t, Sequence* s) {
 }
 
 void info_event(Thread* t, EventSummary* e) {
-  htf_print_event(t, &e->event);
+  pallas_print_event(t, &e->event);
   printf("\t{.nb_events: %zu}\n", e->durations->size);
 }
 
 void info_sequence(Sequence* s) {
-  printf("{.size: %zu}\n", htf_sequence_get_size(s));
+  printf("{.size: %zu}\n", pallas_sequence_get_size(s));
 }
 
 void info_loop(Loop* l) {
   printf("{.nb_loops: %zu, .repeated_token: %c.%x, .nb_iterations: ", l->nb_iterations.size(),
-         HTF_TOKEN_TYPE_C(l->repeated_token), l->repeated_token.id);
+         PALLAS_TOKEN_TYPE_C(l->repeated_token), l->repeated_token.id);
   printf("[");
   for (auto& i : l->nb_iterations) {
     printf("%u", i);
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
-      htf_debug_level_set(DebugLevel::Debug);
+      pallas_debug_level_set(DebugLevel::Debug);
       nb_opts++;
     } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?")) {
       usage(argv[0]);
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
   }
 
   Archive trace = Archive();
-  htf_read_archive(&trace, trace_name);
+  pallas_read_archive(&trace, trace_name);
   info_trace(&trace);
 
   return EXIT_SUCCESS;

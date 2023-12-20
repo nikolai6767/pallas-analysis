@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include "htf/htf_dbg.h"
+#include "pallas/pallas_dbg.h"
 
 #ifdef __cplusplus
 #include <chrono>
@@ -18,13 +18,13 @@ typedef std::chrono::time_point<std::chrono::high_resolution_clock> Timepoint;
 #include <limits.h>
 #include <stdint.h>
 #endif
-typedef uint64_t htf_timestamp_t;
-#define HTF_TIMESTAMP_INVALID UINT64_MAX
+typedef uint64_t pallas_timestamp_t;
+#define PALLAS_TIMESTAMP_INVALID UINT64_MAX
 
-typedef uint64_t htf_duration_t;
-#define HTF_DURATION_INVALID UINT64_MAX
+typedef uint64_t pallas_duration_t;
+#define PALLAS_DURATION_INVALID UINT64_MAX
 
 /** return the time difference of two events. */
-inline htf_duration_t htf_get_duration(htf_timestamp_t t1, htf_timestamp_t t2) {
+inline pallas_duration_t pallas_get_duration(pallas_timestamp_t t1, pallas_timestamp_t t2) {
   return t2 - t1;
 }

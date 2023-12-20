@@ -5,10 +5,10 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_read.h"
-#include "htf/htf_storage.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_read.h"
+#include "pallas/pallas_storage.h"
 
 static bool show_structure = false;
 static bool per_thread = false;
@@ -21,7 +21,7 @@ static bool unroll_loops = false;
 static bool explore_loop_sequences = false;
 static bool verbose = false;
 
-static void _print_timestamp(htf_timestamp_t ts) {
+static void _print_timestamp(pallas_timestamp_t ts) {
   if (print_timestamp) {
     printf("%21.9lf\t", ts / 1e9);
   }
@@ -32,7 +32,7 @@ static void _print_timestamp_header() {
   }
 }
 
-static void _print_duration(htf_timestamp_t d) {
+static void _print_duration(pallas_timestamp_t d) {
   if (print_duration) {
     printf("%21.9lf\t", d / 1e9);
   }
@@ -50,9 +50,9 @@ static void _print_indent(const std::string& current_indent) {
 
 /* Print one event */
 static void print_event(const std::string& current_indent,
-                        const htf::Thread* thread,
-                        const htf::Token token,
-                        const htf::EventOccurence* e) {
+                        const pallas::Thread* thread,
+                        const pallas::Token token,
+                        const pallas::EventOccurence* e) {
   _print_timestamp(e->timestamp);
   _print_duration(e->duration);
   _print_indent(current_indent);
@@ -69,13 +69,13 @@ static void print_event(const std::string& current_indent,
 }
 
 static void print_sequence(const std::string& current_indent,
-                           const htf::Thread* thread,
-                           const htf::Token token,
-                           const htf::SequenceOccurence* sequenceOccurence,
-                           const htf::LoopOccurence* containingLoopOccurence = nullptr) {
+                           const pallas::Thread* thread,
+                           const pallas::Token token,
+                           const pallas::SequenceOccurence* sequenceOccurence,
+                           const pallas::LoopOccurence* containingLoopOccurence = nullptr) {
   auto* sequence = sequenceOccurence->sequence;
-  htf_timestamp_t ts = sequenceOccurence->timestamp;
-  htf_timestamp_t duration = sequenceOccurence->duration;
+  pallas_timestamp_t ts = sequenceOccurence->timestamp;
+  pallas_timestamp_t duration = sequenceOccurence->duration;
 
   _print_timestamp(ts);
   _print_duration(duration);
@@ -98,7 +98,7 @@ static void print_sequence(const std::string& current_indent,
   }
 
   if (containingLoopOccurence && (unroll_loops || explore_loop_sequences)) {
-    //    htf_timestamp_t mean = containingLoopOccurence->duration / containingLoopOccurence->nb_iterations;
+    //    pallas_timestamp_t mean = containingLoopOccurence->duration / containingLoopOccurence->nb_iterations;
     //    std::cout << ((mean < duration) ? "-" : "+");
     //    uint64_t diff = (mean < duration) ? duration - mean : mean - duration;
     //    float percentile = (float)diff / (float)mean * 100;
@@ -108,9 +108,9 @@ static void print_sequence(const std::string& current_indent,
 }
 
 static void print_loop(const std::string& current_indent,
-                       const htf::Thread* thread,
-                       const htf::Token token,
-                       const htf::LoopOccurence* loopOccurence) {
+                       const pallas::Thread* thread,
+                       const pallas::Token token,
+                       const pallas::LoopOccurence* loopOccurence) {
   _print_timestamp(loopOccurence->timestamp);
   _print_duration(loopOccurence->duration);
   _print_indent(current_indent);
@@ -130,13 +130,13 @@ static void print_loop(const std::string& current_indent,
   std::cout << std::endl;
 }
 
-static void print_token(const htf::Thread* thread,
-                        const htf::Token* t,
-                        const htf::Occurence* e,
+static void print_token(const pallas::Thread* thread,
+                        const pallas::Token* t,
+                        const pallas::Occurence* e,
                         int depth = 0,
                         int last_one = 0,
-                        const htf::LoopOccurence* containing_loop = nullptr) {
-  htf_log(htf::DebugLevel::Verbose, "Reading repeated_token(%x.%x) for thread %s\n", t->type, t->id, thread->getName());
+                        const pallas::LoopOccurence* containing_loop = nullptr) {
+  pallas_log(pallas::DebugLevel::Verbose, "Reading repeated_token(%x.%x) for thread %s\n", t->type, t->id, thread->getName());
   // Prints the structure of the sequences and the loops
   std::string current_indent;
   if (show_structure && depth >= 1) {
@@ -144,7 +144,7 @@ static void print_token(const htf::Thread* thread,
     DOFOR(i, depth) {
       current_indent += structure_indent[i];
     }
-    if (t->type != htf::TypeEvent) {
+    if (t->type != pallas::TypeEvent) {
       current_indent += (containing_loop && !explore_loop_sequences) ? "─" : "┬";
     } else {
       current_indent += "─";
@@ -154,18 +154,18 @@ static void print_token(const htf::Thread* thread,
 
   // Prints the repeated_token we first started with
   switch (t->type) {
-  case htf::TypeInvalid:
-    htf_error("Type is invalid\n");
+  case pallas::TypeInvalid:
+    pallas_error("Type is invalid\n");
     break;
-  case htf::TypeEvent:
+  case pallas::TypeEvent:
     print_event(current_indent, thread, *t, &e->event_occurence);
     break;
-  case htf::TypeSequence: {
+  case pallas::TypeSequence: {
     if (show_structure)
       print_sequence(current_indent, thread, *t, &e->sequence_occurence, containing_loop);
     break;
   }
-  case htf::TypeLoop: {
+  case pallas::TypeLoop: {
     if (show_structure)
       print_loop(current_indent, thread, *t, &e->loop_occurence);
     break;
@@ -173,9 +173,9 @@ static void print_token(const htf::Thread* thread,
   }
 }
 
-static void display_sequence(htf::ThreadReader* reader,
-                             htf::Token token,
-                             htf::SequenceOccurence* occurence,
+static void display_sequence(pallas::ThreadReader* reader,
+                             pallas::Token token,
+                             pallas::SequenceOccurence* occurence,
                              int depth) {
   if (occurence) {
     load_savestate(reader, occurence->savestate);
@@ -185,11 +185,11 @@ static void display_sequence(htf::ThreadReader* reader,
   for (const auto& tokenOccurence : current_level) {
     print_token(reader->thread_trace, tokenOccurence.token, tokenOccurence.occurence, depth,
                 &tokenOccurence == &current_level.back());
-    if (tokenOccurence.token->type == htf::TypeSequence) {
+    if (tokenOccurence.token->type == pallas::TypeSequence) {
       display_sequence(reader, *tokenOccurence.token, &tokenOccurence.occurence->sequence_occurence, depth + 1);
     }
-    if (tokenOccurence.token->type == htf::TypeLoop) {
-      htf::LoopOccurence& loop = tokenOccurence.occurence->loop_occurence;
+    if (tokenOccurence.token->type == pallas::TypeLoop) {
+      pallas::LoopOccurence& loop = tokenOccurence.occurence->loop_occurence;
       // The printing of loops is a bit convoluted, because there's no right way to do it
       // Here, we offer four ways to print loops:
       //    - Print only the Sequence inside once, with its mean/median duration
@@ -201,22 +201,22 @@ static void display_sequence(htf::ThreadReader* reader,
       // each Sequence.
       // We'll do each option one after another
       if (!unroll_loops && !explore_loop_sequences) {
-        loop.loop_summary = htf::SequenceOccurence();
+        loop.loop_summary = pallas::SequenceOccurence();
         loop.loop_summary.sequence = loop.full_loop[0].sequence;
         for (uint j = 0; j < loop.nb_iterations; j++) {
           loop.loop_summary.duration += loop.full_loop[j].duration / loop.nb_iterations;
         }
         // Don't do this at home kids
-        print_token(reader->thread_trace, &loop.loop->repeated_token, (htf::Occurence*)&loop.loop_summary, depth + 1,
+        print_token(reader->thread_trace, &loop.loop->repeated_token, (pallas::Occurence*)&loop.loop_summary, depth + 1,
                     true, &loop);
       }
       if (!unroll_loops && explore_loop_sequences) {
-        htf_error("Not implemented yet ! Sorry\n");
+        pallas_error("Not implemented yet ! Sorry\n");
       }
       if (unroll_loops) {
         for (uint j = 0; j < loop.nb_iterations; j++) {
-          htf::SequenceOccurence* seq = &loop.full_loop[j];
-          print_token(reader->thread_trace, &loop.loop->repeated_token, (htf::Occurence*)seq, depth + 1,
+          pallas::SequenceOccurence* seq = &loop.full_loop[j];
+          print_token(reader->thread_trace, &loop.loop->repeated_token, (pallas::Occurence*)seq, depth + 1,
                       j == loop.nb_iterations - 1, &loop);
           if (explore_loop_sequences) {
             display_sequence(reader, loop.loop->repeated_token, seq, depth + 2);
@@ -232,22 +232,22 @@ static void display_sequence(htf::ThreadReader* reader,
 }
 
 /* Print all the events of a thread */
-static void print_thread(htf::Archive& trace, htf::Thread* thread) {
+static void print_thread(pallas::Archive& trace, pallas::Thread* thread) {
   printf("Reading events for thread %u (%s):\n", thread->id, thread->getName());
   _print_timestamp_header();
   _print_duration_header();
 
   printf("Event\n");
 
-  int reader_options = htf::ThreadReaderOptions::None;
+  int reader_options = pallas::ThreadReaderOptions::None;
   if (show_structure)
-    reader_options |= htf::ThreadReaderOptions::ShowStructure;
+    reader_options |= pallas::ThreadReaderOptions::ShowStructure;
   if (!store_timestamps || trace.store_timestamps == 0)
-    reader_options |= htf::ThreadReaderOptions::NoTimestamps;
+    reader_options |= pallas::ThreadReaderOptions::NoTimestamps;
 
-  auto* reader = new htf::ThreadReader(&trace, thread->id, reader_options);
+  auto* reader = new pallas::ThreadReader(&trace, thread->id, reader_options);
 
-  display_sequence(reader, htf::Token(htf::TypeSequence, 0), nullptr, 0);
+  display_sequence(reader, pallas::Token(pallas::TypeSequence, 0), nullptr, 0);
 }
 
 /**
@@ -255,9 +255,9 @@ static void print_thread(htf::Archive& trace, htf::Thread* thread) {
  * @returns Tuple containing the ThreadId and a TokenOccurence.
  *          You are responsible for the memory of the TokenOccurence.
  */
-static std::tuple<htf::ThreadId, htf::TokenOccurence> getNextToken(std::vector<htf::ThreadReader>& threadReaders) {
+static std::tuple<pallas::ThreadId, pallas::TokenOccurence> getNextToken(std::vector<pallas::ThreadReader>& threadReaders) {
   // Find the earliest threadReader
-  htf::ThreadReader* earliestReader = nullptr;
+  pallas::ThreadReader* earliestReader = nullptr;
   for (auto& reader : threadReaders) {
     // Check if reader has finished reading its trace
     if (reader.current_frame < 0)
@@ -269,7 +269,7 @@ static std::tuple<htf::ThreadId, htf::TokenOccurence> getNextToken(std::vector<h
 
   // If no reader was available
   if (!earliestReader) {
-    return {HTF_THREAD_ID_INVALID, {nullptr, nullptr}};
+    return {PALLAS_THREAD_ID_INVALID, {nullptr, nullptr}};
   }
 
   // Grab the interesting information
@@ -279,18 +279,18 @@ static std::tuple<htf::ThreadId, htf::TokenOccurence> getNextToken(std::vector<h
 
   // Update the reader
   earliestReader->updateReadCurToken();
-  if (token.type == htf::TypeEvent)
+  if (token.type == pallas::TypeEvent)
     earliestReader->moveToNextToken();
 
   return {threadId, {&token, occurrence}};
 }
 
 /** Print all the events of all the threads sorted by timestamp*/
-void printTrace(htf::Archive& trace) {
-  auto readers = std::vector<htf::ThreadReader>();
-  int reader_options = htf::ThreadReaderOptions::None;
+void printTrace(pallas::Archive& trace) {
+  auto readers = std::vector<pallas::ThreadReader>();
+  int reader_options = pallas::ThreadReaderOptions::None;
   //  if (show_structure)
-  //    reader_options |= htf::ThreadReaderOptions::ShowStructure;
+  //    reader_options |= pallas::ThreadReaderOptions::ShowStructure;
 
   for (int i = 0; i < trace.nb_threads; i++) {
     readers.emplace_back(&trace, trace.threads[i]->id, reader_options);
@@ -300,11 +300,11 @@ void printTrace(htf::Archive& trace) {
   _print_duration_header();
   printf("Event\n");
 
-  htf::ThreadId threadId;
-  htf::TokenOccurence tokenOccurence;
+  pallas::ThreadId threadId;
+  pallas::TokenOccurence tokenOccurence;
   std::tie(threadId, tokenOccurence) = getNextToken(readers);
-  while (threadId != HTF_THREAD_ID_INVALID) {
-    auto currentReader = std::find_if(readers.begin(), readers.end(), [&threadId](const htf::ThreadReader& reader) {
+  while (threadId != PALLAS_THREAD_ID_INVALID) {
+    auto currentReader = std::find_if(readers.begin(), readers.end(), [&threadId](const pallas::ThreadReader& reader) {
       return reader.thread_trace->id == threadId;
     });
     print_token(currentReader->thread_trace, tokenOccurence.token, tokenOccurence.occurence);
@@ -331,7 +331,7 @@ int main(int argc, char** argv) {
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
-      htf_debug_level_set(htf::DebugLevel::Debug);
+      pallas_debug_level_set(pallas::DebugLevel::Debug);
       nb_opts++;
     } else if (!strcmp(argv[i], "-T")) {
       per_thread = true;
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
 
   if (show_structure) {
     if(!per_thread) {
-      htf_log(htf::DebugLevel::Normal, "Structure mode is only available in Thread mode. Enabling the -T option\n");
+      pallas_log(pallas::DebugLevel::Normal, "Structure mode is only available in Thread mode. Enabling the -T option\n");
       per_thread = 1;
     }
   } else {
@@ -382,8 +382,8 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = htf::Archive();
-  htf_read_archive(&trace, trace_name);
+  auto trace = pallas::Archive();
+  pallas_read_archive(&trace, trace_name);
   store_timestamps = trace.store_timestamps;
 
   if (per_thread) {

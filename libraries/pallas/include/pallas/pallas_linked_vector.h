@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "htf_dbg.h"
+#include "pallas_dbg.h"
 #ifndef __cplusplus
 #include <stdint-gcc.h>
 #endif
@@ -19,7 +19,7 @@
 #include <vector>
 /** Default size for creating Vectors and SubVectors.*/
 #define DEFAULT_VECTOR_SIZE 1000
-namespace htf {
+namespace pallas {
 #endif
 /**
  * An hybrid between a LinkedList and a Vector.
@@ -68,7 +68,7 @@ typedef struct LinkedVector {
       if (pos >= starting_index && pos < size + starting_index) {
         return array[pos - starting_index];
       }
-      htf_error("Wrong index (%lu) compared to starting index (%lu) and size (%lu)\n", pos, starting_index, size);
+      pallas_error("Wrong index (%lu) compared to starting index (%lu) and size (%lu)\n", pos, starting_index, size);
     }
 
     /**
@@ -233,12 +233,12 @@ typedef struct LinkedVector {
 } LinkedVector;
 
 CXX(
-})  // namespace htf
+})  // namespace pallas
 
 
 CXX(extern "C" {)
 /** Allocates and returns a new LinkedVector. */
-  extern HTF(LinkedVector)* linked_vector_new(void);
+  extern PALLAS(LinkedVector)* linked_vector_new(void);
   /**
    * Adds a new element at the end of the vector, after its current last element.
    * The content of `val` is copied to the new element.
@@ -247,7 +247,7 @@ CXX(extern "C" {)
    * @param val Value to be copied to the new element.
    * @return Pointer to the new element.
    */
-  extern uint64_t* linked_vector_add(HTF(LinkedVector) * linkedVector, uint64_t val);
+  extern uint64_t* linked_vector_add(PALLAS(LinkedVector) * linkedVector, uint64_t val);
   /**
    * Returns a pointer to the element at specified location `pos`, with bounds checking.
    *
@@ -257,17 +257,17 @@ CXX(extern "C" {)
    * @param pos Position of the element in the LinkedVector.
    * @return Pointer to the requested element.
    */
-  extern uint64_t* linked_vector_get(HTF(LinkedVector) * linkedVector, size_t pos);
+  extern uint64_t* linked_vector_get(PALLAS(LinkedVector) * linkedVector, size_t pos);
   /**
    * Returns a pointer to the last element in the LinkedVector.
    * @param linkedVector Pointer to the vector.
    * @return Pointer to the last element.
    */
-  extern uint64_t* linked_vector_get_last(HTF(LinkedVector) * linkedVector);
+  extern uint64_t* linked_vector_get_last(PALLAS(LinkedVector) * linkedVector);
   /**
    * Prints the content of the LinkedVector to stdout.
    */
-  extern void print(HTF(LinkedVector));
+  extern void print(PALLAS(LinkedVector));
 CXX(
 };)
 

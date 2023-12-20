@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "htf/htf.h"
+#include "pallas/pallas.h"
 #include "otf2/OTF2_GlobalDefWriter.h"
 #include "otf2/otf2.h"
 
@@ -56,7 +56,7 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteString(OTF2_GlobalDefWriter* writerHand
                                                 OTF2_StringRef self,
                                                 const char* string) {
   //  NOT_IMPLEMENTED;
-  htf_archive_register_string(writerHandle->archive, self, string);
+  pallas_archive_register_string(writerHandle->archive, self, string);
   return OTF2_SUCCESS;
 }
 
@@ -65,7 +65,7 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteAttribute(OTF2_GlobalDefWriter* writerH
                                                    OTF2_StringRef name,
                                                    OTF2_StringRef description,
                                                    OTF2_Type type) {
-  htf_archive_register_attribute(writerHandle->archive, self, name, description, OTF2_HTF_TYPE(type));
+  pallas_archive_register_attribute(writerHandle->archive, self, name, description, OTF2_PALLAS_TYPE(type));
   return OTF2_SUCCESS;
 }
 
@@ -79,7 +79,7 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteSystemTreeNode(OTF2_GlobalDefWriter* wr
 }
 
 struct location_group_map {
-  LocationGroupId htf_location_group;
+  LocationGroupId pallas_location_group;
   OTF2_LocationGroupRef location_group;
 };
 
@@ -89,8 +89,8 @@ int nb_location_group = 0;
 LocationGroupId next_location_group_id(int ref) {
   /* TODO: buggy ?  */
   return ref;
-  static LocationGroupId next_id = HTF_LOCATION_GROUP_ID_INVALID;  // todo: pb with MPI ?
-  if (next_id == HTF_LOCATION_GROUP_ID_INVALID)
+  static LocationGroupId next_id = PALLAS_LOCATION_GROUP_ID_INVALID;  // todo: pb with MPI ?
+  if (next_id == PALLAS_LOCATION_GROUP_ID_INVALID)
     next_id = ref;
   return next_id++;
 }
@@ -98,8 +98,8 @@ LocationGroupId next_location_group_id(int ref) {
 ThreadId next_thread_id(int ref) {
   /* TODO: buggy ?  */
   return ref;
-  static ThreadId next_id = HTF_THREAD_ID_INVALID;  // todo: pb with MPI ?
-  if (next_id == HTF_THREAD_ID_INVALID)
+  static ThreadId next_id = PALLAS_THREAD_ID_INVALID;  // todo: pb with MPI ?
+  if (next_id == PALLAS_THREAD_ID_INVALID)
     next_id = ref;
   return next_id++;
 }
@@ -107,18 +107,18 @@ ThreadId next_thread_id(int ref) {
 LocationGroupId _otf_get_location_group_id(OTF2_LocationGroupRef ref) {
   for (int i = 0; i < nb_location_group; i++) {
     if (location_group_map[i].location_group == ref)
-      return location_group_map[i].htf_location_group;
+      return location_group_map[i].pallas_location_group;
   }
-  return HTF_LOCATION_GROUP_ID_INVALID;
+  return PALLAS_LOCATION_GROUP_ID_INVALID;
 }
 
 LocationGroupId _otf_register_location_group(OTF2_LocationGroupRef ref) {
-  htf_assert(_otf_get_location_group_id(ref) == HTF_LOCATION_GROUP_ID_INVALID);
+  pallas_assert(_otf_get_location_group_id(ref) == PALLAS_LOCATION_GROUP_ID_INVALID);
   int index = nb_location_group++;
   location_group_map = realloc(location_group_map, sizeof(struct location_group_map) * nb_location_group);
-  location_group_map[index].htf_location_group = next_location_group_id(ref);
+  location_group_map[index].pallas_location_group = next_location_group_id(ref);
   location_group_map[index].location_group = ref;
-  return location_group_map[index].htf_location_group;
+  return location_group_map[index].pallas_location_group;
 }
 
 struct location_map {
@@ -134,11 +134,11 @@ ThreadId _otf_get_location_id(OTF2_LocationRef ref) {
     if (location_map[i].location == ref)
       return location_map[i].thread_id;
   }
-  return HTF_THREAD_ID_INVALID;
+  return PALLAS_THREAD_ID_INVALID;
 }
 
 ThreadId _otf_register_location(OTF2_LocationRef ref) {
-  htf_assert(_otf_get_location_id(ref) == HTF_THREAD_ID_INVALID);
+  pallas_assert(_otf_get_location_id(ref) == PALLAS_THREAD_ID_INVALID);
   int index = nb_location++;
   location_map = realloc(location_map, sizeof(struct location_map) * nb_location);
   location_map[index].thread_id = next_thread_id(ref);
@@ -155,8 +155,8 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteLocationGroup(OTF2_GlobalDefWriter* wri
   LocationGroupId lg_id = _otf_register_location_group(self);
   LocationGroupId parent_id = _otf_get_location_group_id(creatingLocationGroup);
 
-  //  htf_write_global_add_subarchive(&writerHandle->archive, self);
-  htf_write_define_location_group(writerHandle->archive, lg_id, name, parent_id);
+  //  pallas_write_global_add_subarchive(&writerHandle->archive, self);
+  pallas_write_define_location_group(writerHandle->archive, lg_id, name, parent_id);
 
   return OTF2_SUCCESS;
 }
@@ -170,7 +170,7 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteLocation(OTF2_GlobalDefWriter* writerHa
   ThreadId thread_id = _otf_register_location(self);
   LocationGroupId parent_id = _otf_get_location_group_id(locationGroup);
 
-  htf_write_define_location(writerHandle->archive, thread_id, name, parent_id);
+  pallas_write_define_location(writerHandle->archive, thread_id, name, parent_id);
 
   return OTF2_SUCCESS;
   //  NOT_IMPLEMENTED;
@@ -187,12 +187,12 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteRegion(OTF2_GlobalDefWriter* writerHand
                                                 OTF2_StringRef sourceFile,
                                                 uint32_t beginLineNumber,
                                                 uint32_t endLineNumber) {
-  /* TODO (in HTF)
+  /* TODO (in Pallas)
    * - add a global writeRegion function
    * - uppon thread creation, copy the write region to the new thread regions
    * - when creating a global region, add it to the existing threads region
    */
-  htf_archive_register_region(writerHandle->archive, self, name);
+  pallas_archive_register_region(writerHandle->archive, self, name);
   return OTF2_SUCCESS;
 }
 

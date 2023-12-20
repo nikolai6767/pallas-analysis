@@ -3,10 +3,10 @@
  * See LICENSE in top-level directory.
  */
 
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
 
-namespace htf {
+namespace pallas {
 /**
  * Returns the Event corresponding to the given Token
  * Aborts if the token is incorrect.
@@ -16,8 +16,8 @@ Event* Thread::getEvent(Token token) const {
 }
 
 EventSummary* Thread::getEventSummary(Token token) const {
-  htf_assert(token.type == TokenType::TypeEvent);
-  htf_assert(token.id < this->nb_events);
+  pallas_assert(token.type == TokenType::TypeEvent);
+  pallas_assert(token.id < this->nb_events);
   return &this->events[token.id];
 }
 
@@ -26,8 +26,8 @@ EventSummary* Thread::getEventSummary(Token token) const {
  * Aborts if the token is incorrect.
  */
 Sequence* Thread::getSequence(Token token) const {
-  htf_assert(token.type == TokenType::TypeSequence);
-  htf_assert(token.id < this->nb_sequences);
+  pallas_assert(token.type == TokenType::TypeSequence);
+  pallas_assert(token.id < this->nb_sequences);
   return this->sequences[token.id];
 }
 /**
@@ -35,8 +35,8 @@ Sequence* Thread::getSequence(Token token) const {
  * Aborts if the token is incorrect.
  */
 Loop* Thread::getLoop(Token token) const {
-  htf_assert(token.type == TokenType::TypeLoop);
-  htf_assert(token.id < this->nb_loops);
+  pallas_assert(token.type == TokenType::TypeLoop);
+  pallas_assert(token.id < this->nb_loops);
   return &this->loops[token.id];
 }
 
@@ -44,23 +44,23 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
   if (sequenceToken.type == TypeSequence) {
     auto sequence = getSequence(sequenceToken);
     if (!sequence) {
-      htf_error("Invalid sequence ID: %d\n", sequenceToken.id);
+      pallas_error("Invalid sequence ID: %d\n", sequenceToken.id);
     }
     if (index >= sequence->size()) {
-      htf_error("Invalid index (%d) in sequence %d\n", index, sequenceToken.id);
+      pallas_error("Invalid index (%d) in sequence %d\n", index, sequenceToken.id);
     }
     return sequence->tokens[index];
   } else if (sequenceToken.type == TypeLoop) {
     auto loop = getLoop(sequenceToken);
     if (!loop) {
-      htf_error("Invalid loop ID: %d\n", sequenceToken.id);
+      pallas_error("Invalid loop ID: %d\n", sequenceToken.id);
     }
     if (index >= loop->nb_iterations.back()) {
-      htf_error("Invalid index (%d): this loop only has %d iterations\n", index, loop->nb_iterations.back());
+      pallas_error("Invalid index (%d): this loop only has %d iterations\n", index, loop->nb_iterations.back());
     }
     return loop->repeated_token;
   }
-  htf_error("Invalid parameter to getToken\n");
+  pallas_error("Invalid parameter to getToken\n");
 }
 
 /**
@@ -69,7 +69,7 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
 void Thread::printToken(Token token) const {
   switch (token.type) {
   case TypeEvent: {
-#define ET2C(et) (((et) == HTF_EVENT_ENTER ? 'E' : (et) == HTF_EVENT_LEAVE ? 'L' : 'S'))
+#define ET2C(et) (((et) == PALLAS_EVENT_ENTER ? 'E' : (et) == PALLAS_EVENT_LEAVE ? 'L' : 'S'))
     Event* event = getEvent(token);
     printf("E%x_%c", token.id, ET2C(event->record));
     break;
@@ -104,7 +104,7 @@ void Thread::printTokenVector(const std::vector<Token>& vector) const {
   printf("]\n");
 }
 
-void Thread::printSequence(htf::Token token) const {
+void Thread::printSequence(pallas::Token token) const {
   Sequence* sequence = getSequence(token);
   printf("#Sequence %d (%zu tokens)-------------\n", token.id, sequence->tokens.size());
   printTokenVector(sequence->tokens);
@@ -112,7 +112,7 @@ void Thread::printSequence(htf::Token token) const {
 
 Thread::Thread() {
   archive = nullptr;
-  id=HTF_THREAD_ID_INVALID;
+  id=PALLAS_THREAD_ID_INVALID;
 
   events = nullptr;
   nb_allocated_events = 0;
@@ -185,15 +185,15 @@ const TokenCountMap& Sequence::getTokenCount(const Thread* thread) {
   }
   return tokenCount;
 }
-}  // namespace htf
+}  // namespace pallas
 
 
-void* htf_realloc(void* buffer, int cur_size, int new_size, size_t datatype_size) {
+void* pallas_realloc(void* buffer, int cur_size, int new_size, size_t datatype_size) {
   void* new_buffer = (void*) realloc(buffer, new_size * datatype_size);
     if (new_buffer == NULL) {
       new_buffer = (void*) calloc(new_size, datatype_size);
       if (new_buffer == NULL) {
-        htf_error("Failed to allocate memory using realloc AND malloc\n");
+        pallas_error("Failed to allocate memory using realloc AND malloc\n");
       }
       memmove(new_buffer, buffer, cur_size * datatype_size);
       free(buffer);
@@ -213,53 +213,53 @@ void* htf_realloc(void* buffer, int cur_size, int new_size, size_t datatype_size
 
 /* C bindings now */
 
-htf::Thread* htf_thread_new() {
-  return new htf::Thread();
+pallas::Thread* pallas_thread_new() {
+  return new pallas::Thread();
 };
 
-const char* htf_thread_get_name(htf::Thread* thread) {
+const char* pallas_thread_get_name(pallas::Thread* thread) {
   return thread->getName();
 }
 
-void htf_print_sequence(htf::Thread* thread, htf::Token seq_id) {
+void pallas_print_sequence(pallas::Thread* thread, pallas::Token seq_id) {
   thread->printSequence(seq_id);
 }
 
-void htf_print_token_array(htf::Thread* thread, htf::Token* token_array, int index_start, int index_stop) {
+void pallas_print_token_array(pallas::Thread* thread, pallas::Token* token_array, int index_start, int index_stop) {
   thread->printTokenArray(token_array, index_start, index_stop);
 }
 
-void htf_print_token(htf::Thread* thread, htf::Token token) {
+void pallas_print_token(pallas::Thread* thread, pallas::Token token) {
   thread->printToken(token);
 }
 
-void htf_print_event(htf::Thread* thread, htf::Event* e) {
+void pallas_print_event(pallas::Thread* thread, pallas::Event* e) {
   thread->printEvent(e);
 }
-htf::Loop* htf_get_loop(htf::Thread* thread, htf::Token id) {
+pallas::Loop* pallas_get_loop(pallas::Thread* thread, pallas::Token id) {
   return thread->getLoop(id);
 }
-htf::Sequence* htf_get_sequence(htf::Thread* thread, htf::Token id) {
+pallas::Sequence* pallas_get_sequence(pallas::Thread* thread, pallas::Token id) {
   return thread->getSequence(id);
 }
-htf::Event* htf_get_event(htf::Thread* thread, htf::Token id) {
+pallas::Event* pallas_get_event(pallas::Thread* thread, pallas::Token id) {
   return thread->getEvent(id);
 }
-htf::Token htf_get_token(htf::Thread* thread, htf::Token sequence, int index) {
+pallas::Token pallas_get_token(pallas::Thread* thread, pallas::Token sequence, int index) {
   return thread->getToken(sequence, index);
 }
 
-size_t htf_sequence_get_size(htf::Sequence* sequence) {
+size_t pallas_sequence_get_size(pallas::Sequence* sequence) {
   return sequence->size();
 }
-htf::Token htf_sequence_get_token(htf::Sequence* sequence, int index) {
+pallas::Token pallas_sequence_get_token(pallas::Sequence* sequence, int index) {
   return sequence->tokens[index];
 }
 
-size_t htf_loop_count(htf::Loop* loop) {
+size_t pallas_loop_count(pallas::Loop* loop) {
   return loop->nb_iterations.size();
 };
-size_t htf_loop_get_count(HTF(Loop) * loop, size_t index) {
+size_t pallas_loop_get_count(PALLAS(Loop) * loop, size_t index) {
   return loop->nb_iterations[index];
 };
 

@@ -5,7 +5,7 @@
 
 #include <inttypes.h>
 #include <malloc.h>
-#include "htf/htf_hash.h"
+#include "pallas/pallas_hash.h"
 #include "stdlib.h"
 
 #define MAX_EVENT (1000000)
@@ -16,7 +16,7 @@
 #define NUM_HASHED (MAX_EVENT + MAX_SEQUENCE + MAX_LOOP + (NUM_TEST_SEQUENCE * MAX_SEQUENCE_LENGTH))
 #define SIZE_COLLISION_ARRAY UINT32_MAX
 using namespace std;
-using namespace htf;
+using namespace pallas;
 
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
   auto collisions = new short[SIZE_COLLISION_ARRAY];

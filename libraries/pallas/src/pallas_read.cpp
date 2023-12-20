@@ -3,24 +3,24 @@
  * See LICENSE in top-level directory.
  */
 
-#include "htf/htf_read.h"
+#include "pallas/pallas_read.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "htf/htf_archive.h"
+#include "pallas/pallas_archive.h"
 
-namespace htf {
+namespace pallas {
 ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int options) {
   // Setup the basic
   this->archive = archive;
   this->options = options;
-  htf_assert(threadId != HTF_THREAD_ID_INVALID);
+  pallas_assert(threadId != PALLAS_THREAD_ID_INVALID);
   thread_trace = archive->getThread(threadId);
-  htf_assert(thread_trace != nullptr);
+  pallas_assert(thread_trace != nullptr);
 
   if (debugLevel >= DebugLevel::Verbose) {
-    htf_log(DebugLevel::Verbose, "init callstack for thread %d\n", threadId);
-    htf_log(DebugLevel::Verbose, "The trace contains:\n");
+    pallas_log(DebugLevel::Verbose, "init callstack for thread %d\n", threadId);
+    pallas_log(DebugLevel::Verbose, "The trace contains:\n");
     thread_trace->printSequence(Token(TypeSequence, 0));
   }
 
@@ -36,17 +36,17 @@ ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int option
 
 const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
   if (frame_number < 0 || frame_number >= MAX_CALLSTACK_DEPTH) {
-    htf_error("Frame number is too high or negative: %d\n", frame_number);
+    pallas_error("Frame number is too high or negative: %d\n", frame_number);
   }
   return callstack_sequence[frame_number];
 }
 
 const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
   if (frame_number < 0 || frame_number >= MAX_CALLSTACK_DEPTH) {
-    htf_error("Frame number is too high or negative: %d\n", frame_number);
+    pallas_error("Frame number is too high or negative: %d\n", frame_number);
   }
   auto sequence = getFrameInCallstack(frame_number);
-  htf_assert(sequence.isIterable());
+  pallas_assert(sequence.isIterable());
   return thread_trace->getToken(sequence, callstack_index[frame_number]);
 }
 const Token& ThreadReader::getCurToken() const {
@@ -75,32 +75,32 @@ void ThreadReader::printCallstack() const {
       auto* loop = thread_trace->getLoop(current_sequence_id);
       printf(" iter %d/%d", callstack_loop_iteration[i],
              loop->nb_iterations[tokenCount.get_value(current_sequence_id)]);
-      htf_assert(callstack_loop_iteration[i] < MAX_CALLSTACK_DEPTH);
+      pallas_assert(callstack_loop_iteration[i] < MAX_CALLSTACK_DEPTH);
     } else if (current_sequence_id.type == TypeSequence) {
       auto* sequence = thread_trace->getSequence(current_sequence_id);
       printf(" pos %d/%lu", callstack_index[i], sequence->size());
-      htf_assert(callstack_index[i] < MAX_CALLSTACK_DEPTH);
+      pallas_assert(callstack_index[i] < MAX_CALLSTACK_DEPTH);
     }
 
     printf("\t-> ");
-    htf_print_token(thread_trace, current_token);
+    pallas_print_token(thread_trace, current_token);
     printf("\n");
   }
 }
 EventSummary* ThreadReader::getEventSummary(Token event) const {
-  htf_assert(event.type == TypeEvent);
+  pallas_assert(event.type == TypeEvent);
   if (event.id < thread_trace->nb_events) {
     return &thread_trace->events[event.id];
   }
-  htf_error("Given event (%d) was invalid\n", event.id);
+  pallas_error("Given event (%d) was invalid\n", event.id);
 }
-htf_timestamp_t ThreadReader::getEventTimestamp(Token event, int occurence_id) const {
-  htf_assert(event.type == TypeEvent);
+pallas_timestamp_t ThreadReader::getEventTimestamp(Token event, int occurence_id) const {
+  pallas_assert(event.type == TypeEvent);
   auto summary = getEventSummary(event);
   if (0 <= occurence_id && occurence_id < summary->nb_occurences) {
     return summary->durations->at(occurence_id);
   }
-  htf_error("Given occurence_id (%d) was invalid for event %d\n", occurence_id, event.id);
+  pallas_error("Given occurence_id (%d) was invalid for event %d\n", occurence_id, event.id);
 }
 bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
   if (sequence_id.type == TypeSequence) {
@@ -108,7 +108,7 @@ bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
     return current_index >= sequence->size();
     // We are in a sequence and index is beyond the end of the sequence
   }
-  htf_error("The given sequence_id was the wrong type: %d\n", sequence_id.type);
+  pallas_error("The given sequence_id was the wrong type: %d\n", sequence_id.type);
 }
 bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   if (loop_id.type == TypeLoop) {
@@ -116,12 +116,12 @@ bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
     return current_index >= loop->nb_iterations.back();
     // We are in a loop and index is beyond the number of iterations
   }
-  htf_error("The given loop_id was the wrong type: %d\n", loop_id.type);
+  pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
 }
 
-htf_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
-  htf_assert(loop_id.type == TypeLoop);
-  htf_duration_t sum = 0;
+pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
+  pallas_assert(loop_id.type == TypeLoop);
+  pallas_duration_t sum = 0;
   auto* loop = thread_trace->getLoop(loop_id);
   auto* sequence = thread_trace->getSequence(loop->repeated_token);
 
@@ -176,11 +176,11 @@ LoopOccurence ThreadReader::getLoopOccurence(Token loop_id, int occurence_id) co
   return loopOccurence;
 }
 
-Occurence* ThreadReader::getOccurence(htf::Token id, int occurence_id) const {
+Occurence* ThreadReader::getOccurence(pallas::Token id, int occurence_id) const {
   auto occurence = new Occurence();
   switch (id.type) {
   case TypeInvalid: {
-    htf_error("Wrong token was given");
+    pallas_error("Wrong token was given");
   }
   case TypeEvent:
     occurence->event_occurence = getEventOccurence(id, occurence_id);
@@ -200,7 +200,7 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, int occurence
   if (summary->attribute_buffer == nullptr)
     return 0;
 
-  htf_assert(occurence_id < summary->nb_occurences);
+  pallas_assert(occurence_id < summary->nb_occurences);
 
   if (summary->attribute_pos < summary->attribute_buffer_size) {
     auto* l = (AttributeList*)&summary->attribute_buffer[summary->attribute_pos];
@@ -213,7 +213,7 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, int occurence
       return l;
     }
     if (l->index > occurence_id) {
-      htf_error("Erro fetching attribute %d. We went too far (cur position: %d) !\n", occurence_id, l->index);
+      pallas_error("Erro fetching attribute %d. We went too far (cur position: %d) !\n", occurence_id, l->index);
     }
   }
   return nullptr;
@@ -222,9 +222,9 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, int occurence
 //******************* EXPLORATION FUNCTIONS ********************
 
 void ThreadReader::enterBlock(Token new_block) {
-  htf_assert(new_block.isIterable());
+  pallas_assert(new_block.isIterable());
   if (debugLevel >= DebugLevel::Debug) {
-    htf_log(DebugLevel::Debug, "[%d] Enter Block ", current_frame);
+    pallas_log(DebugLevel::Debug, "[%d] Enter Block ", current_frame);
     printCurToken();
     printf("\n");
   }
@@ -237,7 +237,7 @@ void ThreadReader::enterBlock(Token new_block) {
 
 void ThreadReader::leaveBlock() {
   if (debugLevel >= DebugLevel::Debug) {
-    htf_log(DebugLevel::Debug, "[%d] Leave ", current_frame);
+    pallas_log(DebugLevel::Debug, "[%d] Leave ", current_frame);
     printCurSequence();
     printf("\n");
   }
@@ -249,21 +249,21 @@ void ThreadReader::leaveBlock() {
 
   if (debugLevel >= DebugLevel::Debug && current_frame >= 0) {
     auto current_sequence = getCurSequence();
-    htf_assert(current_sequence.type == TypeLoop || current_sequence.type == TypeSequence);
+    pallas_assert(current_sequence.type == TypeLoop || current_sequence.type == TypeSequence);
   }
 }
 
 void ThreadReader::moveToNextToken() {
   // Check if we've reached the end of the trace
   if (current_frame < 0) {
-    htf_log(DebugLevel::Debug, "End of trace %d!\n", __LINE__);
+    pallas_log(DebugLevel::Debug, "End of trace %d!\n", __LINE__);
     return;
   }
 
   int current_index = callstack_index[current_frame];
   Token current_sequence_id = callstack_sequence[current_frame];
   int current_loop_iteration = callstack_loop_iteration[current_frame];
-  htf_assert(current_sequence_id.isIterable());
+  pallas_assert(current_sequence_id.isIterable());
 
   /* First update the current loop / sequence. */
   if (current_sequence_id.type == TypeSequence) {
@@ -332,7 +332,7 @@ void ThreadReader::loadSavestate(Savestate* savestate) {
 std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
   Token current_sequence_id = getCurSequence();
   auto* current_sequence = thread_trace->getSequence(current_sequence_id);
-  htf_assert(current_sequence->size() > 0);
+  pallas_assert(current_sequence->size() > 0);
   auto outputVector = std::vector<TokenOccurence>();
   outputVector.resize(current_sequence->size());
 
@@ -390,7 +390,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       break;
     }
     default:
-      htf_error("Invalid token type\n;");
+      pallas_error("Invalid token type\n;");
     }
   }
   return outputVector;
@@ -420,51 +420,51 @@ Savestate::Savestate(const ThreadReader* reader) {
   savestate_memory += sizeof(tokenCount) + (tokenCount.size() * (sizeof(Token) + sizeof(size_t)));
 #endif
 }
-} /* namespace htf */
+} /* namespace pallas */
 
-htf::ThreadReader* htf_new_thread_reader(const htf::Archive* archive, htf::ThreadId thread_id, int options) {
-  return new htf::ThreadReader(archive, thread_id, options);
+pallas::ThreadReader* pallas_new_thread_reader(const pallas::Archive* archive, pallas::ThreadId thread_id, int options) {
+  return new pallas::ThreadReader(archive, thread_id, options);
 }
 
-void htf_thread_reader_enter_block(htf::ThreadReader* reader, htf::Token new_block) {
+void pallas_thread_reader_enter_block(pallas::ThreadReader* reader, pallas::Token new_block) {
   reader->enterBlock(new_block);
 }
 
-void htf_thread_reader_leave_block(htf::ThreadReader* reader) {
+void pallas_thread_reader_leave_block(pallas::ThreadReader* reader) {
   reader->leaveBlock();
 }
 
-void htf_thread_reader_move_to_next_token(htf::ThreadReader* reader) {
+void pallas_thread_reader_move_to_next_token(pallas::ThreadReader* reader) {
   return reader->moveToNextToken();
 }
 
-void htf_thread_reader_update_reader_cur_token(htf::ThreadReader* reader) {
+void pallas_thread_reader_update_reader_cur_token(pallas::ThreadReader* reader) {
   return reader->updateReadCurToken();
 }
 
-htf::Token htf_thread_reader_get_next_token(htf::ThreadReader* reader) {
+pallas::Token pallas_thread_reader_get_next_token(pallas::ThreadReader* reader) {
   return reader->getNextToken();
 }
 
-htf::Token htf_read_thread_cur_token(const htf::ThreadReader* reader) {
+pallas::Token pallas_read_thread_cur_token(const pallas::ThreadReader* reader) {
   return reader->getCurToken();
 }
 
-htf::Occurence* htf_thread_reader_get_occurence(const htf::ThreadReader* reader, htf::Token id, int occurence_id) {
+pallas::Occurence* pallas_thread_reader_get_occurence(const pallas::ThreadReader* reader, pallas::Token id, int occurence_id) {
   return reader->getOccurence(id, occurence_id);
 }
 
 C_CXX(_Thread_local, thread_local) size_t savestate_memory = 0;
 
-struct htf::Savestate* create_savestate(htf::ThreadReader* reader) {
-  return new htf::Savestate(reader);
+struct pallas::Savestate* create_savestate(pallas::ThreadReader* reader) {
+  return new pallas::Savestate(reader);
 }
 
-void load_savestate(htf::ThreadReader* reader, htf::Savestate* savestate) {
+void load_savestate(pallas::ThreadReader* reader, pallas::Savestate* savestate) {
   reader->loadSavestate(savestate);
 }
 
-void skip_sequence(htf::ThreadReader* reader, htf::Token token) {
+void skip_sequence(pallas::ThreadReader* reader, pallas::Token token) {
   reader->skipSequence(token);
 }
 

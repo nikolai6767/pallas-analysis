@@ -3,16 +3,16 @@
  * See LICENSE in top-level directory.
  */
 
-#include "htf/htf_attribute.h"
-#include "htf/htf.h"
-#include "htf/htf_archive.h"
-#include "htf/htf_read.h"
+#include "pallas/pallas_attribute.h"
+#include "pallas/pallas.h"
+#include "pallas/pallas_archive.h"
+#include "pallas/pallas_read.h"
 
 #include <inttypes.h>
 
 #define UNUSED __attribute__((unused))
 
-namespace htf {
+namespace pallas {
 void Thread::printAttribute(AttributeRef ref) const {
   const Attribute* attr = archive->getAttribute(ref);
   if (attr) {
@@ -30,15 +30,15 @@ static enum AttributeType _guess_attribute_size(const AttributeData* attr) {
   uint16_t data_size = attr->struct_size - ATTRIBUTE_HEADER_SIZE;
   switch (data_size) {
   case 1:
-    return HTF_TYPE_UINT8;
+    return PALLAS_TYPE_UINT8;
   case 2:
-    return HTF_TYPE_UINT16;
+    return PALLAS_TYPE_UINT16;
   case 4:
-    return HTF_TYPE_UINT32;
+    return PALLAS_TYPE_UINT32;
   case 8:
-    return HTF_TYPE_UINT64;
+    return PALLAS_TYPE_UINT64;
   default:
-    return HTF_TYPE_NONE;
+    return PALLAS_TYPE_NONE;
   }
 }
 
@@ -74,129 +74,129 @@ void Thread::printRegion(Ref region_ref) const {
     printf("INVALID_REGION <%d>", region_ref);
 }
 
-static void _htf_print_group(Ref group_ref) {
+static void _pallas_print_group(Ref group_ref) {
   printf("group <%d>", group_ref);
 }
 
-static void _htf_print_metric(Ref metric_ref) {
+static void _pallas_print_metric(Ref metric_ref) {
   printf("metric <%d>", metric_ref);
 }
 
-static void _htf_print_comm(Ref comm_ref) {
+static void _pallas_print_comm(Ref comm_ref) {
   printf("comm <%d>", comm_ref);
 }
 
-static void _htf_print_parameter(Ref parameter_ref) {
+static void _pallas_print_parameter(Ref parameter_ref) {
   printf("parameter <%d>", parameter_ref);
 }
 
-static void _htf_print_rma_win(Ref rma_win_ref) {
+static void _pallas_print_rma_win(Ref rma_win_ref) {
   printf("rma_win <%d>", rma_win_ref);
 }
 
-static void _htf_print_source_code_location(Ref source_code_location_ref) {
+static void _pallas_print_source_code_location(Ref source_code_location_ref) {
   printf("source_code_location <%d>", source_code_location_ref);
 }
 
-static void _htf_print_calling_context(Ref calling_context_ref) {
+static void _pallas_print_calling_context(Ref calling_context_ref) {
   printf("calling_context <%d>", calling_context_ref);
 }
 
-static void _htf_print_interrupt_generator(Ref interrupt_generator_ref) {
+static void _pallas_print_interrupt_generator(Ref interrupt_generator_ref) {
   printf("interrupt_generator <%d>", interrupt_generator_ref);
 }
 
-static void _htf_print_io_file(Ref io_file_ref) {
+static void _pallas_print_io_file(Ref io_file_ref) {
   printf("io_file <%d>", io_file_ref);
 }
 
-static void _htf_print_io_handle(Ref io_handle_ref) {
+static void _pallas_print_io_handle(Ref io_handle_ref) {
   printf("io_handle <%d>", io_handle_ref);
 }
 
-static void _htf_print_location_group(Ref location_group_ref) {
+static void _pallas_print_location_group(Ref location_group_ref) {
   printf("location_group <%d>", location_group_ref);
 }
 
-void Thread::printAttributeValue(const struct AttributeData* attr, htf_type_t type) const {
+void Thread::printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const {
   switch (type) {
-  case HTF_TYPE_NONE:
+  case PALLAS_TYPE_NONE:
     printf("NONE");
     break;
-  case HTF_TYPE_UINT8:
+  case PALLAS_TYPE_UINT8:
     printf("%u", attr->value.uint8);
     break;
-  case HTF_TYPE_UINT16:
+  case PALLAS_TYPE_UINT16:
     printf("%u", attr->value.uint16);
     break;
-  case HTF_TYPE_UINT32:
+  case PALLAS_TYPE_UINT32:
     printf("%u", attr->value.uint32);
     break;
-  case HTF_TYPE_UINT64:
+  case PALLAS_TYPE_UINT64:
     printf("%" PRIu64, attr->value.uint64);
     break;
-  case HTF_TYPE_INT8:
+  case PALLAS_TYPE_INT8:
     printf("%d", attr->value.int8);
     break;
-  case HTF_TYPE_INT16:
+  case PALLAS_TYPE_INT16:
     printf("%d", attr->value.int16);
     break;
-  case HTF_TYPE_INT32:
+  case PALLAS_TYPE_INT32:
     printf("%d", attr->value.int32);
     break;
-  case HTF_TYPE_INT64:
+  case PALLAS_TYPE_INT64:
     printf("%" PRId64, attr->value.int64);
     break;
-  case HTF_TYPE_FLOAT:
+  case PALLAS_TYPE_FLOAT:
     printf("%f", attr->value.float32);
     break;
-  case HTF_TYPE_DOUBLE:
+  case PALLAS_TYPE_DOUBLE:
     printf("%lf", attr->value.float64);
     break;
-  case HTF_TYPE_STRING:
+  case PALLAS_TYPE_STRING:
     printString(attr->value.string_ref);
     break;
-  case HTF_TYPE_ATTRIBUTE:
+  case PALLAS_TYPE_ATTRIBUTE:
     printAttributeRef(attr->value.attribute_ref);
     break;
-  case HTF_TYPE_LOCATION:
+  case PALLAS_TYPE_LOCATION:
     printLocation(attr->value.location_ref);
     break;
-  case HTF_TYPE_REGION:
+  case PALLAS_TYPE_REGION:
     printRegion(attr->value.region_ref);
     break;
-  case HTF_TYPE_GROUP:
-    _htf_print_group(attr->value.group_ref);
+  case PALLAS_TYPE_GROUP:
+    _pallas_print_group(attr->value.group_ref);
     break;
-  case HTF_TYPE_METRIC:
-    _htf_print_metric(attr->value.metric_ref);
+  case PALLAS_TYPE_METRIC:
+    _pallas_print_metric(attr->value.metric_ref);
     break;
-  case HTF_TYPE_COMM:
-    _htf_print_comm(attr->value.comm_ref);
+  case PALLAS_TYPE_COMM:
+    _pallas_print_comm(attr->value.comm_ref);
     break;
-  case HTF_TYPE_PARAMETER:
-    _htf_print_parameter(attr->value.parameter_ref);
+  case PALLAS_TYPE_PARAMETER:
+    _pallas_print_parameter(attr->value.parameter_ref);
     break;
-  case HTF_TYPE_RMA_WIN:
-    _htf_print_rma_win(attr->value.rma_win_ref);
+  case PALLAS_TYPE_RMA_WIN:
+    _pallas_print_rma_win(attr->value.rma_win_ref);
     break;
-  case HTF_TYPE_SOURCE_CODE_LOCATION:
-    _htf_print_source_code_location(attr->value.source_code_location_ref);
+  case PALLAS_TYPE_SOURCE_CODE_LOCATION:
+    _pallas_print_source_code_location(attr->value.source_code_location_ref);
     break;
-  case HTF_TYPE_CALLING_CONTEXT:
-    _htf_print_calling_context(attr->value.calling_context_ref);
+  case PALLAS_TYPE_CALLING_CONTEXT:
+    _pallas_print_calling_context(attr->value.calling_context_ref);
     break;
-  case HTF_TYPE_INTERRUPT_GENERATOR:
-    _htf_print_interrupt_generator(attr->value.interrupt_generator_ref);
+  case PALLAS_TYPE_INTERRUPT_GENERATOR:
+    _pallas_print_interrupt_generator(attr->value.interrupt_generator_ref);
     break;
-  case HTF_TYPE_IO_FILE:
-    _htf_print_io_file(attr->value.io_file_ref);
+  case PALLAS_TYPE_IO_FILE:
+    _pallas_print_io_file(attr->value.io_file_ref);
     break;
-  case HTF_TYPE_IO_HANDLE:
-    _htf_print_io_handle(attr->value.io_handle_ref);
+  case PALLAS_TYPE_IO_HANDLE:
+    _pallas_print_io_handle(attr->value.io_handle_ref);
     break;
-  case HTF_TYPE_LOCATION_GROUP:
-    _htf_print_location_group(attr->value.location_group_ref);
+  case PALLAS_TYPE_LOCATION_GROUP:
+    _pallas_print_location_group(attr->value.location_group_ref);
     break;
   }
 }
@@ -226,8 +226,8 @@ void Thread::printAttributeList(const AttributeList* attribute_list) const {
   uint16_t pos = 0;
   for (int i = 0; i < attribute_list->nb_values; i++) {
     AttributeData attr;
-    htf_attribute_list_pop_data(attribute_list, &attr, &pos);
-    htf_assert(ATTRIBUTE_LIST_HEADER_SIZE + pos <= attribute_list->struct_size);
+    pallas_attribute_list_pop_data(attribute_list, &attr, &pos);
+    pallas_assert(ATTRIBUTE_LIST_HEADER_SIZE + pos <= attribute_list->struct_size);
 
     if (i > 0)
       printf(", ");
@@ -239,17 +239,17 @@ void Thread::printAttributeList(const AttributeList* attribute_list) const {
 void Thread::printEventAttribute(const struct EventOccurence* e) const {
   printAttributeList(e->attributes);
 }
-}  // namespace htf
+}  // namespace pallas
 
-void htf_print_attribute_value(htf::Thread* thread, htf::AttributeData* attr, htf::htf_type_t type) {
+void pallas_print_attribute_value(pallas::Thread* thread, pallas::AttributeData* attr, pallas::pallas_type_t type) {
   thread->printAttributeValue(attr, type);
 };
 
-void htf_print_event_attributes(htf::Thread* thread, htf::EventOccurence* e) {
+void pallas_print_event_attributes(pallas::Thread* thread, pallas::EventOccurence* e) {
   thread->printEventAttribute(e);
 };
 
-void htf_print_attribute_list(htf::Thread* thread, htf::AttributeList* l) {
+void pallas_print_attribute_list(pallas::Thread* thread, pallas::AttributeList* l) {
   thread->printAttributeList(l);
 };
 /* -*-
