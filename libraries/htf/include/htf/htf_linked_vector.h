@@ -9,9 +9,7 @@
 #pragma once
 
 #include "htf_dbg.h"
-#ifndef __cplusplus
-#include <stdint-gcc.h>
-#endif
+#include <stdint.h>
 #ifdef __cplusplus
 #include <cstring>
 #include <iostream>

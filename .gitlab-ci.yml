@@ -1,0 +1,46 @@
+stages:
+  - build
+  - test
+
+build:gcc:
+  stage: build
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
+  tags: ['ci.inria.fr', 'linux', 'small']
+  script:
+    # Build Pallas
+    - mkdir build install
+    - cd build/
+    - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=gcc
+    - make
+    - make install
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/pallas
+      - $CI_PROJECT_DIR/build
+
+build:clang:
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
+  tags: ['ci.inria.fr', 'linux', 'small']
+  stage: build
+  script:
+    # Build Pallas
+    - mkdir build install
+    - cd build/
+    - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=clang
+    - make
+    - make install
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/pallas
+
+test:unit:
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
+  tags: ['ci.inria.fr', 'linux', 'small']
+  stage: test
+  dependencies:
+  - build:gcc
+  script:
+    # Run tests for ompt module
+    - export PATH="$PATH:$CI_PROJECT_DIR/pallas/bin/"
+    - cd $CI_PROJECT_DIR/build/
+    - ctest --output-on-failure

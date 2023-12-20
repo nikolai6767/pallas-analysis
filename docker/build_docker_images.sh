@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build -f Dockerfile_htf_test . -t htf/htf_test:latest
+docker build -f Dockerfile_pallas_test . -t pallas/pallas_test:latest
