@@ -10,7 +10,7 @@
 
 #include "pallas_dbg.h"
 #ifndef __cplusplus
-#include <stdint-gcc.h>
+#include <stdint.h>
 #endif
 #ifdef __cplusplus
 #include <cstring>
