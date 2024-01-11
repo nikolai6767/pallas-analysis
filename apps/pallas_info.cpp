@@ -58,8 +58,13 @@ void info_thread(Thread* t) {
 
   printf("\tSequences {.nb_sequences: %d, .nb_allocated_sequences: %d}\n", t->nb_sequences, t->nb_allocated_sequences);
   for (unsigned i = 0; i < t->nb_sequences; i++) {
-    printf("\t\tS%x\t", i);
+    std::cout << "\t\tS" << i << "\t";
     print_sequence(t, t->sequences[i]);
+    if (t->sequences[i]->size() > 1) {
+      std::cout << "\t\t\tMin: " << t->sequences[i]->durations->min
+                << "\tMax: " << t->sequences[i]->durations->max
+                << "\tMean: " << t->sequences[i]->durations->mean << std::endl;
+    }
   }
 
   printf("\tLoops {.nb_loops: %d, .nb_allocated_loops: %d}\n", t->nb_loops, t->nb_allocated_loops);
@@ -136,7 +141,7 @@ void usage(const char* prog_name) {
 
 int main(int argc, char** argv) {
   int nb_opts = 0;
-  char* trace_name = NULL;
+  char* trace_name = nullptr;
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
@@ -154,7 +159,7 @@ int main(int argc, char** argv) {
   }
 
   trace_name = argv[nb_opts + 1];
-  if (trace_name == NULL) {
+  if (trace_name == nullptr) {
     usage(argv[0]);
     return EXIT_SUCCESS;
   }
