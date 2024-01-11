@@ -18,6 +18,9 @@ uint64_t* LinkedVector::add(uint64_t val) {
     last = new SubVector(defaultSize, last);
   }
   size++;
+  max = std::max(max, val);
+  min = std::min(min, val);
+  mean = ((size - 1) * mean + val) / size;
   return last->add(val);
 }
 

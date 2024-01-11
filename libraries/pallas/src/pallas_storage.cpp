@@ -521,6 +521,9 @@ void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) const 
   if (size == 0) {
     return;
   }
+  _pallas_fwrite(&min, sizeof(min), 1, file);
+  _pallas_fwrite(&max, sizeof(max), 1, file);
+  _pallas_fwrite(&mean, sizeof(mean), 1, file);
   auto* buffer = new uint64_t[size];
   uint cur_index = 0;
   SubVector* sub_vec = first;
@@ -537,6 +540,9 @@ void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) const 
 pallas::LinkedVector::LinkedVector(FILE* file, size_t givenSize) {
   size = givenSize;
   if (size) {
+    _pallas_fread(&min, sizeof(min), 1, file);
+    _pallas_fread(&max, sizeof(max), 1, file);
+    _pallas_fread(&mean, sizeof(mean), 1, file);
     auto temp = _pallas_compress_read(size, file);
     last = new SubVector(size, temp);
     first = last;
@@ -547,6 +553,9 @@ pallas::LinkedVector::LinkedVector(FILE* file, size_t givenSize) {
 pallas::LinkedVector::LinkedVector(FILE* file) {
   _pallas_fread(&size, sizeof(size), 1, file);
   if (size) {
+    _pallas_fread(&min, sizeof(min), 1, file);
+    _pallas_fread(&max, sizeof(max), 1, file);
+    _pallas_fread(&mean, sizeof(mean), 1, file);
     auto temp = _pallas_compress_read(size, file);
     last = new SubVector(size, temp);
     first = last;

@@ -28,8 +28,11 @@ namespace pallas {
  * Does not implement any methods to remove items from itself.
  */
 typedef struct LinkedVector {
-  /** Number of element stored in the vector */
-  size_t size CXX({0});
+  size_t size CXX({0});/**< Number of element stored in the vector.  */
+  uint64_t min CXX({UINT64_MAX});/**< Max element stored in the vector. */
+  uint64_t max CXX({0});/**< Min element stored in the vector. */
+  uint64_t mean CXX({0});  /**< Mean of all the elements in the vector. */
+
 
 #ifdef __cplusplus
  private:

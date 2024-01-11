@@ -22,6 +22,8 @@ int main(int argc, char** argv) {
   }
 
   pallas_assert_always(vector.size == TEST_SIZE);
+  pallas_assert_always(vector.min == 0);
+  pallas_assert_always(vector.max == TEST_SIZE - 1);
   return EXIT_SUCCESS;
 }
 
