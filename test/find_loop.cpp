@@ -2,6 +2,7 @@
  * Copyright (C) Telecom SudParis
  * See LICENSE in top-level directory.
  */
+#include <filesystem>
 #include "pallas/pallas.h"
 #include "pallas/pallas_write.h"
 using namespace pallas;
@@ -12,6 +13,8 @@ static pallas_timestamp_t get_timestamp() {
   ts += step;
   return ts;
 }
+
+static inline std::string dummyTraceName = "dummy_trace";
 
 static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
   pallas_log(DebugLevel::Max, "Searching for event {.id=%d}\n", id);
@@ -42,7 +45,7 @@ int main(int argc, char** argv __attribute__((unused))) {
 
   /* Make a dummy archive and a dummy thread writer. */
   struct Archive archive;
-  archive.open("dummy_trace", "dummy_trace", 0);
+  archive.open(dummyTraceName.c_str(), dummyTraceName.c_str(), 0);
   struct ThreadWriter thread_writer;
   thread_writer.open(&archive, 0);
 
@@ -98,6 +101,12 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_assert_always(l->nb_iterations[0] == 3);
   pallas_assert_always(l->nb_iterations[1] == (size_t)NUM_LOOPS);
 
+  thread_writer.threadClose();
+  archive.close();
+  // TODO Find a way for the test to clean this trace
+  //      Because somehow the following does not remove the folder
+  //      Only is content
+  //      std::filesystem::remove_all(dummyTraceName);
   return 0;
 }
 
