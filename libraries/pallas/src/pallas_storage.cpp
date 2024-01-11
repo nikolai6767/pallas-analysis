@@ -1037,8 +1037,8 @@ void pallas_storage_finalize(pallas::Archive* archive) {
   delete[] fullpath;
   _pallas_fwrite(&archive->id, sizeof(pallas::LocationGroupId), 1, f);
   if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID) {
-    uint8_t version[3]= {PALLAS_VERSION_MAJOR, PALLAS_VERSION_MINOR, PALLAS_VERSION_PATCH};
-    _pallas_fwrite(version, sizeof(version), 1, f);
+    uint8_t version = PALLAS_ABI_VERSION;
+    _pallas_fwrite(&version, sizeof(version), 1, f);
   }
   size_t size = archive->definitions.strings.size();
   _pallas_fwrite(&size, sizeof(size), 1, f);
@@ -1114,17 +1114,9 @@ static void _pallas_read_archive(pallas::Archive* global_archive, pallas::Archiv
   _pallas_fread(&archive->id, sizeof(pallas::LocationGroupId), 1, f);
   if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID) {
     // Version checking
-    uint8_t version[3];
-    _pallas_fread(version, sizeof(version), 1, f);
-    if (version[0] != PALLAS_VERSION_MAJOR || version[1] != PALLAS_VERSION_MINOR || version[2] != PALLAS_VERSION_PATCH) {
-      pallas_warn("Reading a trace from a mismatched version of Pallas: %d.%d%.d (cur is %d.%d.%d)",
-                  version[0], version[1], version[2],
-                  PALLAS_VERSION_MAJOR, PALLAS_VERSION_MINOR, PALLAS_VERSION_PATCH);
-    }
-    pallas_assert_always(version[0] == PALLAS_VERSION_MAJOR);
-    if (version[0] == 0) {
-      pallas_assert_always(version[1] == PALLAS_VERSION_MINOR);
-    }
+    uint8_t abi_version;
+    _pallas_fread(&abi_version, sizeof(abi_version), 1, f);
+    pallas_assert_always(abi_version == PALLAS_ABI_VERSION);
   }
   size_t size;
 
