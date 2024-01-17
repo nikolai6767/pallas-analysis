@@ -535,6 +535,8 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
   last_timestamp = PALLAS_TIMESTAMP_INVALID;
   last_duration = nullptr;
   sequence_start_timestamp = new pallas_timestamp_t[max_depth];
+  firstTimestamp = {};
+  incompleteDurations = std::vector<pallas_duration_t*>();
 
   cur_depth = 0;
 
