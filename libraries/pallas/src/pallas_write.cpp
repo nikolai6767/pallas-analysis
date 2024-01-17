@@ -70,7 +70,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
 Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
   if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
     pallas_warn("Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
-             thread_trace.nb_allocated_loops);
+                thread_trace.nb_allocated_loops);
     DOUBLE_MEMORY_SPACE(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
   }
 
@@ -142,12 +142,12 @@ void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
   es->attribute_pos += attribute_list->struct_size;
 
   pallas_log(DebugLevel::Debug, "store_attribute: {index: %d, struct_size: %d, nb_values: %d}\n", attribute_list->index,
-          attribute_list->struct_size, attribute_list->nb_values);
+             attribute_list->struct_size, attribute_list->nb_values);
 }
 
 void ThreadWriter::storeToken(pallas::Sequence* seq, pallas::Token t) {
   pallas_log(DebugLevel::Debug, "store_token: (%c%x) in %p (size: %zu)\n", PALLAS_TOKEN_TYPE_C(t), t.id, seq,
-          seq->size() + 1);
+             seq->size() + 1);
   seq->tokens.push_back(t);
   findLoop();
 }
@@ -167,7 +167,7 @@ void Loop::addIteration() {
   pallas_assert(_pallas_sequences_equal(s1, s2));
 #endif
   pallas_log(DebugLevel::Debug, "Adding an iteration to L%x n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
-          nb_iterations.back() + 1);
+             nb_iterations.back() + 1);
   nb_iterations.back()++;
 }
 
@@ -232,7 +232,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         // The current sequence is just another iteration of the loop
         // remove the sequence, and increment the iteration count
         pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%x aka S%x\n", loop->self_id.id,
-                loop->repeated_token.id);
+                   loop->repeated_token.id);
         loop->addIteration();
         // The current sequence last_timestamp does not need to be updated
 
@@ -248,8 +248,8 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       /* search for a loop of loopLength tokens */
       int is_loop = 1;
       /* search for new loops */
-      is_loop =
-        _pallas_arrays_equal(&currentSequence->tokens[s1Start], loopLength, &currentSequence->tokens[s2Start], loopLength);
+      is_loop = _pallas_arrays_equal(&currentSequence->tokens[s1Start], loopLength, &currentSequence->tokens[s2Start],
+                                     loopLength);
 
       if (is_loop) {
         if (debugLevel >= DebugLevel::Debug) {
@@ -294,7 +294,7 @@ void ThreadWriter::findLoopFilter() {
     if (!loopLength || (endingIndex + 1) < loopLength)
       continue;
     if (_pallas_arrays_equal(&currentSequence->tokens[endingIndex + 1], loopLength,
-                          &currentSequence->tokens[endingIndex + 1 - loopLength], loopLength)) {
+                             &currentSequence->tokens[endingIndex + 1 - loopLength], loopLength)) {
       if (debugLevel >= DebugLevel::Debug) {
         printf("Found a loop of len %lu:\n", loopLength);
         thread_trace.printTokenArray(currentSequence->tokens.data(), endingIndex + 1, loopLength);
@@ -311,13 +311,14 @@ void ThreadWriter::findLoopFilter() {
     auto* loop = thread_trace.getLoop(token);
     auto* sequence = thread_trace.getSequence(loop->repeated_token);
     if (_pallas_arrays_equal(&currentSequence->tokens[loopIndex + 1], loopLength, sequence->tokens.data(),
-                          sequence->size())) {
+                             sequence->size())) {
       pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%x aka S%x\n", loop->self_id.id,
-              loop->repeated_token.id);
+                 loop->repeated_token.id);
       loop->addIteration();
       // The current sequence last_timestamp does not need to be updated
 
-      pallas_timestamp_t ts = thread_trace.getSequenceDuration(&currentSequence->tokens[loopIndex + 1], loopLength, true);
+      pallas_timestamp_t ts =
+        thread_trace.getSequenceDuration(&currentSequence->tokens[loopIndex + 1], loopLength, true);
       addDurationToComplete(sequence->durations->add(ts));
       currentSequence->tokens.resize(loopIndex + 1);
       return;
@@ -376,8 +377,8 @@ void ThreadWriter::recordExitFunction() {
   if (first_token.type != last_token.type) {
     /* If a sequence starts with an Event (eg Enter function foo), it
        should end with an Event too (eg. Exit function foo) */
-    pallas_warn("When closing sequence %p: PALLAS_TOKEN_TYPE(%c%x) != PALLAS_TOKEN_TYPE(%c%x)\n", cur_seq, first_token.type,
-             first_token.id, last_token.type, last_token.id);
+    pallas_warn("When closing sequence %p: PALLAS_TOKEN_TYPE(%c%x) != PALLAS_TOKEN_TYPE(%c%x)\n", cur_seq,
+                first_token.type, first_token.id, last_token.type, last_token.id);
   }
 
   if (first_token.type == TypeEvent) {
@@ -535,8 +536,6 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
   last_timestamp = PALLAS_TIMESTAMP_INVALID;
   last_duration = nullptr;
   sequence_start_timestamp = new pallas_timestamp_t[max_depth];
-  firstTimestamp = {};
-  incompleteDurations = std::vector<pallas_duration_t*>();
 
   cur_depth = 0;
 
@@ -812,6 +811,10 @@ pallas_duration_t Thread::getSequenceDuration(Token* array, size_t size, bool ig
 }  // namespace pallas
 
 /* C Callbacks */
+pallas::ThreadWriter* pallas_thread_writer_new() {
+  return new pallas::ThreadWriter();
+}
+
 extern void pallas_write_global_archive_open(pallas::Archive* archive, const char* dir_name, const char* trace_name) {
   archive->globalOpen(dir_name, trace_name);
 };
@@ -819,7 +822,9 @@ extern void pallas_write_global_archive_close(pallas::Archive* archive) {
   archive->close();
 };
 
-extern void pallas_write_thread_open(pallas::Archive* archive, pallas::ThreadWriter* thread_writer, pallas::ThreadId thread_id) {
+extern void pallas_write_thread_open(pallas::Archive* archive,
+                                     pallas::ThreadWriter* thread_writer,
+                                     pallas::ThreadId thread_id) {
   thread_writer->open(archive, thread_id);
 };
 
@@ -828,23 +833,23 @@ extern void pallas_write_thread_close(pallas::ThreadWriter* thread_writer) {
 };
 
 extern void pallas_write_define_location_group(pallas::Archive* archive,
-                                            pallas::LocationGroupId id,
-                                            pallas::StringRef name,
-                                            pallas::LocationGroupId parent) {
+                                               pallas::LocationGroupId id,
+                                               pallas::StringRef name,
+                                               pallas::LocationGroupId parent) {
   archive->defineLocationGroup(id, name, parent);
 };
 
 extern void pallas_write_define_location(pallas::Archive* archive,
-                                      pallas::ThreadId id,
-                                      pallas::StringRef name,
-                                      pallas::LocationGroupId parent) {
+                                         pallas::ThreadId id,
+                                         pallas::StringRef name,
+                                         pallas::LocationGroupId parent) {
   archive->defineLocation(id, name, parent);
 };
 
 extern void pallas_write_archive_open(pallas::Archive* archive,
-                                   const char* dir_name,
-                                   const char* trace_name,
-                                   pallas::LocationGroupId location_group) {
+                                      const char* dir_name,
+                                      const char* trace_name,
+                                      pallas::LocationGroupId location_group) {
   archive->open(dir_name, trace_name, location_group);
 };
 
@@ -853,17 +858,17 @@ extern void pallas_write_archive_close(PALLAS(Archive) * archive) {
 };
 
 void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
-                     enum PALLAS(EventType) event_type,
-                     PALLAS(TokenId) id,
-                     pallas_timestamp_t ts,
-                     PALLAS(AttributeList) * attribute_list) {
+                        enum PALLAS(EventType) event_type,
+                        PALLAS(TokenId) id,
+                        pallas_timestamp_t ts,
+                        PALLAS(AttributeList) * attribute_list) {
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
 
 void pallas_record_enter(pallas::ThreadWriter* thread_writer,
-                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                      pallas_timestamp_t time,
-                      pallas::RegionRef region_ref) {
+                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                         pallas_timestamp_t time,
+                         pallas::RegionRef region_ref) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -881,9 +886,9 @@ void pallas_record_enter(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_leave(pallas::ThreadWriter* thread_writer,
-                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                      pallas_timestamp_t time,
-                      pallas::RegionRef region_ref) {
+                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                         pallas_timestamp_t time,
+                         pallas::RegionRef region_ref) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -900,8 +905,8 @@ void pallas_record_leave(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_thread_begin(pallas::ThreadWriter* thread_writer,
-                             struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                             pallas_timestamp_t time) {
+                                struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                pallas_timestamp_t time) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -916,8 +921,8 @@ void pallas_record_thread_begin(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_thread_end(pallas::ThreadWriter* thread_writer,
-                           struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                           pallas_timestamp_t time) {
+                              struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                              pallas_timestamp_t time) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -931,8 +936,8 @@ void pallas_record_thread_end(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_thread_team_begin(pallas::ThreadWriter* thread_writer,
-                                  struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                  pallas_timestamp_t time) {
+                                     struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                     pallas_timestamp_t time) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -946,8 +951,8 @@ void pallas_record_thread_team_begin(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_thread_team_end(pallas::ThreadWriter* thread_writer,
-                                struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                pallas_timestamp_t time) {
+                                   struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                   pallas_timestamp_t time) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -961,12 +966,12 @@ void pallas_record_thread_team_end(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_send(pallas::ThreadWriter* thread_writer,
-                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                         pallas_timestamp_t time,
-                         uint32_t receiver,
-                         uint32_t communicator,
-                         uint32_t msgTag,
-                         uint64_t msgLength) {
+                            struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                            pallas_timestamp_t time,
+                            uint32_t receiver,
+                            uint32_t communicator,
+                            uint32_t msgTag,
+                            uint64_t msgLength) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -987,13 +992,13 @@ void pallas_record_mpi_send(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_isend(pallas::ThreadWriter* thread_writer,
-                          struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                          pallas_timestamp_t time,
-                          uint32_t receiver,
-                          uint32_t communicator,
-                          uint32_t msgTag,
-                          uint64_t msgLength,
-                          uint64_t requestID) {
+                             struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                             pallas_timestamp_t time,
+                             uint32_t receiver,
+                             uint32_t communicator,
+                             uint32_t msgTag,
+                             uint64_t msgLength,
+                             uint64_t requestID) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1015,9 +1020,9 @@ void pallas_record_mpi_isend(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_isend_complete(pallas::ThreadWriter* thread_writer,
-                                   struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                   pallas_timestamp_t time,
-                                   uint64_t requestID) {
+                                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                      pallas_timestamp_t time,
+                                      uint64_t requestID) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1035,9 +1040,9 @@ void pallas_record_mpi_isend_complete(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_irecv_request(pallas::ThreadWriter* thread_writer,
-                                  struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                  pallas_timestamp_t time,
-                                  uint64_t requestID) {
+                                     struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                     pallas_timestamp_t time,
+                                     uint64_t requestID) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1055,12 +1060,12 @@ void pallas_record_mpi_irecv_request(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_recv(pallas::ThreadWriter* thread_writer,
-                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                         pallas_timestamp_t time,
-                         uint32_t sender,
-                         uint32_t communicator,
-                         uint32_t msgTag,
-                         uint64_t msgLength) {
+                            struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                            pallas_timestamp_t time,
+                            uint32_t sender,
+                            uint32_t communicator,
+                            uint32_t msgTag,
+                            uint64_t msgLength) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1081,13 +1086,13 @@ void pallas_record_mpi_recv(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_irecv(pallas::ThreadWriter* thread_writer,
-                          struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                          pallas_timestamp_t time,
-                          uint32_t sender,
-                          uint32_t communicator,
-                          uint32_t msgTag,
-                          uint64_t msgLength,
-                          uint64_t requestID) {
+                             struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                             pallas_timestamp_t time,
+                             uint32_t sender,
+                             uint32_t communicator,
+                             uint32_t msgTag,
+                             uint64_t msgLength,
+                             uint64_t requestID) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1109,8 +1114,8 @@ void pallas_record_mpi_irecv(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_collective_begin(pallas::ThreadWriter* thread_writer,
-                                     struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                     pallas_timestamp_t time) {
+                                        struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                        pallas_timestamp_t time) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
@@ -1126,13 +1131,13 @@ void pallas_record_mpi_collective_begin(pallas::ThreadWriter* thread_writer,
 }
 
 void pallas_record_mpi_collective_end(pallas::ThreadWriter* thread_writer,
-                                   struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                   pallas_timestamp_t time,
-                                   uint32_t collectiveOp,
-                                   uint32_t communicator,
-                                   uint32_t root,
-                                   uint64_t sizeSent,
-                                   uint64_t sizeReceived) {
+                                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
+                                      pallas_timestamp_t time,
+                                      uint32_t collectiveOp,
+                                      uint32_t communicator,
+                                      uint32_t root,
+                                      uint64_t sizeSent,
+                                      uint64_t sizeReceived) {
   if (pallas_recursion_shield)
     return;
   pallas_recursion_shield++;
