@@ -57,10 +57,10 @@ void info_thread(Thread* t) {
   }
 
   printf("\tSequences {.nb_sequences: %d, .nb_allocated_sequences: %d}\n", t->nb_sequences, t->nb_allocated_sequences);
-  for (unsigned i = 0; i < t->nb_sequences; i++) {
-    std::cout << "\t\tS" << i << "\t";
+  for (unsigned i = 1; i < t->nb_sequences; i++) {
+    std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
     print_sequence(t, t->sequences[i]);
-    if (t->sequences[i]->size() > 1) {
+    if (t->sequences[i]->durations->size > 1) {
       std::cout << "\t\t\tMin: " << t->sequences[i]->durations->min
                 << "\tMax: " << t->sequences[i]->durations->max
                 << "\tMean: " << t->sequences[i]->durations->mean << std::endl;
