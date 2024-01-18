@@ -625,7 +625,7 @@ static void _pallas_read_attribute_values(pallas::EventSummary* e, FILE* file) {
 
 static void _pallas_store_event(const char* base_dirname, pallas::Thread* th, pallas::EventSummary* e, pallas::Token event) {
   FILE* file = _pallas_get_event_file(base_dirname, th, event, "w");
-  pallas_log(pallas::DebugLevel::Debug, "\tStore event %x {.nb_events=%zu}\n", event.id, e->nb_occurences);
+  pallas_log(pallas::DebugLevel::Debug, "\tStore event %d {.nb_events=%zu}\n", event.id, e->nb_occurences);
 
   _pallas_fwrite(&e->event, sizeof(pallas::Event), 1, file);
   _pallas_fwrite(&e->nb_occurences, sizeof(e->nb_occurences), 1, file);
@@ -641,7 +641,7 @@ static void _pallas_read_event(const char* base_dirname, pallas::Thread* th, pal
 
   _pallas_fread(&e->event, sizeof(pallas::Event), 1, file);
   _pallas_fread(&e->nb_occurences, sizeof(e->nb_occurences), 1, file);
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad event %x {.nb_events=%zu}\n", event.id, e->nb_occurences);
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad event %d {.nb_events=%zu}\n", event.id, e->nb_occurences);
   _pallas_read_attribute_values(e, file);
   if (STORE_TIMESTAMPS) {
     e->durations = new pallas::LinkedVector(file, e->nb_occurences);
@@ -659,7 +659,7 @@ static FILE* _pallas_get_sequence_file(const char* base_dirname, pallas::Thread*
 
 static void _pallas_store_sequence(const char* base_dirname, pallas::Thread* th, pallas::Sequence* s, pallas::Token sequence) {
   FILE* file = _pallas_get_sequence_file(base_dirname, th, sequence, "w");
-  pallas_log(pallas::DebugLevel::Debug, "\tStore sequence %x {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
+  pallas_log(pallas::DebugLevel::Debug, "\tStore sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
           s->durations->size);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     pallas_print_sequence(th, sequence);
@@ -696,7 +696,7 @@ static void _pallas_read_sequence(const char* base_dirname, pallas::Thread* th, 
   }
   fclose(file);
 
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad sequence %x {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
           s->durations->size);
 
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
@@ -713,7 +713,7 @@ static FILE* _pallas_get_loop_file(const char* base_dirname, pallas::Thread* th,
 static void _pallas_store_loop(const char* base_dirname, pallas::Thread* th, pallas::Loop* l, pallas::Token loop) {
   FILE* file = _pallas_get_loop_file(base_dirname, th, loop, "w");
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug, "\tStore loops %x {.nb_loops=%zu, .repeated_token=%x.%x, .nb_iterations:", loop.id,
+    pallas_log(pallas::DebugLevel::Debug, "\tStore loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations:", loop.id,
             l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
     std::cout << "[";
     for (const auto& i : l->nb_iterations) {
@@ -738,7 +738,7 @@ static void _pallas_read_loop(const char* base_dirname, pallas::Thread* th, pall
   _pallas_fread(l->nb_iterations.data(), sizeof(uint), size, file);
   fclose(file);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug, "\tLoad loops %x {.nb_loops=%zu, .repeated_token=%x.%x, .nb_iterations: ", loop.id,
+    pallas_log(pallas::DebugLevel::Debug, "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.id,
             l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
     std::cout << "[";
     for (const auto& i : l->nb_iterations) {
@@ -838,7 +838,7 @@ static void _pallas_store_attributes_generic(FILE* file, pallas::Definition* d) 
 
   pallas_log(pallas::DebugLevel::Debug, "\tStore %zu Attributes\n", d->attributes.size());
   for (int i = 0; i < d->attributes.size(); i++) {
-    pallas_log(pallas::DebugLevel::Debug, "\t\t[%d] {ref=%x, name=%x, type=%x}\n", i, d->attributes[i].attribute_ref,
+    pallas_log(pallas::DebugLevel::Debug, "\t\t[%d] {ref=%d, name=%d, type=%d}\n", i, d->attributes[i].attribute_ref,
             d->attributes[i].name, d->attributes[i].type);
   }
 

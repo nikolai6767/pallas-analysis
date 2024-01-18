@@ -39,7 +39,7 @@ void Definition::addString(StringRef string_ref, const char* string) {
   strncpy(s.str, string, s.length);
   strings.push_back(s);
 
-  pallas_log(DebugLevel::Verbose, "Register string #%zu{.ref=%x, .length=%d, .str='%s'}\n", strings.size() - 1,
+  pallas_log(DebugLevel::Verbose, "Register string #%zu{.ref=%d, .length=%d, .str='%s'}\n", strings.size() - 1,
           s.string_ref, s.length, s.str);
 }
 
@@ -70,7 +70,7 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
   r.string_ref = string_ref;
   regions.push_back(r);
 
-  pallas_log(DebugLevel::Verbose, "Register region #%zu{.ref=%x, .str=%d}\n", regions.size() - 1, r.region_ref,
+  pallas_log(DebugLevel::Verbose, "Register region #%zu{.ref=%d, .str=%d}\n", regions.size() - 1, r.region_ref,
           r.string_ref);
 }
 
@@ -105,7 +105,7 @@ void Definition::addAttribute(AttributeRef attribute_ref,
   a.type = type;
   attributes.push_back(a);
 
-  pallas_log(DebugLevel::Verbose, "Register attribute #%zu{.ref=%x, .name=%d, .description=%d, .type=%d}\n",
+  pallas_log(DebugLevel::Verbose, "Register attribute #%zu{.ref=%d, .name=%d, .description=%d, .type=%d}\n",
           attributes.size() - 1, a.attribute_ref, a.name, a.description, a.type);
 }
 

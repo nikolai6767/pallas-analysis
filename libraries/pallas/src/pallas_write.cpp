@@ -81,13 +81,13 @@ Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
   for (int i = 0; i < thread_trace.nb_loops; i++) {
     if (thread_trace.loops[i].repeated_token.id == sid.id) {
       index = i;
-      pallas_log(DebugLevel::Debug, "\tLoop already exists: id=L%x containing S%x\n", index, sid.id);
+      pallas_log(DebugLevel::Debug, "\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
       break;
     }
   }
   if (index == -1) {
     index = thread_trace.nb_loops++;
-    pallas_log(DebugLevel::Debug, "\tLoop not found. Adding it with id=L%x containing S%x\n", index, sid.id);
+    pallas_log(DebugLevel::Debug, "\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
   }
 
   Loop* l = &thread_trace.loops[index];
@@ -146,7 +146,7 @@ void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
 }
 
 void ThreadWriter::storeToken(pallas::Sequence* seq, pallas::Token t) {
-  pallas_log(DebugLevel::Debug, "store_token: (%c%x) in %p (size: %zu)\n", PALLAS_TOKEN_TYPE_C(t), t.id, seq,
+  pallas_log(DebugLevel::Debug, "store_token: (%c%d) in %p (size: %zu)\n", PALLAS_TOKEN_TYPE_C(t), t.id, seq,
              seq->size() + 1);
   seq->tokens.push_back(t);
   findLoop();
@@ -166,7 +166,7 @@ void Loop::addIteration() {
 					     PALLAS_TOKEN_TO_SEQUENCE_ID(loop->repeated_token));
   pallas_assert(_pallas_sequences_equal(s1, s2));
 #endif
-  pallas_log(DebugLevel::Debug, "Adding an iteration to L%x n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
+  pallas_log(DebugLevel::Debug, "Adding an iteration to L%d n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
              nb_iterations.back() + 1);
   nb_iterations.back()++;
 }
@@ -231,7 +231,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       if (_pallas_arrays_equal(&currentSequence->tokens[s1Start], loopLength, seq->tokens.data(), seq->size())) {
         // The current sequence is just another iteration of the loop
         // remove the sequence, and increment the iteration count
-        pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%x aka S%x\n", loop->self_id.id,
+        pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
         // The current sequence last_timestamp does not need to be updated
@@ -312,7 +312,7 @@ void ThreadWriter::findLoopFilter() {
     auto* sequence = thread_trace.getSequence(loop->repeated_token);
     if (_pallas_arrays_equal(&currentSequence->tokens[loopIndex + 1], loopLength, sequence->tokens.data(),
                              sequence->size())) {
-      pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%x aka S%x\n", loop->self_id.id,
+      pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                  loop->repeated_token.id);
       loop->addIteration();
       // The current sequence last_timestamp does not need to be updated
@@ -377,7 +377,7 @@ void ThreadWriter::recordExitFunction() {
   if (first_token.type != last_token.type) {
     /* If a sequence starts with an Event (eg Enter function foo), it
        should end with an Event too (eg. Exit function foo) */
-    pallas_warn("When closing sequence %p: PALLAS_TOKEN_TYPE(%c%x) != PALLAS_TOKEN_TYPE(%c%x)\n", cur_seq,
+    pallas_warn("When closing sequence %p: PALLAS_TOKEN_TYPE(%c%d) != PALLAS_TOKEN_TYPE(%c%d)\n", cur_seq,
                 first_token.type, first_token.id, last_token.type, last_token.id);
   }
 
@@ -761,7 +761,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   }
 
   TokenId index = nb_events++;
-  pallas_log(DebugLevel::Max, "\tNot found. Adding it with id=%x\n", index);
+  pallas_log(DebugLevel::Max, "\tNot found. Adding it with id=%d\n", index);
   auto* new_event = &events[index];
   new_event->initEventSummary(id, *e);
 

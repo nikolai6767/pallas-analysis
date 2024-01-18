@@ -19,7 +19,7 @@ void print_sequence(Thread* t, Sequence* s) {
       Loop* l = t->getLoop(token);
       token = l->repeated_token;
     }
-    printf("%c%x", PALLAS_TOKEN_TYPE_C(token), token.id);
+    printf("%c%d", PALLAS_TOKEN_TYPE_C(token), token.id);
     if (i < s->size() - 1)
       printf(", ");
   }
@@ -36,7 +36,7 @@ void info_sequence(Sequence* s) {
 }
 
 void info_loop(Loop* l) {
-  printf("{.nb_loops: %zu, .repeated_token: %c.%x, .nb_iterations: ", l->nb_iterations.size(),
+  printf("{.nb_loops: %zu, .repeated_token: %c.%d, .nb_iterations: ", l->nb_iterations.size(),
          PALLAS_TOKEN_TYPE_C(l->repeated_token), l->repeated_token.id);
   printf("[");
   for (auto& i : l->nb_iterations) {
@@ -49,10 +49,10 @@ void info_loop(Loop* l) {
 }
 
 void info_thread(Thread* t) {
-  printf("Thread %x {.archive: %x}\n", t->id, t->archive->id);
+  printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
   printf("\tEvents {.nb_events: %d, .nb_allocated_events: %d}\n", t->nb_events, t->nb_allocated_events);
   for (unsigned i = 0; i < t->nb_events; i++) {
-    printf("\t\tE%x\t", i);
+    printf("\t\tE%d\t", i);
     info_event(t, &t->events[i]);
   }
 
@@ -69,40 +69,40 @@ void info_thread(Thread* t) {
 
   printf("\tLoops {.nb_loops: %d, .nb_allocated_loops: %d}\n", t->nb_loops, t->nb_allocated_loops);
   for (unsigned i = 0; i < t->nb_loops; i++) {
-    printf("\t\tL%x\t", i);
+    printf("\t\tL%d\t", i);
     info_loop(&t->loops[i]);
   }
 }
 
 void info_archive(Archive* archive) {
-  printf("Archive %x:\n", archive->id);
+  printf("Archive %d:\n", archive->id);
   printf("\tdir_name:   %s\n", archive->dir_name);
   printf("\ttrace_name: %s\n", archive->trace_name);
   printf("\tfullpath:   %s\n", archive->fullpath);
   printf("\n");
-  printf("\tglobal_archive: %x\n", archive->global_archive ? (int)archive->global_archive->id : -1);
+  printf("\tglobal_archive: %d\n", archive->global_archive ? (int)archive->global_archive->id : -1);
 
   printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
   for (auto& string : archive->definitions.strings) {
-    printf("\t\t%x: '%s'\n", string.string_ref, string.str);
+    printf("\t\t%d: '%s'\n", string.string_ref, string.str);
   }
 
   printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
   for (unsigned i = 0; i < archive->definitions.regions.size(); i++) {
-    printf("\t\t%x: %x ('%s')\n", archive->definitions.regions[i].region_ref,
+    printf("\t\t%d: %d ('%s')\n", archive->definitions.regions[i].region_ref,
            archive->definitions.regions[i].string_ref,
            archive->getString(archive->definitions.regions[i].string_ref)->str);
   }
 
   printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
   for (unsigned i = 0; i < archive->location_groups.size(); i++) {
-    printf("\t\t%x: %x ('%s'), parent: %x\n", archive->location_groups[i].id, archive->location_groups[i].name,
+    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->location_groups[i].id, archive->location_groups[i].name,
            archive->getString(archive->location_groups[i].name)->str, archive->location_groups[i].parent);
   }
 
   printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
   for (unsigned i = 0; i < archive->locations.size(); i++) {
-    printf("\t\t%x: %x ('%s'), parent: %x\n", archive->locations[i].id, archive->locations[i].name,
+    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->locations[i].id, archive->locations[i].name,
            archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
   }
 
@@ -112,7 +112,7 @@ void info_archive(Archive* archive) {
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {
       if (archive->threads[i]) {
-        printf("\t\t%x: {.archive=%x, .nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", archive->threads[i]->id,
+        printf("\t\t%d: {.archive=%d, .nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", archive->threads[i]->id,
                archive->threads[i]->archive->id, archive->threads[i]->nb_events, archive->threads[i]->nb_sequences,
                archive->threads[i]->nb_loops);
       }

@@ -71,17 +71,17 @@ void Thread::printToken(Token token) const {
   case TypeEvent: {
 #define ET2C(et) (((et) == PALLAS_EVENT_ENTER ? 'E' : (et) == PALLAS_EVENT_LEAVE ? 'L' : 'S'))
     Event* event = getEvent(token);
-    printf("E%x_%c", token.id, ET2C(event->record));
+    printf("E%d_%c", token.id, ET2C(event->record));
     break;
   }
   case TypeSequence:
-    printf("S%x", token.id);
+    printf("S%d", token.id);
     break;
   case TypeLoop:
-    printf("L%x", token.id);
+    printf("L%d", token.id);
     break;
   default:
-    printf("U%x_%x", token.type, token.id);
+    printf("U%d_%d", token.type, token.id);
     break;
   }
 }

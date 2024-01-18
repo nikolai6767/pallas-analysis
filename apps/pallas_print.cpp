@@ -136,7 +136,7 @@ static void print_token(const pallas::Thread* thread,
                         int depth = 0,
                         int last_one = 0,
                         const pallas::LoopOccurence* containing_loop = nullptr) {
-  pallas_log(pallas::DebugLevel::Verbose, "Reading repeated_token(%x.%x) for thread %s\n", t->type, t->id, thread->getName());
+  pallas_log(pallas::DebugLevel::Verbose, "Reading repeated_token(%d.%d) for thread %s\n", t->type, t->id, thread->getName());
   // Prints the structure of the sequences and the loops
   std::string current_indent;
   if (show_structure && depth >= 1) {
