@@ -521,6 +521,7 @@ extern "C" {
 
 
   /** Does a safe-ish realloc the the given buffer.
+   * Given the use of realloc, it does not call the constructor  of the newly created objects.
    *
    * Given a buffer, its current size, a new desired size and its containing object's datatype,
    * changes the size of the buffer using realloc, or if it fails, malloc and memmove, then frees the old buffer.
@@ -533,7 +534,7 @@ extern "C" {
 };
 #endif
 
-/** Doubles the memory allocated for the given buffer.
+/** Doubles the memory allocated for the given buffer. Does not call the constructor for the given objects.
  *
  * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
  * doubles the size of the buffer using realloc, or if it fails, malloc and memmove then frees the old buffer.
@@ -544,6 +545,20 @@ extern "C" {
     buffer = (datatype*) pallas_realloc((void*)buffer, counter, (counter)*2, sizeof(datatype)); \
     counter = (counter)*2;						\
   } while(0)
+
+/**
+ * Doubles the memory allocated for the given buffer and calls the constructor for the given objects.
+ *
+ * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
+ * creates a new buffer using C++'s new keyword, then copies the old data to that buffer, and frees the old buffer.
+ */
+#define DOUBLE_MEMORY_SPACE_CONSTRUCTOR(buffer, counter, datatype) do { \
+  auto new_buffer = new datatype[counter * 2]; \
+  std::copy(buffer, &buffer[counter], new_buffer);\
+  counter *= 2;\
+  delete[] buffer;\
+  buffer = new_buffer;\
+  } while (0)
 
 /** Increments the memory allocated for the given buffer by one.
  *

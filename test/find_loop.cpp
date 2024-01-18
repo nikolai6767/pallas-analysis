@@ -21,7 +21,7 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
 
   while (id > thread_trace->nb_allocated_events) {
     pallas_warn("Doubling mem space of events for thread trace %p\n", (void*)thread_trace);
-    DOUBLE_MEMORY_SPACE(thread_trace->events, thread_trace->nb_allocated_events, struct EventSummary);
+    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace->events, thread_trace->nb_allocated_events, struct EventSummary);
   }
   if (thread_trace->nb_events < id + 1) {
     thread_trace->nb_events = id + 1;

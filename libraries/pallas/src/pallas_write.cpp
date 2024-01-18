@@ -71,7 +71,7 @@ Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
   if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
     pallas_warn("Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
                 thread_trace.nb_allocated_loops);
-    DOUBLE_MEMORY_SPACE(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
+    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
   }
 
   auto* cur_seq = getCurrentSequence();
@@ -757,7 +757,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   if (nb_events >= nb_allocated_events) {
     pallas_warn("Doubling mem space of events for thread trace %p\n", this);
-    DOUBLE_MEMORY_SPACE(events, nb_allocated_events, EventSummary);
+    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(events, nb_allocated_events, EventSummary);
   }
 
   TokenId index = nb_events++;
