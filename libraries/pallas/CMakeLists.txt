@@ -21,7 +21,7 @@ set(PALLAS_HEADERS
         include/pallas/pallas.h
         include/pallas/pallas_hash.h
         include/pallas/pallas_linked_vector.h
-	include/pallas/pallas_parameter_handler.h
+	    include/pallas/pallas_parameter_handler.h
         include/pallas/pallas_read.h
         include/pallas/pallas_storage.h
         include/pallas/pallas_timestamp.h
@@ -49,6 +49,7 @@ target_include_directories(pallas
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         include
+        ${zstd_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
         ${CMAKE_CURRENT_BINARY_DIR}/include/pallas/
 )
