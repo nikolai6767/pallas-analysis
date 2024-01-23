@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 include_directories(${CMAKE_SOURCE_DIR}/src/)
-link_libraries(pallas zstd)
+link_libraries(pallas)
 configure_file(../config.json config.json COPYONLY)
 
 add_executable(pallas_print pallas_print.cpp)

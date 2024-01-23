@@ -33,8 +33,8 @@ option(ENABLE_ZFP "Enables compression using the ZFP lib" ON)
 # find_program(MPICC mpicc REQUIRED)
 # endif()
 
-find_package(zstd REQUIRED)
 find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZSTD libzstd REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 find_package(Doxygen)
 
