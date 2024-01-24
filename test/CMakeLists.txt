@@ -5,7 +5,9 @@ enable_testing()
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wno-sign-compare)
 include_directories(${CMAKE_SOURCE_DIR}/src/)
-link_libraries(pallas)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+link_libraries(pallas Threads::Threads)
 configure_file(../config.json config.json COPYONLY)
 
 #####################################################
