@@ -16,7 +16,7 @@ set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already (but later on when installing)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}") # the RPATH to be used when installing
-
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # CMakeFind repository
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
 
@@ -81,7 +81,6 @@ if (ENABLE_SZ)
     find_package(SZ)
     if (SZ_FOUND)
         add_compile_definitions(WITH_SZ)
-	link_libraries(${SZ_LIBRARIES})
     endif ()
 endif (ENABLE_SZ)
 
