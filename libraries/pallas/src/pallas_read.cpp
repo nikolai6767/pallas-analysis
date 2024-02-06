@@ -160,7 +160,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, int occu
   sequenceOccurence.full_sequence = nullptr;
   sequenceOccurence.savestate = new Savestate(this);
 
-  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
+//  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
 };
 
@@ -349,7 +349,6 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
         referential_timestamp += occurence.duration;
       }
-      tokenCount[token]++;
       break;
     }
     case TypeLoop: {
@@ -378,7 +377,6 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       }
       leaveBlock();
 
-      tokenCount[token]++;
       break;
     }
     case TypeSequence: {
@@ -392,6 +390,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
     default:
       pallas_error("Invalid token type\n;");
     }
+    tokenCount[token]++;
   }
   return outputVector;
 }
