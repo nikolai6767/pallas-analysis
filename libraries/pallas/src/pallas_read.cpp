@@ -292,11 +292,6 @@ void ThreadReader::updateReadCurToken() {
   switch (current_token.type) {
   case TypeSequence: {
     tokenCount[current_token]++;
-    if (current_token.id == 2 && tokenCount[current_token] > 2) {
-      printf("%d\n", tokenCount[current_token]);
-      // DO Someting
-      printf("hoi");
-    }
     enterBlock(current_token);
     break;
   }
