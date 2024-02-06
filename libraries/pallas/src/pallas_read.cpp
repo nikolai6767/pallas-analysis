@@ -160,7 +160,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, int occu
   sequenceOccurence.full_sequence = nullptr;
   sequenceOccurence.savestate = new Savestate(this);
 
-  auto tokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace);
+  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
 };
 

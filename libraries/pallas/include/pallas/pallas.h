@@ -53,7 +53,7 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
  * TypeLoop = 'L'
  * 'U' otherwise
  */
-#define PALLAS_TOKEN_TYPE_C(t)        \
+#define PALLAS_TOKEN_TYPE_C(t)     \
   (t.type) == TypeInvalid    ? 'I' \
   : (t.type) == TypeEvent    ? 'E' \
   : (t.type) == TypeSequence ? 'S' \
@@ -130,64 +130,64 @@ enum EventType {
  * Enumeration of the different events that are recorded by Pallas
  */
 enum Record {
-  PALLAS_EVENT_BUFFER_FLUSH = 0,                      /**< Event record identifier for the BufferFlush event. */
-  PALLAS_EVENT_MEASUREMENT_ON_OFF = 1,                /**< Event record identifier for the MeasurementOnOff event. */
-  PALLAS_EVENT_ENTER = 2,                             /**< Event record identifier for the Enter event. */
-  PALLAS_EVENT_LEAVE = 3,                             /**< Event record identifier for the Leave event. */
-  PALLAS_EVENT_MPI_SEND = 4,                          /**< Event record identifier for the MpiSend event. */
-  PALLAS_EVENT_MPI_ISEND = 5,                         /**< Event record identifier for the MpiIsend event. */
-  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,                /**< Event record identifier for the MpiIsendComplete event. */
-  PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                 /**< Event record identifier for the MpiIrecvRequest event. */
-  PALLAS_EVENT_MPI_RECV = 8,                          /**< Event record identifier for the MpiRecv event. */
-  PALLAS_EVENT_MPI_IRECV = 9,                         /**< Event record identifier for the MpiIrecv event. */
-  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                 /**< Event record identifier for the MpiRequestTest event. */
-  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,            /**< Event record identifier for the MpiRequestCancelled event. */
-  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,             /**< Event record identifier for the MpiCollectiveBegin event. */
-  PALLAS_EVENT_MPI_COLLECTIVE_END = 13,               /**< Event record identifier for the MpiCollectiveEnd event. */
-  PALLAS_EVENT_OMP_FORK = 14,                         /**< Event record identifier for the OmpFork event. */
-  PALLAS_EVENT_OMP_JOIN = 15,                         /**< Event record identifier for the OmpJoin event. */
-  PALLAS_EVENT_OMP_ACQUIRE_LOCK = 16,                 /**< Event record identifier for the OmpAcquireLock event. */
-  PALLAS_EVENT_OMP_RELEASE_LOCK = 17,                 /**< Event record identifier for the OmpReleaseLock event. */
-  PALLAS_EVENT_OMP_TASK_CREATE = 18,                  /**< Event record identifier for the OmpTaskCreate event. */
-  PALLAS_EVENT_OMP_TASK_SWITCH = 19,                  /**< Event record identifier for the OmpTaskSwitch event. */
-  PALLAS_EVENT_OMP_TASK_COMPLETE = 20,                /**< Event record identifier for the OmpTaskComplete event. */
-  PALLAS_EVENT_METRIC = 21,                           /**< Event record identifier for the Metric event. */
-  PALLAS_EVENT_PARAMETER_STRING = 22,                 /**< Event record identifier for the ParameterString event. */
-  PALLAS_EVENT_PARAMETER_INT = 23,                    /**< Event record identifier for the ParameterInt event. */
-  PALLAS_EVENT_PARAMETER_UNSIGNED_INT = 24,           /**< Event record identifier for the ParameterUnsignedInt event. */
-  PALLAS_EVENT_THREAD_FORK = 25,                      /**< Event record identifier for the ThreadFork event. */
-  PALLAS_EVENT_THREAD_JOIN = 26,                      /**< Event record identifier for the ThreadJoin event. */
-  PALLAS_EVENT_THREAD_TEAM_BEGIN = 27,                /**< Event record identifier for the ThreadTeamBegin event. */
-  PALLAS_EVENT_THREAD_TEAM_END = 28,                  /**< Event record identifier for the ThreadTeamEnd event. */
-  PALLAS_EVENT_THREAD_ACQUIRE_LOCK = 29,              /**< Event record identifier for the ThreadAcquireLock event. */
-  PALLAS_EVENT_THREAD_RELEASE_LOCK = 30,              /**< Event record identifier for the ThreadReleaseLock event. */
-  PALLAS_EVENT_THREAD_TASK_CREATE = 31,               /**< Event record identifier for the ThreadTaskCreate event. */
-  PALLAS_EVENT_THREAD_TASK_SWITCH = 32,               /**< Event record identifier for the ThreadTaskSwitch event. */
-  PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,             /**< Event record identifier for the ThreadTaskComplete event. */
-  PALLAS_EVENT_THREAD_CREATE = 34,                    /**< Event record identifier for the ThreadCreate event. */
-  PALLAS_EVENT_THREAD_BEGIN = 35,                     /**< Event record identifier for the ThreadBegin event. */
-  PALLAS_EVENT_THREAD_WAIT = 36,                      /**< Event record identifier for the ThreadWait event. */
-  PALLAS_EVENT_THREAD_END = 37,                       /**< Event record identifier for the ThreadEnd event. */
-  PALLAS_EVENT_IO_CREATE_HANDLE = 38,                 /**< Event record identifier for the IoCreateHandle event. */
-  PALLAS_EVENT_IO_DESTROY_HANDLE = 39,                /**< Event record identifier for the IoDestroyHandle event. */
-  PALLAS_EVENT_IO_SEEK = 41,                          /**< Event record identifier for the IoSeek event. */
-  PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,           /**< Event record identifier for the IoChangeStatusFlags event. */
-  PALLAS_EVENT_IO_DELETE_FILE = 43,                   /**< Event record identifier for the IoDeleteFile event. */
-  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,               /**< Event record identifier for the IoOperationBegin event. */
-  PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,              /**< Event record identifier for the IoDuplicateHandle event. */
-  PALLAS_EVENT_IO_OPERATION_TEST = 45,                /**< Event record identifier for the IoOperationTest event. */
-  PALLAS_EVENT_IO_OPERATION_ISSUED = 46,              /**< Event record identifier for the IoOperationIssued event. */
-  PALLAS_EVENT_IO_OPERATION_COMPLETE = 47,            /**< Event record identifier for the IoOperationComplete event. */
-  PALLAS_EVENT_IO_OPERATION_CANCELLED = 48,           /**< Event record identifier for the IoOperationCancelled event. */
-  PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                  /**< Event record identifier for the IoAcquireLock event. */
-  PALLAS_EVENT_IO_RELEASE_LOCK = 50,                  /**< Event record identifier for the IoReleaseLock event. */
-  PALLAS_EVENT_IO_TRY_LOCK = 51,                      /**< Event record identifier for the IoTryLock event. */
-  PALLAS_EVENT_PROGRAM_BEGIN = 52,                    /**< Event record identifier for the ProgramBegin event. */
-  PALLAS_EVENT_PROGRAM_END = 53,                      /**< Event record identifier for the ProgramEnd event. */
-  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54,  /**< Event record identifier for the NonBlockingCollectiveRequest
-                                                    * event. */
+  PALLAS_EVENT_BUFFER_FLUSH = 0,                     /**< Event record identifier for the BufferFlush event. */
+  PALLAS_EVENT_MEASUREMENT_ON_OFF = 1,               /**< Event record identifier for the MeasurementOnOff event. */
+  PALLAS_EVENT_ENTER = 2,                            /**< Event record identifier for the Enter event. */
+  PALLAS_EVENT_LEAVE = 3,                            /**< Event record identifier for the Leave event. */
+  PALLAS_EVENT_MPI_SEND = 4,                         /**< Event record identifier for the MpiSend event. */
+  PALLAS_EVENT_MPI_ISEND = 5,                        /**< Event record identifier for the MpiIsend event. */
+  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,               /**< Event record identifier for the MpiIsendComplete event. */
+  PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                /**< Event record identifier for the MpiIrecvRequest event. */
+  PALLAS_EVENT_MPI_RECV = 8,                         /**< Event record identifier for the MpiRecv event. */
+  PALLAS_EVENT_MPI_IRECV = 9,                        /**< Event record identifier for the MpiIrecv event. */
+  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                /**< Event record identifier for the MpiRequestTest event. */
+  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,           /**< Event record identifier for the MpiRequestCancelled event. */
+  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,            /**< Event record identifier for the MpiCollectiveBegin event. */
+  PALLAS_EVENT_MPI_COLLECTIVE_END = 13,              /**< Event record identifier for the MpiCollectiveEnd event. */
+  PALLAS_EVENT_OMP_FORK = 14,                        /**< Event record identifier for the OmpFork event. */
+  PALLAS_EVENT_OMP_JOIN = 15,                        /**< Event record identifier for the OmpJoin event. */
+  PALLAS_EVENT_OMP_ACQUIRE_LOCK = 16,                /**< Event record identifier for the OmpAcquireLock event. */
+  PALLAS_EVENT_OMP_RELEASE_LOCK = 17,                /**< Event record identifier for the OmpReleaseLock event. */
+  PALLAS_EVENT_OMP_TASK_CREATE = 18,                 /**< Event record identifier for the OmpTaskCreate event. */
+  PALLAS_EVENT_OMP_TASK_SWITCH = 19,                 /**< Event record identifier for the OmpTaskSwitch event. */
+  PALLAS_EVENT_OMP_TASK_COMPLETE = 20,               /**< Event record identifier for the OmpTaskComplete event. */
+  PALLAS_EVENT_METRIC = 21,                          /**< Event record identifier for the Metric event. */
+  PALLAS_EVENT_PARAMETER_STRING = 22,                /**< Event record identifier for the ParameterString event. */
+  PALLAS_EVENT_PARAMETER_INT = 23,                   /**< Event record identifier for the ParameterInt event. */
+  PALLAS_EVENT_PARAMETER_UNSIGNED_INT = 24,          /**< Event record identifier for the ParameterUnsignedInt event. */
+  PALLAS_EVENT_THREAD_FORK = 25,                     /**< Event record identifier for the ThreadFork event. */
+  PALLAS_EVENT_THREAD_JOIN = 26,                     /**< Event record identifier for the ThreadJoin event. */
+  PALLAS_EVENT_THREAD_TEAM_BEGIN = 27,               /**< Event record identifier for the ThreadTeamBegin event. */
+  PALLAS_EVENT_THREAD_TEAM_END = 28,                 /**< Event record identifier for the ThreadTeamEnd event. */
+  PALLAS_EVENT_THREAD_ACQUIRE_LOCK = 29,             /**< Event record identifier for the ThreadAcquireLock event. */
+  PALLAS_EVENT_THREAD_RELEASE_LOCK = 30,             /**< Event record identifier for the ThreadReleaseLock event. */
+  PALLAS_EVENT_THREAD_TASK_CREATE = 31,              /**< Event record identifier for the ThreadTaskCreate event. */
+  PALLAS_EVENT_THREAD_TASK_SWITCH = 32,              /**< Event record identifier for the ThreadTaskSwitch event. */
+  PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,            /**< Event record identifier for the ThreadTaskComplete event. */
+  PALLAS_EVENT_THREAD_CREATE = 34,                   /**< Event record identifier for the ThreadCreate event. */
+  PALLAS_EVENT_THREAD_BEGIN = 35,                    /**< Event record identifier for the ThreadBegin event. */
+  PALLAS_EVENT_THREAD_WAIT = 36,                     /**< Event record identifier for the ThreadWait event. */
+  PALLAS_EVENT_THREAD_END = 37,                      /**< Event record identifier for the ThreadEnd event. */
+  PALLAS_EVENT_IO_CREATE_HANDLE = 38,                /**< Event record identifier for the IoCreateHandle event. */
+  PALLAS_EVENT_IO_DESTROY_HANDLE = 39,               /**< Event record identifier for the IoDestroyHandle event. */
+  PALLAS_EVENT_IO_SEEK = 41,                         /**< Event record identifier for the IoSeek event. */
+  PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,          /**< Event record identifier for the IoChangeStatusFlags event. */
+  PALLAS_EVENT_IO_DELETE_FILE = 43,                  /**< Event record identifier for the IoDeleteFile event. */
+  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,              /**< Event record identifier for the IoOperationBegin event. */
+  PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,             /**< Event record identifier for the IoDuplicateHandle event. */
+  PALLAS_EVENT_IO_OPERATION_TEST = 45,               /**< Event record identifier for the IoOperationTest event. */
+  PALLAS_EVENT_IO_OPERATION_ISSUED = 46,             /**< Event record identifier for the IoOperationIssued event. */
+  PALLAS_EVENT_IO_OPERATION_COMPLETE = 47,           /**< Event record identifier for the IoOperationComplete event. */
+  PALLAS_EVENT_IO_OPERATION_CANCELLED = 48,          /**< Event record identifier for the IoOperationCancelled event. */
+  PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                 /**< Event record identifier for the IoAcquireLock event. */
+  PALLAS_EVENT_IO_RELEASE_LOCK = 50,                 /**< Event record identifier for the IoReleaseLock event. */
+  PALLAS_EVENT_IO_TRY_LOCK = 51,                     /**< Event record identifier for the IoTryLock event. */
+  PALLAS_EVENT_PROGRAM_BEGIN = 52,                   /**< Event record identifier for the ProgramBegin event. */
+  PALLAS_EVENT_PROGRAM_END = 53,                     /**< Event record identifier for the ProgramEnd event. */
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54, /**< Event record identifier for the NonBlockingCollectiveRequest
+                                                      * event. */
   PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55, /**< Event record identifier for the NonBlockingCollectiveComplete
-                                                    * event. */
+                                                       * event. */
   PALLAS_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
   PALLAS_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
 
@@ -277,8 +277,9 @@ typedef struct Sequence {
   [[nodiscard]] size_t size() const { return tokens.size(); }
   /** Getter for #tokenCount.
    * If need be, counts the number of Token in that Sequence to initialize it.
+   * alreadyReadTokens is used when you read the trace, it's supposed to be threadReader.tokenCount.
    * @returns Reference to #tokenCount.*/
-  const TokenCountMap& getTokenCount(const struct Thread* thread);
+  const TokenCountMap& getTokenCount(const struct Thread* thread, const TokenCountMap* alreadyReadTokens = nullptr);
 #endif
 } Sequence;
 
@@ -317,10 +318,11 @@ typedef struct EventSummary {
 #endif
 } EventSummary;
 
-typedef uint32_t ThreadId;                                          /**< Reference for a pallas::Thread. */
+typedef uint32_t ThreadId;                                                   /**< Reference for a pallas::Thread. */
 #define PALLAS_THREAD_ID_INVALID ((PALLAS(ThreadId))PALLAS_UNDEFINED_UINT32) /**< Invalid ThreadId. */
-typedef uint32_t LocationGroupId;                                   /**< Reference for a pallas::LocationGroup. */
-#define PALLAS_LOCATION_GROUP_ID_INVALID ((PALLAS(LocationGroupId))PALLAS_UNDEFINED_UINT32) /**< Invalid LocationGroupId. */
+typedef uint32_t LocationGroupId; /**< Reference for a pallas::LocationGroup. */
+#define PALLAS_LOCATION_GROUP_ID_INVALID \
+  ((PALLAS(LocationGroupId))PALLAS_UNDEFINED_UINT32) /**< Invalid LocationGroupId. */
 #define PALLAS_MAIN_LOCATION_GROUP_ID ((PALLAS(LocationGroupId))PALLAS_LOCATION_GROUP_ID_INVALID - 1)
 /**< Main LocationGroupId \todo What is that ?*/
 
@@ -378,7 +380,7 @@ typedef struct Attribute {
   AttributeRef attribute_ref; /**< Id of that Attribute. */
   StringRef name;             /**< Name of that Attribute. */
   StringRef description;      /**< Description of that Attribute. */
-  pallas_type_t type;            /**< Type of that Attribute. */
+  pallas_type_t type;         /**< Type of that Attribute. */
 } Attribute;
 
 /**
@@ -447,7 +449,7 @@ typedef struct Thread {
 
   // Make sure this object is never copied
   Thread(const Thread&) = delete;
-  void operator=(const Thread&) = delete; 
+  void operator=(const Thread&) = delete;
 #endif
 } Thread;
 
@@ -472,7 +474,8 @@ extern "C" {
   /**
    * Print the subset of a repeated_token array
    */
-  extern void pallas_print_token_array(PALLAS(Thread) * thread, PALLAS(Token) * token_array, int index_start, int index_stop);
+  extern void pallas_print_token_array(PALLAS(Thread) * thread, PALLAS(Token) * token_array, int index_start,
+                                       int index_stop);
 
   /**
    * Print a repeated_token
@@ -519,7 +522,6 @@ extern "C" {
   /** Returns the number of loops for the nth loop. */
   extern size_t pallas_loop_get_count(PALLAS(Loop) * loop, size_t index);
 
-
   /** Does a safe-ish realloc the the given buffer.
    * Given the use of realloc, it does not call the constructor  of the newly created objects.
    *
@@ -541,10 +543,11 @@ extern "C" {
  * This is better than a realloc because it moves the data around, but it is also slower.
  * Checks for error at malloc.
  */
-#define DOUBLE_MEMORY_SPACE(buffer, counter, datatype) do {		\
-    buffer = (datatype*) pallas_realloc((void*)buffer, counter, (counter)*2, sizeof(datatype)); \
-    counter = (counter)*2;						\
-  } while(0)
+#define DOUBLE_MEMORY_SPACE(buffer, counter, datatype)                                           \
+  do {                                                                                           \
+    buffer = (datatype*)pallas_realloc((void*)buffer, counter, (counter) * 2, sizeof(datatype)); \
+    counter = (counter) * 2;                                                                     \
+  } while (0)
 
 /**
  * Doubles the memory allocated for the given buffer and calls the constructor for the given objects.
@@ -552,12 +555,13 @@ extern "C" {
  * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
  * creates a new buffer using C++'s new keyword, then copies the old data to that buffer, and frees the old buffer.
  */
-#define DOUBLE_MEMORY_SPACE_CONSTRUCTOR(buffer, counter, datatype) do { \
-  auto new_buffer = new datatype[counter * 2]; \
-  std::copy(buffer, &buffer[counter], new_buffer);\
-  counter *= 2;\
-  delete[] buffer;\
-  buffer = new_buffer;\
+#define DOUBLE_MEMORY_SPACE_CONSTRUCTOR(buffer, counter, datatype) \
+  do {                                                             \
+    auto new_buffer = new datatype[counter * 2];                   \
+    std::copy(buffer, &buffer[counter], new_buffer);               \
+    counter *= 2;                                                  \
+    delete[] buffer;                                               \
+    buffer = new_buffer;                                           \
   } while (0)
 
 /** Increments the memory allocated for the given buffer by one.
@@ -567,10 +571,11 @@ extern "C" {
  * This is better than a realloc because it moves the data around, but it is also slower.
  * Checks for error at malloc.
  */
-#define INCREMENT_MEMORY_SPACE(buffer, counter, datatype) do {		\
-  buffer = (datatype*) pallas_realloc((void*)buffer, counter, (counter)+1, sizeof(datatype)); \
-  counter = (counter) + 1;						\
-} while(0)
+#define INCREMENT_MEMORY_SPACE(buffer, counter, datatype)                                        \
+  do {                                                                                           \
+    buffer = (datatype*)pallas_realloc((void*)buffer, counter, (counter) + 1, sizeof(datatype)); \
+    counter = (counter) + 1;                                                                     \
+  } while (0)
 
 /**
  * Primitive for DOFOR loops
