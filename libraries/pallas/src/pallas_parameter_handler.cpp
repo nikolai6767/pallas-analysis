@@ -210,7 +210,7 @@ ParameterHandler::ParameterHandler() {
   }
   pallas_log(DebugLevel::Debug, "Loading configuration file from %s\n", possibleConfigFileName);
   configFile.open(possibleConfigFileName);
-  if (!configFile.good()) {
+  if (!configFile.good() && possibleConfigFileName != defaultPath) {
     pallas_warn("Config file didn't exist: %s.\n", possibleConfigFileName);
     return;
   }
