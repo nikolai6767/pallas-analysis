@@ -148,8 +148,7 @@ function trace_get_nb_event_of_type {
     "$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |
       grep -E "^[[:space:]]+[[:digit:]]" |
       awk '{$1=""; $2=""}1' |
-      grep -E "^[[:space:]]+$event_type" |
-      wc -l
+      grep -E -c "^[[:space:]]+$event_type"
 }
 
 function trace_get_nb_function {
@@ -161,8 +160,7 @@ function trace_get_nb_function {
       grep -E "^[[:space:]]+[[:digit:]]" |
       awk '{$1=""; $2=""}1' |
       grep -E "^[[:space:]]+$event_type" |
-      grep -E "\($function_name\)" |
-      wc -l
+      grep -E -c "\($function_name\)"
 }
 
 function trace_check_existence {
