@@ -17,8 +17,8 @@ static short store_timestamps = 1;
 
 static bool print_timestamp = true;
 static bool print_duration = false;
-static bool unroll_loops = false;
-static bool explore_loop_sequences = false;
+static bool unroll_loops = true;
+static bool explore_loop_sequences = true;
 static bool verbose = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
@@ -338,6 +338,8 @@ int main(int argc, char** argv) {
       nb_opts++;
     } else if (!strcmp(argv[i], "-S")) {
       show_structure = true;
+      unroll_loops = false;
+      explore_loop_sequences = false;
       nb_opts++;
     } else if (!strcmp(argv[i], "-d")) {
       print_duration = true;
