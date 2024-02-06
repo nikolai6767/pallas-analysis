@@ -113,7 +113,7 @@ bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
 bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   if (loop_id.type == TypeLoop) {
     auto* loop = thread_trace->getLoop(loop_id);
-    return current_index >= loop->nb_iterations.back();
+    return current_index >= loop->nb_iterations[tokenCount.get_value(loop_id) - 1];
     // We are in a loop and index is beyond the number of iterations
   }
   pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
@@ -160,7 +160,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, int occu
   sequenceOccurence.full_sequence = nullptr;
   sequenceOccurence.savestate = new Savestate(this);
 
-//  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
+  //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
 };
 
@@ -292,6 +292,11 @@ void ThreadReader::updateReadCurToken() {
   switch (current_token.type) {
   case TypeSequence: {
     tokenCount[current_token]++;
+    if (current_token.id == 2 && tokenCount[current_token] > 2) {
+      printf("%d\n", tokenCount[current_token]);
+      // DO Someting
+      printf("hoi");
+    }
     enterBlock(current_token);
     break;
   }
@@ -421,7 +426,9 @@ Savestate::Savestate(const ThreadReader* reader) {
 }
 } /* namespace pallas */
 
-pallas::ThreadReader* pallas_new_thread_reader(const pallas::Archive* archive, pallas::ThreadId thread_id, int options) {
+pallas::ThreadReader* pallas_new_thread_reader(const pallas::Archive* archive,
+                                               pallas::ThreadId thread_id,
+                                               int options) {
   return new pallas::ThreadReader(archive, thread_id, options);
 }
 
@@ -449,7 +456,9 @@ pallas::Token pallas_read_thread_cur_token(const pallas::ThreadReader* reader) {
   return reader->getCurToken();
 }
 
-pallas::Occurence* pallas_thread_reader_get_occurence(const pallas::ThreadReader* reader, pallas::Token id, int occurence_id) {
+pallas::Occurence* pallas_thread_reader_get_occurence(const pallas::ThreadReader* reader,
+                                                      pallas::Token id,
+                                                      int occurence_id) {
   return reader->getOccurence(id, occurence_id);
 }
 
