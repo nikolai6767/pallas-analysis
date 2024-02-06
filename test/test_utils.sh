@@ -3,8 +3,12 @@
 CUR_PATH=$(dirname  $(realpath $0))
 cd "$CUR_PATH"
 
-[ -n "$PALLAS_PRINT_PATH" ]    || export PALLAS_PRINT_PATH=pallas_print
-[ -n "$PALLAS_INFO_PATH" ]    || export PALLAS_INFO_PATH=pallas_info
+if [ $# -gt 0 ]; then
+    BUILD_DIR=$1
+fi
+
+[ -n "$PALLAS_PRINT_PATH" ]    || export PALLAS_PRINT_PATH=$BUILD_DIR/apps/pallas_print
+[ -n "$PALLAS_INFO_PATH" ]    || export PALLAS_INFO_PATH=$BUILD_DIR/apps/pallas_info
 
 
 C_BLACK='\033[0;30m'
@@ -174,6 +178,7 @@ function trace_check_pallas_print {
 
     ((nb_test++))
     echo " > Checking if pallas_print works"
+    echo "$PALLAS_PRINT_PATH"
 
     if ! "$PALLAS_PRINT_PATH" "$trace_filename"  > /dev/null 2>&1 ; then
 	print_error "Cannot parse trace '$trace_filename'"
