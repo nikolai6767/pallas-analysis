@@ -212,7 +212,6 @@ ParameterHandler::ParameterHandler() {
   configFile.open(possibleConfigFileName);
   if (!configFile.good()) {
     pallas_warn("Config file didn't exist: %s.\n", possibleConfigFileName);
-    pallas_warn("Using the default one: %s\n", to_string().c_str());
     return;
   }
 
@@ -228,7 +227,7 @@ ParameterHandler::ParameterHandler() {
   zstdCompressionLevel = loadZSTDCompressionLevel(config);
   timestampStorage = loadTimestampStorageConfig(config);
 
-  pallas_log(pallas::DebugLevel::Verbose, "%s\n", to_string().c_str());
+  pallas_log(pallas::DebugLevel::Normal, "%s\n", to_string().c_str());
 }
 
 size_t ParameterHandler::getMaxLoopLength() const {
