@@ -36,7 +36,7 @@ trace_check_enter_leave_parity "$trace_filename"
 trace_check_nb_function "$trace_filename" function_0 $(expr $niter \* $nthread)
 trace_check_nb_function "$trace_filename" function_1 $(expr $niter \* $nthread)
 
-#rm -rf "${test_program}_trace"
+rm -rf "${test_program}_trace"
 
 
 # Run the benchmark again with a logical clock
@@ -67,7 +67,7 @@ trace_check_timestamp_values "$trace_filename" thread_1
 trace_check_timestamp_values "$trace_filename" thread_2
 trace_check_timestamp_values "$trace_filename" thread_3
 
-#rm -rf "${test_program}_trace"
+rm -rf "${test_program}_trace"
 
 echo "results: $nb_pass pass, $nb_failed failed"
 if [ $nb_failed -gt 0 ]; then
