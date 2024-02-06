@@ -28,14 +28,14 @@ uint64_t loadUInt64FromConfig(Json::Value& config, std::string fieldName) {
   return UINT64_MAX;
 }
 
-std::string loadStringFromEnv(Json::Value& config, std::string envName) {
+std::string loadStringFromEnv(std::string envName) {
   const char* env_value = getenv(envName.c_str());
   if (env_value)
     return std::string(env_value);
   return "";
 }
 
-uint64_t loadUInt64FromEnv(Json::Value& config, std::string envName) {
+uint64_t loadUInt64FromEnv(std::string envName) {
   const char* env_value = getenv(envName.c_str());
   if (env_value) {
     return std::stoull(env_value);
@@ -72,11 +72,12 @@ pallas::CompressionAlgorithm compressionAlgorithmFromString(std::string str) {
 pallas::CompressionAlgorithm loadCompressionAlgorithmConfig(Json::Value& config) {
   pallas::CompressionAlgorithm ret = pallas::CompressionAlgorithm::None;
 
-  std::string value = loadStringFromEnv(config, "PALLAS_COMPRESSION");
-  if (value.empty()) {
+  std::string value = loadStringFromEnv("PALLAS_COMPRESSION");
+  if (value.empty() && ! config.empty()) {
     value = loadStringFromConfig(config, "compressionAlgorithm");
   }
-  ret = compressionAlgorithmFromString(value);
+  if (!value.empty())
+    ret = compressionAlgorithmFromString(value);
 
   return ret;
 }
@@ -104,11 +105,12 @@ pallas::EncodingAlgorithm encodingAlgorithmFromString(std::string str) {
 pallas::EncodingAlgorithm loadEncodingAlgorithmConfig(Json::Value& config) {
   pallas::EncodingAlgorithm ret = pallas::EncodingAlgorithm::None;
 
-  std::string value = loadStringFromEnv(config, "PALLAS_ENCODING");
-  if (value.empty()) {
+  std::string value = loadStringFromEnv("PALLAS_ENCODING");
+  if (value.empty() && ! config.empty()) {
     value = loadStringFromConfig(config, "encodingAlgorithm");
   }
-  ret = encodingAlgorithmFromString(value);
+  if (!value.empty())
+    ret = encodingAlgorithmFromString(value);
   return ret;
 }
 
@@ -136,40 +138,45 @@ pallas::LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str) {
 pallas::LoopFindingAlgorithm loadLoopFindingAlgorithmConfig(Json::Value& config) {
   pallas::LoopFindingAlgorithm ret = pallas::LoopFindingAlgorithm::BasicTruncated;
 
-  std::string value = loadStringFromEnv(config, "PALLAS_LOOP_FINDING");
-  if (value.empty()) {
+  std::string value = loadStringFromEnv("PALLAS_LOOP_FINDING");
+  if (value.empty() && ! config.empty()) {
     value = loadStringFromConfig(config, "loopFindingAlgorithm");
   }
-  ret = loopFindingAlgorithmFromString(value);
+  if (!value.empty())
+    ret = loopFindingAlgorithmFromString(value);
   return ret;
 }
 
 uint64_t loadMaxLoopLength(Json::Value& config) {
-  uint64_t ret = 100;
 
-  uint64_t value = loadUInt64FromEnv(config, "PALLAS_LOOP_LENGTH");
-  if (value == UINT64_MAX) {
+  uint64_t value = loadUInt64FromEnv("PALLAS_LOOP_LENGTH");
+  if (value == UINT64_MAX && ! config.empty()) {
     value = loadUInt64FromConfig(config, "maxLoopLength");
   }
 
+  if (value == UINT64_MAX) {
+    return 100;
+  }
   return value;
 }
 
 uint64_t loadZSTDCompressionLevel(Json::Value& config) {
-  uint64_t ret = 3;
 
-  uint64_t value = loadUInt64FromEnv(config, "PALLAS_ZSTD_LVL");
-  if (value == UINT64_MAX) {
+  uint64_t value = loadUInt64FromEnv("PALLAS_ZSTD_LVL");
+  if (value == UINT64_MAX && ! config.empty()) {
     value = loadUInt64FromConfig(config, "zstdCompressionLevel");
   }
-
+  if (value == UINT64_MAX) {
+    return 3;
+  }
   return value;
 }
 
-std::map<pallas::TimestampStorage, std::string> TimestampStorageMap = {{pallas::TimestampStorage::None, "None"},
-                                                                    {pallas::TimestampStorage::Delta, "Delta"},
-                                                                    {pallas::TimestampStorage::Timestamp, "Timestamp"},
-                                                                    {pallas::TimestampStorage::Invalid, "Invalid"}};
+std::map<pallas::TimestampStorage, std::string> TimestampStorageMap = {
+  {pallas::TimestampStorage::None, "None"},
+  {pallas::TimestampStorage::Delta, "Delta"},
+  {pallas::TimestampStorage::Timestamp, "Timestamp"},
+  {pallas::TimestampStorage::Invalid, "Invalid"}};
 
 std::string pallas::toString(pallas::TimestampStorage alg) {
   return TimestampStorageMap[alg];
@@ -187,11 +194,12 @@ pallas::TimestampStorage timestampStorageFromString(std::string str) {
 pallas::TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
   pallas::TimestampStorage ret = pallas::TimestampStorage::Delta;
 
-  std::string value = loadStringFromEnv(config, "PALLAS_TIMESTAMP_STORAGE");
-  if (value.empty()) {
+  std::string value = loadStringFromEnv("PALLAS_TIMESTAMP_STORAGE");
+  if (value.empty() && ! config.empty()) {
     value = loadStringFromConfig(config, "timestampStorage");
   }
-  ret = timestampStorageFromString(value);
+  if (!value.empty())
+    ret = timestampStorageFromString(value);
   return ret;
 }
 
@@ -216,7 +224,9 @@ ParameterHandler::ParameterHandler() {
   }
 
   Json::Value config;
-  configFile >> config;
+  if (configFile.good()) {
+    configFile >> config;
+  }
   configFile.close();
   /* Load from file */
 
