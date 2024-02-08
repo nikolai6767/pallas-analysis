@@ -3,8 +3,9 @@
 Pallas provides an interface to write and read trace data.
 
 ## Building
-
-```
+You need to have ZSTD and JSONCPP installed before you try to build this.
+To build and install, simply run:
+```bash
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALLATION_DIR
 make && make install
@@ -14,7 +15,7 @@ This will build and install `pallas_info` and `pallas_print`,
 which are tools made to read Pallas traces, as well as the Pallas library, and a modified OTF2 library.
 
 If you want to enable SZ and ZFP, you should install them, and then add `-DSZ_ROOT_DIR=<your SZ installation>`
-and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line.
+and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line. Documentation is built automatically if Doxygen is installed.
 
 ## Usage
 
