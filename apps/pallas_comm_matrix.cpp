@@ -44,7 +44,7 @@ void pop_data(pallas::Event* e, void* data, size_t data_size, byte*& cursor) {
        {
           byte* cursor = nullptr;
 
-          /* Get attributes of the MPI_SEND calls */
+          /* Get attributes of the MPI_SEND call */
           uint32_t receiver;
           uint32_t communicator;
           uint32_t msgTag;
@@ -55,8 +55,8 @@ void pop_data(pallas::Event* e, void* data, size_t data_size, byte*& cursor) {
           pop_data(&e.event, &msgTag, sizeof(msgTag), cursor);
           pop_data(&e.event, &msgLength, sizeof(msgLength), cursor);
 
-          /* Update comm matrix for the thread and receiver with the message size msgLength  */
-          matrix[i][receiver]+=msgLength;
+          /* Update comm matrix for the thread and receiver with the message size msgLength that happened nb_occurences times  */
+          matrix[i][receiver]+=msgLength*e.nb_occurences;
 
        }
     }
@@ -70,19 +70,27 @@ void save_matrix(std::string& filename, int** matrix, int size){
   std::ofstream outfile;
   outfile.open(filename.c_str());
 
+  /* Write the first line containing all the ranks id */
   for (int i=0; i<size; i++)
-    outfile<<i+1<<",";
+  {
+    outfile<<i+1;
+    if (i<size-1)
+      outfile<<",";
+  }
   outfile<<std::endl;
 
+
+  /* Write the content of the matrix rank by rank */
   for (int i = 0; i < size; i++) {
-      outfile<<i+1<<",";
       for (int j = 0; j < size; j++) {
           outfile << matrix[i][j];
           if (j<size-1)
-            outfile << ",";
+            outfile<< ",";
       }
       outfile<<std::endl;
   }
+
+  outfile.close();
 }
 
 
@@ -91,7 +99,7 @@ void usage(const std::string& prog_name) {
   std::cout<<std::endl<<"Usage: "<<prog_name<<" -t trace_file [OPTION] "<<std::endl;
    std::cout<<"\t-t FILE   --- Path to the Pallas trace file"<<std::endl;
    std::cout<<"\t[OPTION] -n OUTPUT_FILE   --- Name of the output file. Extension will be .mat. By default, the name of the file with be pallas_comm_matrix.mat"<<std::endl;
-   std::cout<<"\t[OPTION]-? -h   --- Display this help and exit"<<std::endl;
+   std::cout<<"\t[OPTION] -? -h   --- Display this help and exit"<<std::endl;
 }
 
 
@@ -152,7 +160,8 @@ int main(int argc, char** argv) {
   /* Save the matrix in the file */
   save_matrix(output_file, matrix,size);
 
-  delete matrix;
+  /* Free memory */
+  delete[] (matrix);
 
   return EXIT_SUCCESS;
 }
