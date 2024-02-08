@@ -5,25 +5,32 @@ Pallas provides an interface to write and read trace data.
 ## Building
 
 ```
-mkdir build && cd dir
+mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALLATION_DIR
-make -j 14 && make install
+make && make install
 ```
+
+This will build and install `pallas_info` and `pallas_print`,
+which are tools made to read Pallas traces, as well as the Pallas library, and a modified OTF2 library.
 
 If you want to enable SZ and ZFP, you should install them, and then add `-DSZ_ROOT_DIR=<your SZ installation>`
 and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line.
+
+## Usage
+
+After compiling Pallas, install [ezTrace](https://eztrace.gitlab.io/eztrace).
+Make sure to build it from source, and to use the Pallas OTF2 library, not the normal OTF2 library.
+You can check `which otf2-config` to see if you have the correct one. If not, check your PATH and LD_LIBRARY_PATH variables.
+
+Make sure to enable the relevant ezTrace modules.
+Then trace any program by running `mpirun -np N eztrace -t <your modules> <your programm>`.
+The trace file will be generated in the `<your programm>_trace` folder.
+You can then read it using `pallas_print <your programm>_trace/eztrace_log.pallas`
 
 ## About
 
 Pallas implements a subset of the [OTF2](https://www.vi-hps.org/projects/score-p) API.
 It also implements the [Murmur3 hashing function](https://github.com/PeterScott/murmur3).
-
-## Usage
-
-After compiling Pallas, install [ezTrace](https://eztrace.gitlab.io/eztrace).
-Make sure you enable the relevant modules, and make sure to have the compiled Pallas libs in your library path.
-Then trace any program by running `mpirun -np N eztrace -t <your modules> <your programm>`.
-The trace file will be generated in the `<your programm>_trace` folder.
 
 ## Configuration
 
