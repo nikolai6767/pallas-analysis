@@ -336,21 +336,22 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[i], "-T")) {
       per_thread = true;
       nb_opts++;
-    } else if (!strcmp(argv[i], "-S")) {
-      show_structure = true;
-      unroll_loops = false;
-      explore_loop_sequences = false;
-      nb_opts++;
     } else if (!strcmp(argv[i], "-d")) {
       print_duration = true;
       nb_opts++;
     } else if (!strcmp(argv[i], "-t")) {
       print_timestamp = false;
       nb_opts++;
-    } else if (!strcmp(argv[i], "-u")) {
+    } else if (!strcmp(argv[i], "-S")) {
+      per_thread = true;
+      show_structure = true;
+      unroll_loops = false;
+      explore_loop_sequences = false;
+      nb_opts++;
+    } else if (show_structure && !strcmp(argv[i], "-u")) {
       unroll_loops = true;
       nb_opts++;
-    } else if (!strcmp(argv[i], "-e")) {
+    } else if (show_structure && !strcmp(argv[i], "-e")) {
       explore_loop_sequences = true;
       nb_opts++;
     } else if (!strcmp(argv[i], "--no-timestamps")) {
@@ -367,15 +368,6 @@ int main(int argc, char** argv) {
        */
       break;
     }
-  }
-
-  if (show_structure) {
-    if(!per_thread) {
-      pallas_log(pallas::DebugLevel::Normal, "Structure mode is only available in Thread mode. Enabling the -T option\n");
-      per_thread = 1;
-    }
-  } else {
-    unroll_loops = true;
   }
 
   trace_name = argv[nb_opts + 1];
