@@ -11,9 +11,10 @@ This app can do three main things:
 - Print the structure of the trace, for each thread.
 
 Here's a list of the arguments one can provide:
+
 | Argument | Meaning                                                                                                                      |
 |----------|------------------------------------------------------------------------------------------------------------------------------|
-| -h, -?   | Prints a help menu.                                                                                                          |
+| -h / -?  | Prints a help menu.                                                                                                          |
 | -v       | Verbose / Debug mode.                                                                                                        |
 | -T       | Thread per thread mode.                                                                                                      |
 | -d       | Show durations.                                                                                                              |
