@@ -105,7 +105,7 @@ void ThreadWriter::storeTimestamp(EventSummary* es, pallas_timestamp_t ts) {
   }
 #endif
 
-  int store_event_durations = 1;  // TODO: make is optional
+  int store_event_durations = 1;
   if (store_event_durations) {
     // update the last event's duration
     if (last_duration) {
@@ -435,7 +435,6 @@ void ThreadWriter::recordExitFunction() {
   auto* seq = thread_trace.sequences[seq_id.id];
 
   pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
-  // TODO: update statistics on the sequence (min/max/avg duration)
   seq->durations->add(sequence_duration);
 
   pallas_log(DebugLevel::Debug, "Exiting a function, closing sequence %d (%p)\n", seq_id.id, cur_seq);
