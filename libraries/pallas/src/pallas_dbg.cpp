@@ -51,7 +51,7 @@ void pallas_debug_level_set(enum pallas::DebugLevel lvl) {
 }
 
 void pallas_debug_level_init() {
-  char* verbose_str = getenv("VERBOSE");
+  char* verbose_str = getenv("PALLAS_DEBUG_LVL");
   if (verbose_str) {
     enum pallas::DebugLevel lvl = pallas::DebugLevel::Verbose;
     if (strcmp(verbose_str, "error") == 0)
