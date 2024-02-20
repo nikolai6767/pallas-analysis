@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <utility>
 
 #ifdef WITH_ZFP
 #include <zfp.h>
@@ -21,10 +22,10 @@
 #include <sz.h>
 #endif
 
-#include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_hash.h"
+#include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
 
@@ -41,8 +42,14 @@ void pallas_storage_option_init() {
   if (store_hashing_str && strcmp(store_hashing_str, "FALSE") != 0)
     STORE_HASHING = 1;
 }
-static void _pallas_store_event(const char* base_dirname, pallas::Thread* th, pallas::EventSummary* e, pallas::Token event);
-static void _pallas_store_sequence(const char* base_dirname, pallas::Thread* th, pallas::Sequence* s, pallas::Token sequence);
+static void _pallas_store_event(const char* base_dirname,
+                                pallas::Thread* th,
+                                pallas::EventSummary* e,
+                                pallas::Token event);
+static void _pallas_store_sequence(const char* base_dirname,
+                                   pallas::Thread* th,
+                                   pallas::Sequence* s,
+                                   pallas::Token sequence);
 
 static void _pallas_store_loop(const char* base_dirname, pallas::Thread* th, pallas::Loop* l, pallas::Token loop);
 
@@ -53,8 +60,14 @@ static void _pallas_store_attributes(pallas::Archive* c);
 static void _pallas_store_location_groups(pallas::Archive* a);
 static void _pallas_store_locations(pallas::Archive* a);
 
-static void _pallas_read_event(const char* base_dirname, pallas::Thread* th, pallas::EventSummary* e, pallas::Token event);
-static void _pallas_read_sequence(const char* base_dirname, pallas::Thread* th, pallas::Sequence* s, pallas::Token sequence);
+static void _pallas_read_event(const char* base_dirname,
+                               pallas::Thread* th,
+                               pallas::EventSummary* e,
+                               pallas::Token event);
+static void _pallas_read_sequence(const char* base_dirname,
+                                  pallas::Thread* th,
+                                  pallas::Sequence* s,
+                                  pallas::Token sequence);
 static void _pallas_read_loop(const char* base_dirname, pallas::Thread* th, pallas::Loop* l, pallas::Token loop);
 
 static void _pallas_read_string(pallas::Archive* c, pallas::String* l, int string_index);
@@ -88,17 +101,17 @@ static FILE* _pallas_file_open(const char* filename, const char* mode) {
 }
 
 #define _pallas_fread(ptr, size, nmemb, stream)            \
-  do {                                                  \
-    size_t ret = fread(ptr, size, nmemb, stream);       \
-    if (ret != nmemb)                                   \
+  do {                                                     \
+    size_t ret = fread(ptr, size, nmemb, stream);          \
+    if (ret != nmemb)                                      \
       pallas_error("fread failed: %s\n", strerror(errno)); \
   } while (0)
 
-#define _pallas_fwrite(ptr, size, nmemb, stream)      \
+#define _pallas_fwrite(ptr, size, nmemb, stream)   \
   do {                                             \
     size_t ret = fwrite(ptr, size, nmemb, stream); \
     if (ret != nmemb)                              \
-      pallas_error("fwrite failed\n");                \
+      pallas_error("fwrite failed\n");             \
   } while (0)
 
 /******************* Read/Write/Compression function for vectors and arrays *******************/
@@ -363,7 +376,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     break;
   }
   default:
-      pallas_error("Invalid Encoding algorithm\n");
+    pallas_error("Invalid Encoding algorithm\n");
   }
 
   byte* compressedArray = nullptr;
@@ -400,7 +413,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     break;
 #endif
   default:
-      pallas_error("Invalid Compression algorithm\n");
+    pallas_error("Invalid Compression algorithm\n");
   }
 
   if (pallas::parameterHandler.getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
@@ -480,7 +493,7 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
     break;
 #endif
   default:
-      pallas_error("Invalid Compression algorithm\n");
+    pallas_error("Invalid Compression algorithm\n");
   }
 
   switch (encodingAlgorithm) {
@@ -504,7 +517,8 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
     pallas_error("Invalid Encoding algorithm\n");
   }
 
-  if (compressionAlgorithm == pallas::CompressionAlgorithm::None && encodingAlgorithm == pallas::EncodingAlgorithm::None) {
+  if (compressionAlgorithm == pallas::CompressionAlgorithm::None &&
+      encodingAlgorithm == pallas::EncodingAlgorithm::None) {
     size_t realSize;
     _pallas_fread(&realSize, sizeof(realSize), 1, file);
     uncompressedArray = new uint64_t[n];
@@ -537,32 +551,32 @@ void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) const 
   delete[] buffer;
 }
 
-pallas::LinkedVector::LinkedVector(FILE* file, size_t givenSize) {
-  size = givenSize;
+pallas::LinkedVector::LinkedVector(FILE* file, const char * filePath, size_t givenSize) {
+  this->filePath = filePath;
+  if (!givenSize) {
+    _pallas_fread(&size, sizeof(size), 1, file);
+  }
+  else {
+    size = givenSize;
+  }
   if (size) {
     _pallas_fread(&min, sizeof(min), 1, file);
     _pallas_fread(&max, sizeof(max), 1, file);
     _pallas_fread(&mean, sizeof(mean), 1, file);
-    auto temp = _pallas_compress_read(size, file);
-    last = new SubVector(size, temp);
+    last = nullptr;
     first = last;
-    last->size = size;
+    offset = ftell(file);
   }
 }
 
-pallas::LinkedVector::LinkedVector(FILE* file) {
-  _pallas_fread(&size, sizeof(size), 1, file);
-  if (size) {
-    _pallas_fread(&min, sizeof(min), 1, file);
-    _pallas_fread(&max, sizeof(max), 1, file);
-    _pallas_fread(&mean, sizeof(mean), 1, file);
-    auto temp = _pallas_compress_read(size, file);
-    last = new SubVector(size, temp);
-    first = last;
-    last->size = size;
-  }
+void pallas::LinkedVector::load_timestamps() {
+  pallas_log(DebugLevel::Debug, "Loading timestamps from %s\n", filePath);
+  FILE* file = _pallas_file_open(filePath, "r");
+  fseek(file, offset, 0);
+  auto temp = _pallas_compress_read(size, file);
+  last = new SubVector(size, temp);
+  first = last;
 }
-// TODO Find a way to delegate this ?
 
 /**************** Storage Functions ****************/
 
@@ -575,10 +589,10 @@ static const char* base_dirname(pallas::Archive* a) {
   return a->dir_name;
 }
 
-static FILE* _pallas_get_event_file(const char* base_dirname, pallas::Thread* th, pallas::Token event, const char* mode) {
-  char filename[1024];
+static const char* _pallas_get_event_filename(const char* base_dirname, pallas::Thread* th, pallas::Token event) {
+  char* filename = new char[1024];
   snprintf(filename, 1024, "%s/thread_%u/event_%d", base_dirname, th->id, event.id);
-  return _pallas_file_open(filename, mode);
+  return filename;
 }
 
 static void _pallas_store_attribute_values(pallas::EventSummary* e, FILE* file) {
@@ -623,8 +637,12 @@ static void _pallas_read_attribute_values(pallas::EventSummary* e, FILE* file) {
   }
 }
 
-static void _pallas_store_event(const char* base_dirname, pallas::Thread* th, pallas::EventSummary* e, pallas::Token event) {
-  FILE* file = _pallas_get_event_file(base_dirname, th, event, "w");
+static void _pallas_store_event(const char* base_dirname,
+                                pallas::Thread* th,
+                                pallas::EventSummary* e,
+                                pallas::Token event) {
+  const char* filename = _pallas_get_event_filename(base_dirname, th, event);
+  FILE* file = _pallas_file_open(filename, "w");
   pallas_log(pallas::DebugLevel::Debug, "\tStore event %d {.nb_events=%zu}\n", event.id, e->nb_occurences);
 
   _pallas_fwrite(&e->event, sizeof(pallas::Event), 1, file);
@@ -636,31 +654,39 @@ static void _pallas_store_event(const char* base_dirname, pallas::Thread* th, pa
   fclose(file);
 }
 
-static void _pallas_read_event(const char* base_dirname, pallas::Thread* th, pallas::EventSummary* e, pallas::Token event) {
-  FILE* file = _pallas_get_event_file(base_dirname, th, event, "r");
+static void _pallas_read_event(const char* base_dirname,
+                               pallas::Thread* th,
+                               pallas::EventSummary* e,
+                               pallas::Token event) {
+  const char* filename = _pallas_get_event_filename(base_dirname, th, event);
+  FILE* file = _pallas_file_open(filename, "r");
 
   _pallas_fread(&e->event, sizeof(pallas::Event), 1, file);
   _pallas_fread(&e->nb_occurences, sizeof(e->nb_occurences), 1, file);
   pallas_log(pallas::DebugLevel::Debug, "\tLoad event %d {.nb_events=%zu}\n", event.id, e->nb_occurences);
   _pallas_read_attribute_values(e, file);
   if (STORE_TIMESTAMPS) {
-    e->durations = new pallas::LinkedVector(file, e->nb_occurences);
+    e->durations = new pallas::LinkedVector(file, filename, e->nb_occurences);
   } else {
     e->durations->size = 0;
   }
   fclose(file);
 }
 
-static FILE* _pallas_get_sequence_file(const char* base_dirname, pallas::Thread* th, pallas::Token sequence, const char* mode) {
-  char filename[1024];
+static const char* _pallas_get_sequence_filename(const char* base_dirname, pallas::Thread* th, pallas::Token sequence) {
+  char* filename = new char[1024];
   snprintf(filename, 1024, "%s/thread_%u/sequence_%d", base_dirname, th->id, sequence.id);
-  return _pallas_file_open(filename, mode);
+  return filename;
 }
 
-static void _pallas_store_sequence(const char* base_dirname, pallas::Thread* th, pallas::Sequence* s, pallas::Token sequence) {
-  FILE* file = _pallas_get_sequence_file(base_dirname, th, sequence, "w");
+static void _pallas_store_sequence(const char* base_dirname,
+                                   pallas::Thread* th,
+                                   pallas::Sequence* s,
+                                   pallas::Token sequence) {
+  const char* filename = _pallas_get_sequence_filename(base_dirname, th, sequence);
+  FILE* file = _pallas_file_open(filename, "w");
   pallas_log(pallas::DebugLevel::Debug, "\tStore sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
-          s->durations->size);
+             s->durations->size);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     pallas_print_sequence(th, sequence);
   }
@@ -679,8 +705,12 @@ static void _pallas_store_sequence(const char* base_dirname, pallas::Thread* th,
   fclose(file);
 }
 
-static void _pallas_read_sequence(const char* base_dirname, pallas::Thread* th, pallas::Sequence* s, pallas::Token sequence) {
-  FILE* file = _pallas_get_sequence_file(base_dirname, th, sequence, "r");
+static void _pallas_read_sequence(const char* base_dirname,
+                                  pallas::Thread* th,
+                                  pallas::Sequence* s,
+                                  pallas::Token sequence) {
+  const char* filename = _pallas_get_sequence_filename(base_dirname, th, sequence);
+  FILE* file = _pallas_file_open(filename, "r");
   size_t size;
   _pallas_fread(&size, sizeof(size), 1, file);
   s->tokens.resize(size);
@@ -692,12 +722,12 @@ static void _pallas_read_sequence(const char* base_dirname, pallas::Thread* th, 
     pallas_assert(stored_hash == s->hash);
   }
   if (STORE_TIMESTAMPS) {
-    s->durations = new pallas::LinkedVector(file);
+    s->durations = new pallas::LinkedVector(file, filename);
   }
   fclose(file);
 
   pallas_log(pallas::DebugLevel::Debug, "\tLoad sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
-          s->durations->size);
+             s->durations->size);
 
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     pallas_print_sequence(th, sequence);
@@ -713,8 +743,9 @@ static FILE* _pallas_get_loop_file(const char* base_dirname, pallas::Thread* th,
 static void _pallas_store_loop(const char* base_dirname, pallas::Thread* th, pallas::Loop* l, pallas::Token loop) {
   FILE* file = _pallas_get_loop_file(base_dirname, th, loop, "w");
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug, "\tStore loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations:", loop.id,
-            l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
+    pallas_log(pallas::DebugLevel::Debug,
+               "\tStore loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations:", loop.id,
+               l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
     std::cout << "[";
     for (const auto& i : l->nb_iterations) {
       std::cout << i << ((&i != &l->nb_iterations.back()) ? ", " : "]");
@@ -738,8 +769,9 @@ static void _pallas_read_loop(const char* base_dirname, pallas::Thread* th, pall
   _pallas_fread(l->nb_iterations.data(), sizeof(uint), size, file);
   fclose(file);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug, "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.id,
-            l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
+    pallas_log(pallas::DebugLevel::Debug,
+               "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.id,
+               l->nb_iterations.size(), l->repeated_token.type, l->repeated_token.id);
     std::cout << "[";
     for (const auto& i : l->nb_iterations) {
       std::cout << i << ((&i != &l->nb_iterations.back()) ? ", " : "]");
@@ -755,8 +787,8 @@ static FILE* _pallas_get_string_file(pallas::Archive* a, int string_index, const
 }
 
 static void _pallas_store_string_generic(FILE* file, pallas::String* s, int string_index) {
-  pallas_log(pallas::DebugLevel::Debug, "\tStore String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index, s->string_ref,
-          s->length, s->str);
+  pallas_log(pallas::DebugLevel::Debug, "\tStore String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index,
+             s->string_ref, s->length, s->str);
 
   _pallas_fwrite(&s->string_ref, sizeof(s->string_ref), 1, file);
   _pallas_fwrite(&s->length, sizeof(s->length), 1, file);
@@ -775,8 +807,8 @@ static void _pallas_read_string_generic(FILE* file, pallas::String* s, int strin
   s->str = new char[s->length];
   pallas_assert(s->str);
   _pallas_fread(s->str, sizeof(char), s->length, file);
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index, s->string_ref,
-          s->length, s->str);
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index,
+             s->string_ref, s->length, s->str);
 }
 
 static void _pallas_read_string(pallas::Archive* a, pallas::String* s, int string_index) {
@@ -839,7 +871,7 @@ static void _pallas_store_attributes_generic(FILE* file, pallas::Definition* d) 
   pallas_log(pallas::DebugLevel::Debug, "\tStore %zu Attributes\n", d->attributes.size());
   for (int i = 0; i < d->attributes.size(); i++) {
     pallas_log(pallas::DebugLevel::Debug, "\t\t[%d] {ref=%d, name=%d, type=%d}\n", i, d->attributes[i].attribute_ref,
-            d->attributes[i].name, d->attributes[i].type);
+               d->attributes[i].name, d->attributes[i].type);
   }
 
   _pallas_fwrite(d->attributes.data(), sizeof(pallas::Attribute), d->attributes.size(), file);
@@ -941,15 +973,15 @@ static FILE* _pallas_get_thread(const char* dir_name, pallas::ThreadId thread_id
 
 static void _pallas_store_thread(const char* dir_name, pallas::Thread* th) {
   if (th->nb_events == 0) {
-    pallas_log(pallas::DebugLevel::Verbose, "\tSkipping Thread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
-            th->nb_events, th->nb_sequences, th->nb_loops);
+    pallas_log(pallas::DebugLevel::Verbose, "\tSkipping Thread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n",
+               th->id, th->nb_events, th->nb_sequences, th->nb_loops);
     abort();
   }
 
   FILE* token_file = _pallas_get_thread(dir_name, th->id, "w");
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
-          th->nb_events, th->nb_sequences, th->nb_loops);
+             th->nb_events, th->nb_sequences, th->nb_loops);
 
   _pallas_fwrite(&th->id, sizeof(th->id), 1, token_file);
   _pallas_fwrite(&th->archive->id, sizeof(th->archive->id), 1, token_file);
@@ -969,7 +1001,8 @@ static void _pallas_store_thread(const char* dir_name, pallas::Thread* th) {
 
   for (int i = 0; i < th->nb_loops; i++)
     _pallas_store_loop(dir_name, th, &th->loops[i], PALLAS_LOOP_ID(i));
-  pallas_log(pallas::DebugLevel::Debug, "Average compression ratio: %.2f\n", (numberRawBytes + .0) / numberCompressedBytes);
+  pallas_log(pallas::DebugLevel::Debug, "Average compression ratio: %.2f\n",
+             (numberRawBytes + .0) / numberCompressedBytes);
 }
 
 void pallas::Thread::finalizeThread() {
@@ -1013,7 +1046,7 @@ static void _pallas_read_thread(pallas::Archive* global_archive, pallas::Thread*
   fclose(token_file);
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u: {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
-          th->nb_events, th->nb_sequences, th->nb_loops);
+             th->nb_events, th->nb_sequences, th->nb_loops);
 }
 
 void pallas_storage_finalize_thread(pallas::Thread* thread) {
@@ -1093,7 +1126,10 @@ char* pallas_archive_fullpath(char* dir_name, char* trace_name) {
   return fullpath;
 }
 
-static void _pallas_read_archive(pallas::Archive* global_archive, pallas::Archive* archive, char* dir_name, char* trace_name) {
+static void _pallas_read_archive(pallas::Archive* global_archive,
+                                 pallas::Archive* archive,
+                                 char* dir_name,
+                                 char* trace_name) {
   archive->fullpath = pallas_archive_fullpath(dir_name, trace_name);
   archive->dir_name = strdup(dir_name);
   archive->trace_name = strdup(trace_name);
@@ -1107,7 +1143,7 @@ static void _pallas_read_archive(pallas::Archive* global_archive, pallas::Archiv
   }
 
   pallas_log(pallas::DebugLevel::Debug, "Reading archive {.dir_name='%s', .trace='%s'}\n", archive->dir_name,
-          archive->trace_name);
+             archive->trace_name);
 
   FILE* f = _pallas_file_open(archive->fullpath, "r");
 
@@ -1133,7 +1169,7 @@ static void _pallas_read_archive(pallas::Archive* global_archive, pallas::Archiv
 
   _pallas_fread(&archive->nb_threads, sizeof(int), 1, f);
 
-  archive->threads = (pallas::Thread**) calloc(sizeof(pallas::Thread*), archive->nb_threads);
+  archive->threads = (pallas::Thread**)calloc(sizeof(pallas::Thread*), archive->nb_threads);
   archive->nb_allocated_threads = archive->nb_threads;
 
   //  _pallas_fread(&COMPRESSION_OPTIONS, sizeof(COMPRESSION_OPTIONS), 1, f);
@@ -1191,7 +1227,7 @@ static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive, pal
     return nullptr;
   }
   printf("Reading archive %s\n", fullpath);
-  delete [] fullpath;
+  delete[] fullpath;
 
   while (global_archive->nb_archives >= global_archive->nb_allocated_archives) {
     INCREMENT_MEMORY_SPACE(global_archive->archive_list, global_archive->nb_allocated_archives, pallas::Archive*);

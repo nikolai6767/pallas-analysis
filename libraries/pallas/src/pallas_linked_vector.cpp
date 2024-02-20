@@ -24,9 +24,12 @@ uint64_t* LinkedVector::add(uint64_t val) {
   return last->add(val);
 }
 
-uint64_t& LinkedVector::at(size_t pos) const {
+uint64_t& LinkedVector::at(size_t pos) {
   if (pos >= size) {
     pallas_error("Getting an element whose index (%lu) is bigger than vector size (%lu)\n", pos, size);
+  }
+  if (first == nullptr) {
+    load_timestamps();
   }
   struct SubVector* correct_sub = last;
   while (pos < correct_sub->starting_index) {
@@ -35,7 +38,10 @@ uint64_t& LinkedVector::at(size_t pos) const {
   return correct_sub->at(pos);
 }
 
-uint64_t& LinkedVector::operator[](size_t pos) const {
+uint64_t& LinkedVector::operator[](size_t pos) {
+  if (first == nullptr) {
+    load_timestamps();
+  }
   struct SubVector* correct_sub = last;
   while (pos < correct_sub->starting_index) {
     correct_sub = correct_sub->previous;

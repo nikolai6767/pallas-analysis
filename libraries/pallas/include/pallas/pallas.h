@@ -303,10 +303,10 @@ typedef struct Loop {
  * and its attributes.
  */
 typedef struct EventSummary {
-  TokenId id;                                        /**< ID of the Event */
-  Event event;                                       /**< The Event being summarized.*/
-  LinkedVector* durations CXX({new LinkedVector()}); /**< Durations for each occurrence of that Event.*/
-  size_t nb_occurences;                              /**< Number of times that Event has happened. */
+  TokenId id;              /**< ID of the Event */
+  Event event;             /**< The Event being summarized.*/
+  LinkedVector* durations; /**< Durations for each occurrence of that Event.*/
+  size_t nb_occurences;    /**< Number of times that Event has happened. */
 
   uint8_t* attribute_buffer;    /**< Storage for Attribute.*/
   size_t attribute_buffer_size; /**< Size of #attribute_buffer.*/

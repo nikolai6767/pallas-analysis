@@ -30,6 +30,15 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
 
 static void init_dummy_event(ThreadWriter* thread_writer, int id) {
   check_event_allocation(&thread_writer->thread_trace, id);
+  auto& es = thread_writer->thread_trace.events[id];
+  if (es.durations == nullptr) {
+    es.id = id;
+    es.nb_occurences = 0;
+    es.attribute_buffer = nullptr;
+    es.attribute_buffer_size = 0;
+    es.attribute_pos = 0;
+    es.durations = new LinkedVector();
+  }
   thread_writer->storeEvent(PALLAS_SINGLETON, id, get_timestamp(), nullptr);
 }
 

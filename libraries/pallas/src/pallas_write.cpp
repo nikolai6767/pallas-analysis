@@ -736,9 +736,10 @@ void Thread::printEvent(pallas::Event* e) const {
 void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
   id = token_id;
   nb_occurences = 0;
-  attribute_buffer = 0;
+  attribute_buffer = nullptr;
   attribute_buffer_size = 0;
   attribute_pos = 0;
+  durations = new LinkedVector();
   memcpy(&event, &e, sizeof(e));
 }
 

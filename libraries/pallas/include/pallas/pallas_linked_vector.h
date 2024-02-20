@@ -16,6 +16,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <vector>
 /** Default size for creating Vectors and SubVectors.*/
 #define DEFAULT_VECTOR_SIZE 1000
@@ -28,11 +29,13 @@ namespace pallas {
  * Does not implement any methods to remove items from itself.
  */
 typedef struct LinkedVector {
-  size_t size CXX({0});/**< Number of element stored in the vector.  */
-  uint64_t min CXX({UINT64_MAX});/**< Max element stored in the vector. */
-  uint64_t max CXX({0});/**< Min element stored in the vector. */
-  uint64_t mean CXX({0});  /**< Mean of all the elements in the vector. */
-
+  size_t size CXX({0});           /**< Number of element stored in the vector.  */
+  uint64_t min CXX({UINT64_MAX}); /**< Max element stored in the vector. */
+  uint64_t max CXX({0});          /**< Min element stored in the vector. */
+  uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
+  CXX(private:)
+  const char* filePath; /**< Path to the file storing the durations. */
+  long offset;              /**< Offset in the file. */
 
 #ifdef __cplusplus
  private:
@@ -79,7 +82,9 @@ typedef struct LinkedVector {
      * @param pos Position of the element in the LinkedVector.
      * @return Reference to the requested element.
      */
-    uint64_t& operator[](size_t pos) const { return array[pos - starting_index]; }
+    uint64_t& operator[](size_t pos) const {
+      return array[pos - starting_index];
+    }
 
     /**
      * Construct a SubVector of a given size.
@@ -106,6 +111,7 @@ typedef struct LinkedVector {
       previous = nullptr;
       starting_index = 0;
       allocated = size;
+      this->size = size;
       this->array = array;
     }
 
@@ -120,15 +126,19 @@ typedef struct LinkedVector {
   C_CXX(void, SubVector) * first;                /**< First SubVector in the LinkedList structure.*/
   C_CXX(void, SubVector) * last;                 /**< Last SubVector in the LinkedList structure.*/
 #ifdef __cplusplus
+  /**
+   * Loads the timestamps / durations from filePath.
+   */
+  void load_timestamps();
  public:
   /**
    * Creates a new LinkedVector, with a SubVector of size `defaultSize`.
    */
   LinkedVector();
-  /** Loads a LinkedVector from a file without reading the size. */
-  LinkedVector(FILE* file, size_t size);
-  /** Loads a LinkedVector from a file. */
-  LinkedVector(FILE* file);
+  /** Loads a LinkedVector from a file.
+   * If size is given, does so without reading the size.
+   * */
+  LinkedVector(FILE* file, const char* filePath, size_t size = 0);
   /**
    * Adds a new element at the end of the vector, after its current last element.
    * The content of `val` is copied to the new element.
@@ -145,7 +155,7 @@ typedef struct LinkedVector {
    * @param pos Position of the element in the LinkedVector.
    * @return Reference to the requested element.
    */
-  [[nodiscard]] uint64_t& at(size_t pos) const;
+  [[nodiscard]] uint64_t& at(size_t pos);
   /**
    * Returns a reference to the element at specified location `pos`, without bounds checking.
    *
@@ -154,7 +164,7 @@ typedef struct LinkedVector {
    * @param pos Position of the element in the LinkedVector.
    * @return Reference to the requested element.
    */
-  [[nodiscard]] uint64_t& operator[](size_t pos) const;
+  [[nodiscard]] uint64_t& operator[](size_t pos);
   /**
    * Returns a reference to the first element in the LinkedVector.
    * @return Reference to the first element.
@@ -172,6 +182,9 @@ typedef struct LinkedVector {
   void print() const;
   /**
    * Writes the vector to the given file as an array.
+   * You may write the size of the vector as a header.
+   * Then its min, max, and mean are written.
+   * Finally, writes the array.
    * @param file File descriptor.
    * @param writeSize Boolean indicating wether you should write the size of the LinkedVector as a header.
    */
