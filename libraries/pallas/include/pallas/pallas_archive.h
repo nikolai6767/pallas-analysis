@@ -88,9 +88,9 @@ typedef struct Archive {
   short store_timestamps; /**< Indicates whether there are timestamps in there.*/
 #ifdef __cplusplus
   [[nodiscard]] Thread* getThread(ThreadId) const;
-  [[nodiscard]] const struct String* getString(StringRef) const;
-  [[nodiscard]] const struct Region* getRegion(RegionRef) const;
-  [[nodiscard]] const struct Attribute* getAttribute(AttributeRef) const;
+  [[nodiscard]] const struct String* getString(StringRef string_ref);
+  [[nodiscard]] const struct Region* getRegion(RegionRef region_ref);
+  [[nodiscard]] const struct Attribute* getAttribute(AttributeRef attribute_ref);
   void addString(StringRef, const char*);
   void addRegion(RegionRef, StringRef);
   void addAttribute(AttributeRef, StringRef, StringRef, pallas_type_t);

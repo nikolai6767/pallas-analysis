@@ -130,6 +130,11 @@ typedef struct LinkedVector {
    * Loads the timestamps / durations from filePath.
    */
   void load_timestamps();
+  /**
+   * Updates the min/max/mean, not using the last item, but the item before the last.
+   * This is so that we actually get the durations, and not the timestamps.
+   */
+  void updateStats(bool isLastCompute);
  public:
   /**
    * Creates a new LinkedVector, with a SubVector of size `defaultSize`.
@@ -169,17 +174,17 @@ typedef struct LinkedVector {
    * Returns a reference to the first element in the LinkedVector.
    * @return Reference to the first element.
    */
-  [[nodiscard]] uint64_t& front() const;
+  [[nodiscard]] uint64_t& front();
   /**
    * Returns a reference to the last element in the LinkedVector.
    * @return Reference to the last element.
    */
-  [[nodiscard]] uint64_t& back() const;
+  [[nodiscard]] uint64_t& back();
 
   /**
    * Prints the content of the LinkedVector to stdout.
    */
-  void print() const;
+  void print();
   /**
    * Writes the vector to the given file as an array.
    * You may write the size of the vector as a header.
@@ -188,7 +193,7 @@ typedef struct LinkedVector {
    * @param file File descriptor.
    * @param writeSize Boolean indicating wether you should write the size of the LinkedVector as a header.
    */
-  void writeToFile(FILE* file, bool writeSize) const;
+  void writeToFile(FILE* file, bool writeSize);
 
   /**
    * Classic ForwardIterator for LinkedVector.
