@@ -14,7 +14,7 @@ static pallas_timestamp_t get_timestamp() {
   return ts;
 }
 
-static inline std::string dummyTraceName = "dummy_trace";
+static inline std::string dummyTraceName = "find_loop_trace";
 
 static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
   pallas_log(DebugLevel::Max, "Searching for event {.id=%d}\n", id);
@@ -64,10 +64,10 @@ int main(int argc, char** argv __attribute__((unused))) {
 
   /* Check they've been correctly registered. */
   pallas_assert_always(thread_writer.cur_depth == 0);
-  pallas_assert_always(thread_writer.og_seq[0]->size() == (unsigned int)MAX_EVENT);
+  pallas_assert_always(thread_writer.sequence_stack[0].size() == (unsigned int)MAX_EVENT);
   for (int eid = 0; eid < MAX_EVENT; eid++) {
-    pallas_assert_always(thread_writer.og_seq[0]->tokens[eid].type == TypeEvent);
-    pallas_assert_always(thread_writer.og_seq[0]->tokens[eid].id == eid);
+    pallas_assert_always(thread_writer.sequence_stack[0][eid].type == TypeEvent);
+    pallas_assert_always(thread_writer.sequence_stack[0][eid].id == eid);
   }
 
   /* Start recording some more events. This should make a first loop. */
@@ -76,10 +76,10 @@ int main(int argc, char** argv __attribute__((unused))) {
 
   /* This should have been recognized as a loop, so now there should be some changes. */
   pallas_assert_always(thread_writer.cur_depth == 0);
-  pallas_assert_always(thread_writer.og_seq[0]->size() == 1);
-  pallas_assert_always(thread_writer.og_seq[0]->tokens[0].type == TypeLoop);
+  pallas_assert_always(thread_writer.sequence_stack[0].size() == 1);
+  pallas_assert_always(thread_writer.sequence_stack[0][0].type == TypeLoop);
   /* Check that the loop is correct */
-  struct Loop* l = thread_writer.thread_trace.getLoop(thread_writer.og_seq[0]->tokens[0]);
+  struct Loop* l = thread_writer.thread_trace.getLoop(thread_writer.sequence_stack[0][0]);
   pallas_assert_always(l->nb_iterations[0] == 2);
 
   /* Check that the sequence inside that loop is correct */
@@ -96,7 +96,7 @@ int main(int argc, char** argv __attribute__((unused))) {
   for (int eid = 0; eid < MAX_EVENT; eid++)
     init_dummy_event(&thread_writer, eid);
   pallas_assert_always(thread_writer.cur_depth == 0);
-  pallas_assert_always(thread_writer.og_seq[0]->size() == 1);
+  pallas_assert_always(thread_writer.sequence_stack[0].size() == 1);
   pallas_assert_always(l->nb_iterations[0] == 3);
 
   /* Now start recording one more event and then loop again. */
@@ -106,7 +106,7 @@ int main(int argc, char** argv __attribute__((unused))) {
     init_dummy_event(&thread_writer, eid);
   }
   pallas_assert_always(thread_writer.cur_depth == 0);
-  pallas_assert_always(thread_writer.og_seq[0]->size() == 3);  // L0 E L0
+  pallas_assert_always(thread_writer.sequence_stack[0].size() == 3);  // L0 E L0
   pallas_assert_always(l->nb_iterations[0] == 3);
   pallas_assert_always(l->nb_iterations[1] == (size_t)NUM_LOOPS);
 

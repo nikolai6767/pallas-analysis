@@ -528,7 +528,8 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
   return uncompressedArray;
 }
 
-void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) const {
+void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) {
+  updateStats(true);
   if (writeSize) {
     _pallas_fwrite(&size, sizeof(size), 1, file);
   }
@@ -551,12 +552,11 @@ void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) const 
   delete[] buffer;
 }
 
-pallas::LinkedVector::LinkedVector(FILE* file, const char * filePath, size_t givenSize) {
+pallas::LinkedVector::LinkedVector(FILE* file, const char* filePath, size_t givenSize) {
   this->filePath = filePath;
   if (!givenSize) {
     _pallas_fread(&size, sizeof(size), 1, file);
-  }
-  else {
+  } else {
     size = givenSize;
   }
   if (size) {
@@ -576,6 +576,7 @@ void pallas::LinkedVector::load_timestamps() {
   auto temp = _pallas_compress_read(size, file);
   last = new SubVector(size, temp);
   first = last;
+  fclose(file);
 }
 
 /**************** Storage Functions ****************/
@@ -710,6 +711,7 @@ static void _pallas_read_sequence(const char* base_dirname,
                                   pallas::Sequence* s,
                                   pallas::Token sequence) {
   const char* filename = _pallas_get_sequence_filename(base_dirname, th, sequence);
+  s->id = sequence.id;
   FILE* file = _pallas_file_open(filename, "r");
   size_t size;
   _pallas_fread(&size, sizeof(size), 1, file);

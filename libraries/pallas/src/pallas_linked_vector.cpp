@@ -12,15 +12,28 @@ LinkedVector::LinkedVector() {
   last = first;
 }
 
+void LinkedVector::updateStats(bool isLastCompute = false) {
+  if (size > 1) {
+    auto& val = at(size-2);
+    max = std::max(max, val);
+    min = std::min(min, val);
+    mean = ((size - 2) * mean + val) / (size - 1);
+  }
+  if (isLastCompute) {
+    auto& val = back();
+    max = std::max(max, val);
+    min = std::min(min, val);
+    mean = ((size - 1) * mean + val) / size;
+  }
+}
+
 uint64_t* LinkedVector::add(uint64_t val) {
   if (this->last->size >= this->last->allocated) {
     pallas_log(DebugLevel::Debug, "Adding a new tail to an array: %p\n", this);
     last = new SubVector(defaultSize, last);
   }
   size++;
-  max = std::max(max, val);
-  min = std::min(min, val);
-  mean = ((size - 1) * mean + val) / size;
+  updateStats(false);
   return last->add(val);
 }
 
@@ -49,15 +62,15 @@ uint64_t& LinkedVector::operator[](size_t pos) {
   return (*correct_sub)[pos];
 }
 
-uint64_t& LinkedVector::front() const {
-  return first->at(0);
+uint64_t& LinkedVector::front() {
+  return at(0);
 }
 
-uint64_t& LinkedVector::back() const {
+uint64_t& LinkedVector::back() {
   return last->at(size - 1);
 }
 
-void LinkedVector::print() const {
+void LinkedVector::print() {
   std::cout << "[";
   if (size) {
     for (auto& i : *this) {

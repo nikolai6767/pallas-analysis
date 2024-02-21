@@ -48,26 +48,30 @@ void info_loop(Loop* l) {
   printf("]}\n");
 }
 
+#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d) )
+
 void info_thread(Thread* t) {
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
-  printf("\tEvents {.nb_events: %d, .nb_allocated_events: %d}\n", t->nb_events, t->nb_allocated_events);
+  printf("\tEvents {.nb_events: %d}\n", t->nb_events);
   for (unsigned i = 0; i < t->nb_events; i++) {
     printf("\t\tE%d\t", i);
     info_event(t, &t->events[i]);
   }
 
-  printf("\tSequences {.nb_sequences: %d, .nb_allocated_sequences: %d}\n", t->nb_sequences, t->nb_allocated_sequences);
+  printf("\tSequences {.nb_sequences: %d}\n", t->nb_sequences);
   for (unsigned i = 1; i < t->nb_sequences; i++) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
     print_sequence(t, t->sequences[i]);
     if (t->sequences[i]->durations->size > 1) {
-      std::cout << "\t\t\tMin: " << t->sequences[i]->durations->min
-                << "\tMax: " << t->sequences[i]->durations->max
-                << "\tMean: " << t->sequences[i]->durations->mean << std::endl;
+      std::cout << "\t\t\tMin: " << UINT64_FILTER(t->sequences[i]->durations->min)
+                << "\tMax: " << UINT64_FILTER(t->sequences[i]->durations->max)
+                << "\tMean: " << UINT64_FILTER(t->sequences[i]->durations->mean) << std::endl;
+    } else {
+      std::cout << "\t\t\tDuration: " << t->sequences[i]->durations->front() << std::endl;
     }
   }
 
-  printf("\tLoops {.nb_loops: %d, .nb_allocated_loops: %d}\n", t->nb_loops, t->nb_allocated_loops);
+  printf("\tLoops {.nb_loops: %d}\n", t->nb_loops);
   for (unsigned i = 0; i < t->nb_loops; i++) {
     printf("\t\tL%d\t", i);
     info_loop(&t->loops[i]);
@@ -106,8 +110,7 @@ void info_archive(Archive* archive) {
            archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
   }
 
-  printf("\tThreads {.nb_threads: %d, .nb_allocated_threads: %d}:\n", archive->nb_threads,
-         archive->nb_allocated_threads);
+  printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
 
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {

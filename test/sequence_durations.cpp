@@ -44,11 +44,9 @@ static void init_dummy_event(ThreadWriter* thread_writer, int id) {
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
   /* Make a dummy archive and a dummy thread writer. */
   Archive archive;
-  archive.open("dummy_trace", "dummy_trace", 0);
-  std::cout << "Hoi" << std::endl;
+  archive.open("sequence_duration_trace", "sequence_duration_trace", 0);
 
   ThreadWriter thread_writer;
-  std::cout << "Hoi" << std::endl;
 
   thread_writer.open(&archive, 0);
 
@@ -78,17 +76,9 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   }
   init_dummy_event(&thread_writer, 0);
   thread_writer.thread_trace.events[0].durations->at(0) = 0;
-  auto baseSequence = thread_writer.thread_trace.sequences[0];
-  baseSequence->durations->add(
-    thread_writer.thread_trace.getSequenceDuration(baseSequence->tokens.data(), baseSequence->tokens.size()));
-  //  for (unsigned eid = 0; eid < thread_writer.thread_trace.nb_events; eid++) {
-  //    auto es = thread_writer.thread_trace.events[eid];
-  //    std::cout << "Information on Event " << eid << ":\n"
-  //              << "\tNumber of occurences: " << es.durations->size << "\n"
-  //              << "\tDurations: ";
-  //    es.durations->print();
-  //    std::cout << std::endl;
-  //  }
+  thread_writer.threadClose();
+  archive.close();
+
   for (int sequence_number = 0; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
     Sequence* s = thread_writer.thread_trace.sequences[sequence_number];
     std::cout << "Information on sequence " << sequence_number << ":\n"

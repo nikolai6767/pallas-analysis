@@ -15,7 +15,6 @@ namespace pallas {
  * @returns First String matching the given pallas::StringRef, nullptr if it doesn't have a match.
  */
 const String* Definition::getString(StringRef string_ref) const {
-  /* TODO: race condition here ? when adding a region, there may be a realloc so we may have to hold the mutex */
   for (auto& s : strings) {
     if (s.string_ref == string_ref) {
       return &s;
@@ -48,7 +47,6 @@ void Definition::addString(StringRef string_ref, const char* string) {
  * @returns First Region matching the given pallas::RegionRef, nullptr if it doesn't have a match.
  */
 const Region* Definition::getRegion(RegionRef region_ref) const {
-  /* TODO: race condition here ? when adding a region, there may be a realloc so we may have to hold the mutex */
   for (auto& r : regions) {
     if (r.region_ref == region_ref) {
       return &r;
@@ -79,7 +77,6 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
  * @returns First Attribute matching the given pallas::AttributeRef, nullptr if it doesn't have a match.
  */
 const Attribute* Definition::getAttribute(AttributeRef attribute_ref) const {
-  /* TODO: race condition here ? when adding a region, there may be a realloc so we may have to hold the mutex */
   for (auto& a : attributes) {
     if (a.attribute_ref == attribute_ref) {
       return &a;
@@ -114,8 +111,10 @@ void Definition::addAttribute(AttributeRef attribute_ref,
  * @returns First String matching the given pallas::StringRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const String* Archive::getString(StringRef string_ref) const {
+const String* Archive::getString(StringRef string_ref) {
+  pthread_mutex_lock(&lock);
   auto res = definitions.getString(string_ref);
+  pthread_mutex_unlock(&lock);
   return (res) ? res : (global_archive) ? global_archive->getString(string_ref) : nullptr;
 }
 
@@ -124,8 +123,10 @@ const String* Archive::getString(StringRef string_ref) const {
  * @returns First Region matching the given pallas::RegionRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const Region* Archive::getRegion(RegionRef region_ref) const {
+const Region* Archive::getRegion(RegionRef region_ref) {
+  pthread_mutex_lock(&lock);
   auto res = definitions.getRegion(region_ref);
+  pthread_mutex_unlock(&lock);
   return (res) ? res : (global_archive) ? global_archive->getRegion(region_ref) : nullptr;
 }
 
@@ -134,8 +135,10 @@ const Region* Archive::getRegion(RegionRef region_ref) const {
  * @returns First Attribute matching the given pallas::AttributeRef in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const Attribute* Archive::getAttribute(AttributeRef attribute_ref) const {
+const Attribute* Archive::getAttribute(AttributeRef attribute_ref) {
+  pthread_mutex_lock(&lock);
   auto res = definitions.getAttribute(attribute_ref);
+  pthread_mutex_unlock(&lock);
   return (res) ? res : (global_archive) ? global_archive->getAttribute(attribute_ref) : nullptr;
 }
 

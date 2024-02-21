@@ -262,6 +262,7 @@ struct TokenCountMap : public std::map<Token, size_t> {
  * Structure to store a sequence in PALLAS format.
  */
 typedef struct Sequence {
+  TokenId id CXX({PALLAS_TOKEN_ID_INVALID});         /**< ID of that sequence. */
   LinkedVector* durations CXX({new LinkedVector()}); /**< Vector of durations for these type of sequences. */
   uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
   DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
@@ -400,6 +401,12 @@ typedef struct Thread {
   unsigned nb_allocated_sequences; /**< Size of #sequences. */
   unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
+  /** Map to associate Sequences to their id.*/
+#ifdef __cplusplus
+  std::map<uint32_t, std::vector<TokenId>> hashToSequence;
+#else
+  byte hashToSequence[MAP_SIZE];
+#endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Size of #loops. */
   unsigned nb_loops;           /**< Number of pallas::Loop in #loops. */
