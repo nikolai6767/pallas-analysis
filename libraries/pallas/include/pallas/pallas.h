@@ -394,46 +394,56 @@ typedef struct Thread {
   ThreadId id;             /**< Id of this Thread. */
 
   EventSummary* events;         /**< Array of events recorded in this Thread. */
-  unsigned nb_allocated_events; /**< Size of #events. */
+  unsigned nb_allocated_events; /**< Number of blocks of size pallas:EventSummary allocated in #events. */
   unsigned nb_events;           /**< Number of pallas::EventSummary in #events. */
 
   Sequence** sequences;            /**< Array of pallas::Sequence recorded in this Thread. */
-  unsigned nb_allocated_sequences; /**< Size of #sequences. */
+  unsigned nb_allocated_sequences; /**< Number of blocks of size pallas:Sequence allocated in #sequences. */
   unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
-  /** Map to associate Sequences to their id.*/
+  /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::map<uint32_t, std::vector<TokenId>> hashToSequence;
 #else
   byte hashToSequence[MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
-  unsigned nb_allocated_loops; /**< Size of #loops. */
+  unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
   unsigned nb_loops;           /**< Number of pallas::Loop in #loops. */
 #ifdef __cplusplus
+  /** Returns the ID corresponding to the given Event.
+   * If there isn't already one, creates a corresponding EventSummary.
+   */
   TokenId getEventId(Event* e);
+  /** Returns the Event corresponding to the given Token. */
   [[nodiscard]] Event* getEvent(Token) const;
+  /** Returns the EventSummary corresponding to the given Token. */
   [[nodiscard]] EventSummary* getEventSummary(Token) const;
   [[nodiscard]] Sequence* getSequence(Token) const;
   [[nodiscard]] Loop* getLoop(Token) const;
   /** Returns the n-th token in the given Sequence/Loop. */
   [[nodiscard]] Token& getToken(Token, int) const;
 
+  /**
+   * Prints the given Token, along with its id.
+   * E_E, E_L, E_S indicates an Enter, Leave or Singleton Event.
+   * S and L indicates a Sequence or a Loop.
+   */
   void printToken(Token) const;
-  void printTokenArray(const Token* array, size_t start_index, size_t len) const;
-  void printTokenVector(const std::vector<Token>&) const;
-  void printSequence(Token) const;
-  void printEvent(Event*) const;
-  void printAttribute(AttributeRef) const;
-  void printString(StringRef) const;
-  void printAttributeRef(AttributeRef) const;
-  void printLocation(Ref) const;
-  void printRegion(RegionRef) const;
-  void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const;
-  void printAttribute(const struct AttributeData* attr) const;
-  void printAttributeList(const struct AttributeList* attribute_list) const;
-  void printEventAttribute(const struct EventOccurence* es) const;
-  [[nodiscard]] const char* getName() const;
+  void printTokenArray(const Token* array, size_t start_index, size_t len) const; /**< Prints an array of Tokens. */
+  void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
+  void printSequence(Token) const;            /**< Prints the Sequence corresponding to the given Token. */
+  void printEvent(Event*) const;              /**< Prints an Event. */
+  void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
+  void printString(StringRef) const;          /**< Prints a String (checks for validity first). */
+  void printAttributeRef(AttributeRef) const; /**< Prints an AttributeRef (checks for validity first). */
+  void printLocation(Ref) const;              /**< Prints a Ref for a Location (checks for validity first). */
+  void printRegion(RegionRef) const;          /**< Prints an RegionRef (checks for validity first). */
+  void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const; /**< Prints an AttributeValue.*/
+  void printAttribute(const struct AttributeData* attr) const;                          /**< Prints an AttributeData. */
+  void printAttributeList(const struct AttributeList* attribute_list) const;            /**< Prints an AttributeList. */
+  void printEventAttribute(const struct EventOccurence* es) const; /**< Prints an EventOccurence. */
+  [[nodiscard]] const char* getName() const;                       /**< Returns the name of this thread. */
   /** Search for a sequence_id that matches the given array as a Sequence.
    * If none of the registered sequence match, register a new Sequence.
    */
@@ -442,10 +452,11 @@ typedef struct Thread {
    * You can choose to ignore the last token. */
   pallas_duration_t getSequenceDuration(Token* array, size_t size, bool ignoreLast = false);
   void finalizeThread();
-  /** Create a new Thread from an archive and an id. This is used when writing the trace. */
+  /** Initializes the Thread from an archive and an id.
+   * This is used when writing the trace, because it creates Threads using malloc. */
   void initThread(Archive* a, ThreadId id);
 
-  //  /** Create a blank new Thread. This is used when reading the trace. */
+  /** Create a blank new Thread. This is used when reading the trace. */
   Thread();
 
   // Make sure this object is never copied

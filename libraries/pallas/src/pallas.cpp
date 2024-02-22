@@ -7,10 +7,7 @@
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
-/**
- * Returns the Event corresponding to the given Token
- * Aborts if the token is incorrect.
- */
+
 Event* Thread::getEvent(Token token) const {
   return &getEventSummary(token)->event;
 }
@@ -21,19 +18,12 @@ EventSummary* Thread::getEventSummary(Token token) const {
   return &this->events[token.id];
 }
 
-/**
- * Returns the Sequence corresponding to the given Token
- * Aborts if the token is incorrect.
- */
 Sequence* Thread::getSequence(Token token) const {
   pallas_assert(token.type == TokenType::TypeSequence);
   pallas_assert(token.id < this->nb_sequences);
   return this->sequences[token.id];
 }
-/**
- * Returns the Loop corresponding to the given Token
- * Aborts if the token is incorrect.
- */
+
 Loop* Thread::getLoop(Token token) const {
   pallas_assert(token.type == TokenType::TypeLoop);
   pallas_assert(token.id < this->nb_loops);
@@ -63,9 +53,6 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
   pallas_error("Invalid parameter to getToken\n");
 }
 
-/**
- * Prints a given Token.
- */
 void Thread::printToken(Token token) const {
   switch (token.type) {
   case TypeEvent: {
@@ -155,9 +142,6 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   pthread_mutex_unlock(&archive->lock);
 }
 
-/**
- * Returns a Thread's name.
- */
 const char* Thread::getName() const {
   return archive->getString(archive->getLocation(id)->name)->str;
 }
