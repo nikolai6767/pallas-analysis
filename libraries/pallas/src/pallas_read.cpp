@@ -198,7 +198,7 @@ Occurence* ThreadReader::getOccurence(pallas::Token id, int occurence_id) const 
 AttributeList* ThreadReader::getEventAttributeList(Token event_id, int occurence_id) const {
   auto* summary = getEventSummary(event_id);
   if (summary->attribute_buffer == nullptr)
-    return 0;
+    return nullptr;
 
   pallas_assert(occurence_id < summary->nb_occurences);
 
@@ -213,7 +213,7 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, int occurence
       return l;
     }
     if (l->index > occurence_id) {
-      pallas_error("Erro fetching attribute %d. We went too far (cur position: %d) !\n", occurence_id, l->index);
+      pallas_error("Error fetching attribute %d. We went too far (cur position: %d) !\n", occurence_id, l->index);
     }
   }
   return nullptr;

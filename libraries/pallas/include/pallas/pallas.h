@@ -309,7 +309,7 @@ typedef struct EventSummary {
   LinkedVector* durations; /**< Durations for each occurrence of that Event.*/
   size_t nb_occurences;    /**< Number of times that Event has happened. */
 
-  uint8_t* attribute_buffer;    /**< Storage for Attribute.*/
+  byte* attribute_buffer;       /**< Storage for Attribute.*/
   size_t attribute_buffer_size; /**< Size of #attribute_buffer.*/
   size_t attribute_pos;         /**< Position of #attribute_buffer.*/
 #ifdef __cplusplus
@@ -434,14 +434,8 @@ typedef struct Thread {
   void printAttributeList(const struct AttributeList* attribute_list) const;
   void printEventAttribute(const struct EventOccurence* es) const;
   [[nodiscard]] const char* getName() const;
-  /** Search for a sequence_id that matches the given sequence.
-   * If none of the registered sequence match, register a new Sequence.
-   * \todo Speed this up using hash map and/or storing the sequence's id in the structure.
-   */
-  Token getSequenceId(Sequence* sequence);
   /** Search for a sequence_id that matches the given array as a Sequence.
    * If none of the registered sequence match, register a new Sequence.
-   * \todo Speed this up using hashmap
    */
   Token getSequenceIdFromArray(Token* token_array, size_t array_len);
   /** Returns the duration for the given array.
