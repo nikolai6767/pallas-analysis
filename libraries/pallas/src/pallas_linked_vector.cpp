@@ -12,19 +12,20 @@ LinkedVector::LinkedVector() {
   last = first;
 }
 
-void LinkedVector::updateStats(bool isLastCompute = false) {
+void LinkedVector::updateStats() {
   if (size > 1) {
-    auto& val = at(size-2);
+    auto& val = at(size - 2);
     max = std::max(max, val);
     min = std::min(min, val);
-    mean = ((size - 2) * mean + val) / (size - 1);
+    mean += val;
   }
-  if (isLastCompute) {
-    auto& val = back();
-    max = std::max(max, val);
-    min = std::min(min, val);
-    mean = ((size - 1) * mean + val) / size;
-  }
+}
+
+void LinkedVector::finalUpdateStats() {
+  auto& val = back();
+  max = std::max(max, val);
+  min = std::min(min, val);
+  mean = (mean + val) / size;
 }
 
 uint64_t* LinkedVector::add(uint64_t val) {
@@ -33,7 +34,7 @@ uint64_t* LinkedVector::add(uint64_t val) {
     last = new SubVector(defaultSize, last);
   }
   size++;
-  updateStats(false);
+  updateStats();
   return last->add(val);
 }
 
@@ -95,4 +96,45 @@ uint64_t* linked_vector_get_last(LinkedVector* linkedVector) {
 }
 void print(LinkedVector linkedVector) {
   return linkedVector.print();
+}
+
+// Sub-vector methods
+
+uint64_t* LinkedVector::SubVector::add(uint64_t val) {
+  array[size] = val;
+  return &array[size++];
+}
+
+uint64_t& LinkedVector::SubVector::at(size_t pos) const {
+  if (pos >= starting_index && pos < size + starting_index) {
+    return array[pos - starting_index];
+  }
+  pallas_error("Wrong index (%lu) compared to starting index (%lu) and size (%lu)\n", pos, starting_index, size);
+}
+
+uint64_t& LinkedVector::SubVector::operator[](size_t pos) const {
+  return array[pos - starting_index];
+}
+
+LinkedVector::SubVector::SubVector(size_t new_array_size, LinkedVector::SubVector* previous_subvector) {
+  previous = previous_subvector;
+  starting_index = 0;
+  if (previous) {
+    previous->next = this;
+    starting_index = previous->starting_index + previous->size;
+  }
+  allocated = new_array_size;
+  array = new uint64_t[new_array_size];
+}
+
+LinkedVector::SubVector::SubVector(size_t size, uint64_t* array) {
+  previous = nullptr;
+  starting_index = 0;
+  allocated = size;
+  this->size = size;
+  this->array = array;
+}
+
+void LinkedVector::SubVector::copyToArray(uint64_t* given_array) const {
+  memcpy(given_array, array, size * sizeof(uint64_t));
 }

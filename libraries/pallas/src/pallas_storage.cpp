@@ -529,7 +529,7 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
 }
 
 void pallas::LinkedVector::writeToFile(FILE* file, bool writeSize = true) {
-  updateStats(true);
+  finalUpdateStats();
   if (writeSize) {
     _pallas_fwrite(&size, sizeof(size), 1, file);
   }

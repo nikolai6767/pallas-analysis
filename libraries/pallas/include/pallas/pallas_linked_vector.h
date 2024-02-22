@@ -35,7 +35,7 @@ typedef struct LinkedVector {
   uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
   CXX(private:)
   const char* filePath; /**< Path to the file storing the durations. */
-  long offset;              /**< Offset in the file. */
+  long offset;          /**< Offset in the file. */
 
 #ifdef __cplusplus
  private:
@@ -60,66 +60,41 @@ typedef struct LinkedVector {
      * @param val Value to be copied to the new element.
      * @return Reference to the new element.
      */
-    uint64_t* add(uint64_t val) {
-      array[size] = val;
-      return &array[size++];
-    }
+    uint64_t* add(uint64_t val);
 
     /**
      * Returns a reference to the element at specified location `pos`, with bounds checking.
      * @param pos Position of the element in the LinkedVector.
      * @return Reference to the requested element.
      */
-    [[nodiscard]] uint64_t& at(size_t pos) const {
-      if (pos >= starting_index && pos < size + starting_index) {
-        return array[pos - starting_index];
-      }
-      pallas_error("Wrong index (%lu) compared to starting index (%lu) and size (%lu)\n", pos, starting_index, size);
-    }
+    [[nodiscard]] uint64_t& at(size_t pos) const;
 
     /**
      * Returns a reference to the element at specified location `pos`, without bounds checking.
      * @param pos Position of the element in the LinkedVector.
      * @return Reference to the requested element.
      */
-    uint64_t& operator[](size_t pos) const {
-      return array[pos - starting_index];
-    }
+    [[nodiscard]] uint64_t& operator[](size_t pos) const;
 
     /**
      * Construct a SubVector of a given size.
      * @param new_array_size Size of the SubVector.
      * @param previous_subvector Previous SubVector in the LinkedVector.
      */
-    SubVector(size_t new_array_size, SubVector* previous_subvector = nullptr) {
-      previous = previous_subvector;
-      starting_index = 0;
-      if (previous) {
-        previous->next = this;
-        starting_index = previous->starting_index + previous->size;
-      }
-      allocated = new_array_size;
-      array = new uint64_t[new_array_size];
-    }
+    SubVector(size_t new_array_size, SubVector* previous_subvector = nullptr);
 
     /**
      * Construct a SubVector from a given already allocated array, and its size.
      * @param size Size of `array`.
      * @param array Allocated array of values.
      */
-    SubVector(size_t size, uint64_t* array) {
-      previous = nullptr;
-      starting_index = 0;
-      allocated = size;
-      this->size = size;
-      this->array = array;
-    }
+    SubVector(size_t size, uint64_t* array);
 
     /**
      * Copies the values in array to given_array.
      * @param given_array An allocated array of correct size.
      */
-    void copyToArray(uint64_t* given_array) const { memcpy(given_array, array, size * sizeof(uint64_t)); }
+    void copyToArray(uint64_t* given_array) const;
   };
 #endif
   size_t defaultSize CXX({DEFAULT_VECTOR_SIZE}); /**< Default size of the newly created SubVectors.*/
@@ -134,8 +109,11 @@ typedef struct LinkedVector {
    * Updates the min/max/mean, not using the last item, but the item before the last.
    * This is so that we actually get the durations, and not the timestamps.
    */
-  void updateStats(bool isLastCompute);
+  void updateStats();
+
  public:
+  /** Does the final calculation for updating the statistics in that vector.*/
+  void finalUpdateStats();
   /**
    * Creates a new LinkedVector, with a SubVector of size `defaultSize`.
    */
