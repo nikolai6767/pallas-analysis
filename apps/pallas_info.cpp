@@ -59,7 +59,7 @@ void info_thread(Thread* t) {
   }
 
   printf("\tSequences {.nb_sequences: %d}\n", t->nb_sequences);
-  for (unsigned i = 1; i < t->nb_sequences; i++) {
+  for (unsigned i = 0; i < t->nb_sequences; i++) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
     print_sequence(t, t->sequences[i]);
     if (t->sequences[i]->durations->size > 1) {
