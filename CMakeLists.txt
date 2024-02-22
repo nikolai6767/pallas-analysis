@@ -19,6 +19,8 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}") # the RPATH to be used w
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # CMakeFind repository
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
+# C++ standard
+set (CMAKE_CXX_STANDARD 17)
 
 
 # Look for libraries
