@@ -4,8 +4,9 @@
  */
 #include <cstdlib>
 #include <cstring>
-#if __cplusplus >= 202002L
+#if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
 #include <format>
+#define HAS_FORMAT
 #endif
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
@@ -46,7 +47,7 @@ void info_loop(Loop* l) {
   printf("]}\n");
 }
 
-#if __cplusplus >= 202002L
+#ifdef HAS_FORMAT
 #define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9) )
 #else
 #define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9)
