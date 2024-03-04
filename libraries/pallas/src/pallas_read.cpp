@@ -122,21 +122,21 @@ bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
 pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
   pallas_assert(loop_id.type == TypeLoop);
   pallas_duration_t sum = 0;
-  auto* loop = thread_trace->getLoop(loop_id);
-  auto* sequence = thread_trace->getSequence(loop->repeated_token);
+  const auto* loop = thread_trace->getLoop(loop_id);
+  const auto* sequence = thread_trace->getSequence(loop->repeated_token);
 
-  Token sequence_id = loop->repeated_token;
+  const Token sequence_id = loop->repeated_token;
 
-  size_t loopIndex = tokenCount.get_value(loop_id);
-  size_t offset = tokenCount.get_value(sequence_id);
-  size_t nIterations = loop->nb_iterations.at(loopIndex);
+  const size_t loopIndex = tokenCount.get_value(loop_id);
+  const size_t offset = tokenCount.get_value(sequence_id);
+  const size_t nIterations = loop->nb_iterations.at(loopIndex);
   DOFOR(i, nIterations) {
     sum += sequence->durations->at(offset + i);
   }
   return sum;
 }
 
-EventOccurence ThreadReader::getEventOccurence(Token event_id, int occurence_id) const {
+EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_id) const {
   auto eventOccurence = EventOccurence();
   auto* es = getEventSummary(event_id);
   eventOccurence.event = thread_trace->getEvent(event_id);
@@ -149,7 +149,7 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, int occurence_id)
   return eventOccurence;
 }
 
-SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, int occurence_id) const {
+SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t occurence_id) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -330,19 +330,22 @@ void ThreadReader::loadSavestate(Savestate* savestate) {
 }
 
 std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
-  Token current_sequence_id = getCurSequence();
-  auto* current_sequence = thread_trace->getSequence(current_sequence_id);
-  pallas_assert(current_sequence->size() > 0);
+  const Token curSeqToken = getCurSequence();
+  const auto* curSeq = thread_trace->getSequence(curSeqToken);
+  pallas_assert(curSeq->size() > 0);
   auto outputVector = std::vector<TokenOccurence>();
-  outputVector.resize(current_sequence->size());
+  outputVector.resize(curSeq->size());
 
-  DOFOR(i, current_sequence->size()) {
-    Token token = current_sequence->tokens[i];
-    outputVector[i].occurence = new Occurence;
-    outputVector[i].token = &current_sequence->tokens[i];
+  DOFOR(i, curSeq->size()) {
+    const Token token = curSeq->tokens[i];
+    outputVector[i].occurence = new Occurence();
+    outputVector[i].token = &curSeq->tokens[i];
+    /// Three steps for every token type
+    /// 1 - Grab the information we want, ie call getTypeOccurence
+    /// 2 - Write that information to the occurence in the vector (outputVector[i].occurence->type_occurence)
+    /// 3 - Update the reader
     switch (token.type) {
     case TypeEvent: {
-      // Get the info
       auto& occurence = outputVector[i].occurence->event_occurence;
 
       occurence = getEventOccurence(token, tokenCount[token]);
@@ -352,7 +355,6 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       break;
     }
     case TypeLoop: {
-      // Get the info
       auto& occurence = outputVector[i].occurence->loop_occurence;
       auto* loop = &thread_trace->loops[token.id];
 
@@ -366,6 +368,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       enterBlock(token);
 
       occurence.full_loop = new SequenceOccurence[occurence.nb_iterations];
+      auto& sequenceTokenCount = thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace);
       occurence.duration = 0;
       DOFOR(j, occurence.nb_iterations) {
         occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token]);
@@ -374,6 +377,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
           referential_timestamp += occurence.full_loop[j].duration;
         }
         tokenCount[loop->repeated_token]++;
+        tokenCount += sequenceTokenCount;
       }
       leaveBlock();
 

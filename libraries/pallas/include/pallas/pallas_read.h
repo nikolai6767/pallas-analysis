@@ -143,10 +143,10 @@ typedef struct ThreadReader {
 
   /** Returns an EventOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
-  [[nodiscard]] EventOccurence getEventOccurence(Token event_id, int occurence_id) const;
+  [[nodiscard]] EventOccurence getEventOccurence(Token event_id, size_t occurence_id) const;
   /** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
-  [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id, int occurence_id) const;
+  [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id, size_t occurence_id) const;
   /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, int occurence_id) const;
