@@ -11,7 +11,7 @@
 #include "pallas/pallas_storage.h"
 
 using namespace pallas;
-void print_sequence(Thread* t, const Sequence* s) {
+void print_sequence(const Sequence* s) {
   printf("{");
   for (unsigned i = 0; i < s->size(); i++) {
     const Token token = s->tokens[i];
@@ -57,7 +57,7 @@ void info_thread(Thread* t) {
   printf("\tSequences {.nb_sequences: %d}\n", t->nb_sequences);
   for (unsigned i = 0; i < t->nb_sequences; i++) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
-    print_sequence(t, t->sequences[i]);
+    print_sequence(t->sequences[i]);
     if (t->sequences[i]->durations->size > 1) {
       std::cout << "\t\t\tMin: " << UINT64_FILTER(t->sequences[i]->durations->min)
                 << "\tMax: " << UINT64_FILTER(t->sequences[i]->durations->max)
