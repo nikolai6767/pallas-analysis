@@ -97,18 +97,11 @@ Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
 }
 
 void ThreadWriter::storeTimestamp(EventSummary* es, pallas_timestamp_t ts) {
-#if 0
-  // Not yet implemented
-  if(store_event_timestamps) {
-    es->timestamps->add(ts);
-  }
-#endif
-
   int store_event_durations = 1;
   if (store_event_durations) {
     // update the last event's duration
     if (last_duration) {
-      pallas_timestamp_t delta = pallas_get_duration(last_timestamp, ts);
+      const pallas_timestamp_t delta = pallas_get_duration(last_timestamp, ts);
       *last_duration = delta;
       completeDurations(delta);
     }
@@ -122,14 +115,14 @@ void ThreadWriter::storeTimestamp(EventSummary* es, pallas_timestamp_t ts) {
 
 void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
                                       struct pallas::AttributeList* attribute_list,
-                                      size_t occurence_index) {
+                                      const size_t occurence_index) {
   attribute_list->index = occurence_index;
   if (es->attribute_pos + attribute_list->struct_size >= es->attribute_buffer_size) {
     if (es->attribute_buffer_size == 0) {
       pallas_warn("Allocating attribute memory for event %u\n", es->id);
       es->attribute_buffer_size = NB_ATTRIBUTE_DEFAULT * sizeof(struct pallas::AttributeList);
       es->attribute_buffer = new uint8_t[es->attribute_buffer_size];
-      pallas_assert(es->attribute_buffer != NULL);
+      pallas_assert(es->attribute_buffer != nullptr);
     } else {
       pallas_warn("Doubling mem space of attributes for event %u\n", es->id);
       DOUBLE_MEMORY_SPACE(es->attribute_buffer, es->attribute_buffer_size, uint8_t);
@@ -233,9 +226,8 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
-        // The current sequence last_timestamp does not need to be updated
 
-        pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[s1Start], loopLength, true);
+        const pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[s1Start], loopLength, true);
         addDurationToComplete(seq->durations->add(ts));
         curTokenSeq.resize(s1Start);
         return;
@@ -429,11 +421,12 @@ void ThreadWriter::recordExitFunction() {
   }
 #endif
 
-  Token seq_id = thread_trace.getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
-  auto* seq = thread_trace.sequences[seq_id.id];
+  const Token seq_id = thread_trace.getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
+  const auto* seq = thread_trace.sequences[seq_id.id];
 
-  pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
-  seq->durations->add(sequence_duration);
+  const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
+  // I feel like it's a bad idea to simply... ignore the duration of the "Close" event
+  addDurationToComplete(seq->durations->add(sequence_duration));
 
   pallas_log(DebugLevel::Debug, "Exiting a function, closing sequence %d\n", seq_id.id);
 
@@ -765,7 +758,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   return index;
 }
-pallas_duration_t Thread::getSequenceDuration(Token* array, size_t size, bool ignoreLast) {
+pallas_duration_t Thread::getSequenceDuration(const Token* array, size_t size, bool ignoreLast) const {
   pallas_duration_t sum = 0;
   auto tokenCount = TokenCountMap();
   size_t i = size;
@@ -781,20 +774,20 @@ pallas_duration_t Thread::getSequenceDuration(Token* array, size_t size, bool ig
       break;
     }
     case TypeEvent: {
-      auto summary = getEventSummary(token);
+      const auto summary = getEventSummary(token);
       sum += summary->durations->at(summary->durations->size - tokenCount[token]);
       break;
     }
     case TypeSequence: {
-      auto sequence = getSequence(token);
+      const auto sequence = getSequence(token);
       sum += sequence->durations->at(sequence->durations->size - tokenCount[token]);
       tokenCount += sequence->getTokenCount(this);
       break;
     }
     case TypeLoop: {
-      auto loop = getLoop(token);
-      auto nb_iterations = loop->nb_iterations[loop->nb_iterations.size() - tokenCount[token]];
-      auto sequence = getSequence(loop->repeated_token);
+      const auto loop = getLoop(token);
+      const auto nb_iterations = loop->nb_iterations[loop->nb_iterations.size() - tokenCount[token]];
+      const auto sequence = getSequence(loop->repeated_token);
       for (size_t j = 0; j < nb_iterations; j++) {
         tokenCount[loop->repeated_token]++;
         sum += sequence->durations->at(sequence->durations->size - tokenCount[loop->repeated_token]);
