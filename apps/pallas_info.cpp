@@ -32,7 +32,7 @@ void info_sequence(Sequence* s) {
 }
 
 void info_loop(Loop* l) {
-  printf("{.nb_loops: %zu, .repeated_token: %c.%d, .nb_iterations: ", l->nb_iterations.size(),
+  printf("{.nb_loops: %zu, .repeated_token: %c%d, .nb_iterations: ", l->nb_iterations.size(),
          PALLAS_TOKEN_TYPE_C(l->repeated_token), l->repeated_token.id);
   printf("[");
   for (auto& i : l->nb_iterations) {
