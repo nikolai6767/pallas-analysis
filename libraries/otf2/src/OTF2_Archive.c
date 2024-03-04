@@ -202,10 +202,10 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
 
 OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRef location) {
   pthread_mutex_lock(&archive->lock);
-  pallas_log(DebugLevel::Debug,"OTF2_Archive_GetEvtWriter (%lu)\n", location);
+  pallas_log(Debug,"OTF2_Archive_GetEvtWriter (%lu)\n", location);
   for (int i = 0; i < archive->nb_locations; i++) {
     if (archive->evt_writers[i]->locationRef == location) {
-      pallas_log(DebugLevel::Debug,"\t->%d (.location=%lu, .writer=%p)\n", i, archive->evt_writers[i]->locationRef,
+      pallas_log(Debug,"\t->%d (.location=%lu, .writer=%p)\n", i, archive->evt_writers[i]->locationRef,
              archive->evt_writers[i]->thread_writer);
 
       //      pallas_assert(archive->evt_writers[i]->thread_writer->thread_trace.container);
@@ -216,7 +216,7 @@ OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRe
 
   const int index = new_location(archive, location);
 
-  pallas_log(DebugLevel::Debug,"New EvtWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
+  pallas_log(Debug,"New EvtWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
          archive->evt_writers[index]->thread_writer);
 
   //  pallas_assert(archive->evt_writers[index]->thread_writer->thread_trace.container);
@@ -234,7 +234,7 @@ OTF2_DefWriter* OTF2_Archive_GetDefWriter(OTF2_Archive* archive, OTF2_LocationRe
   }
   const int index = new_location(archive, location);
 
-  pallas_log(DebugLevel::Debug, "New DefWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
+  pallas_log(Debug, "New DefWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
          archive->evt_writers[index]->thread_writer);
   pthread_mutex_unlock(&archive->lock);
   return archive->def_writers[index];
