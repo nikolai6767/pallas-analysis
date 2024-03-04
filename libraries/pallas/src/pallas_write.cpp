@@ -70,15 +70,9 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   return sid;
 }
 
-Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
-  if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
-    pallas_warn("Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
-                thread_trace.nb_allocated_loops);
-    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
-  }
-
+Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   auto& curTokenSeq = getCurrentTokenSequence();
-  Token sid = thread_trace.getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
+  const Token sid = thread_trace.getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
 
   int index = -1;
   for (int i = 0; i < thread_trace.nb_loops; i++) {
@@ -89,6 +83,11 @@ Loop* ThreadWriter::createLoop(int start_index, int loop_len) {
     }
   }
   if (index == -1) {
+    if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
+      pallas_warn("Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
+                  thread_trace.nb_allocated_loops);
+      DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
+    }
     index = thread_trace.nb_loops++;
     pallas_log(DebugLevel::Debug, "\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
   }
@@ -169,7 +168,7 @@ void Loop::addIteration() {
 
 void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteration, size_t index_second_iteration) {
   if (index_first_iteration > index_second_iteration) {
-    size_t tmp = index_second_iteration;
+    const size_t tmp = index_second_iteration;
     index_second_iteration = index_first_iteration;
     index_first_iteration = tmp;
   }
@@ -178,11 +177,11 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
   auto& curTokenSeq = getCurrentTokenSequence();
 
   // We need to go back in the current sequence in order to correctly calculate our durations
-  Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
+  const Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
 
-  pallas_timestamp_t duration_first_iteration =
+  const pallas_duration_t duration_first_iteration =
     thread_trace.getSequenceDuration(&curTokenSeq[index_first_iteration], 2 * loop_len, true);
-  pallas_timestamp_t duration_second_iteration =
+  const pallas_duration_t duration_second_iteration =
     thread_trace.getSequenceDuration(&curTokenSeq[index_second_iteration], loop_len, true);
   // We don't take into account the last token because it's not a duration yet
 
@@ -245,7 +244,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
     if (currentIndex + 1 >= 2 * loopLength) {
       size_t s2Start = currentIndex + 1 - 2 * loopLength;
       /* search for a loop of loopLength tokens */
-      int is_loop = 1;
+      bool is_loop = true;
       /* search for new loops */
       is_loop = _pallas_arrays_equal(&curTokenSeq[s1Start], loopLength, &curTokenSeq[s2Start], loopLength);
 
