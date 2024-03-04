@@ -4,6 +4,7 @@
  */
 #include <cstdlib>
 #include <cstring>
+#include <format>
 
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
@@ -44,7 +45,7 @@ void info_loop(Loop* l) {
   printf("]}\n");
 }
 
-#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d) )
+#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9) )
 
 void info_thread(Thread* t) {
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
@@ -59,9 +60,9 @@ void info_thread(Thread* t) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
     print_sequence(t->sequences[i]);
     if (t->sequences[i]->durations->size > 1) {
-      std::cout << "\t\t\tMin: " << UINT64_FILTER(t->sequences[i]->durations->min)
-                << "\tMax: " << UINT64_FILTER(t->sequences[i]->durations->max)
-                << "\tMean: " << UINT64_FILTER(t->sequences[i]->durations->mean) << std::endl;
+      std::cout <<   "\t\t\tMin:  " << UINT64_FILTER(t->sequences[i]->durations->min)
+                << "\n\t\t\tMax:  " << UINT64_FILTER(t->sequences[i]->durations->max)
+                << "\n\t\t\tMean: " << UINT64_FILTER(t->sequences[i]->durations->mean) << std::endl;
     } else {
       std::cout << "\t\t\tDuration: " << t->sequences[i]->durations->front() << std::endl;
     }
