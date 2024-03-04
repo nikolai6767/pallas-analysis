@@ -450,7 +450,7 @@ typedef struct Thread {
   Token getSequenceIdFromArray(Token* token_array, size_t array_len);
   /** Returns the duration for the given array.
    * You can choose to ignore the last token. */
-  pallas_duration_t getSequenceDuration(Token* array, size_t size, bool ignoreLast = false);
+  pallas_duration_t getSequenceDuration(const Token*array, size_t size, bool ignoreLast = false) const;
   void finalizeThread();
   /** Initializes the Thread from an archive and an id.
    * This is used when writing the trace, because it creates Threads using malloc. */
