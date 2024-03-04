@@ -50,7 +50,7 @@ void info_loop(Loop* l) {
 #ifdef HAS_FORMAT
 #define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9) )
 #else
-#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9)
+#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9))
 #endif
 void info_thread(Thread* t) {
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
