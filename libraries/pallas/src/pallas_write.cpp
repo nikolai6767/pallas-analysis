@@ -210,14 +210,13 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
  */
 void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   auto& curTokenSeq = getCurrentTokenSequence();
-  size_t currentIndex = curTokenSeq.size() - 1;
+  const size_t currentIndex = curTokenSeq.size() - 1;
   for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= currentIndex; loopLength++) {
     // search for a loop of loopLength tokens
-    size_t s1Start = currentIndex + 1 - loopLength;
-    size_t loopStart = s1Start - 1;
+    const size_t s1Start = currentIndex + 1 - loopLength;
     // First, check if there's a loop that start at loopStart
-    if (curTokenSeq[loopStart].type == TypeLoop) {
-      Token l = curTokenSeq[loopStart];
+    if (const size_t loopStart = s1Start - 1; curTokenSeq[loopStart].type == TypeLoop) {
+      const Token l = curTokenSeq[loopStart];
       Loop* loop = thread_trace.getLoop(l);
       pallas_assert(loop);
 
@@ -233,6 +232,11 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
 
         const pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[s1Start], loopLength, true);
         addDurationToComplete(seq->durations->add(ts));
+        curTokenSeq.resize(s1Start);
+        return;
+      } else if (loopLength == 1 && curTokenSeq[s1Start].type == TypeSequence && curTokenSeq[s1Start].id == seq->id) {
+        pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
+        loop->addIteration();
         curTokenSeq.resize(s1Start);
         return;
       }
@@ -312,6 +316,11 @@ void ThreadWriter::findLoopFilter() {
 
       pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[loopIndex + 1], loopLength, true);
       addDurationToComplete(sequence->durations->add(ts));
+      curTokenSeq.resize(loopIndex + 1);
+      return;
+    } else if (loopLength == 1 && curTokenSeq[loopIndex + 1].type == TypeSequence && curTokenSeq[loopIndex + 1].id == sequence->id) {
+      pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
+      loop->addIteration();
       curTokenSeq.resize(loopIndex + 1);
       return;
     }
