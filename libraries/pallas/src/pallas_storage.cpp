@@ -33,12 +33,12 @@ short STORE_TIMESTAMPS = 1;
 static short STORE_HASHING = 0;
 void pallas_storage_option_init() {
   // Timestamp storage
-  char* store_timestamps_str = getenv("STORE_TIMESTAMPS");
+  const char* store_timestamps_str = getenv("STORE_TIMESTAMPS");
   if (store_timestamps_str && strcmp(store_timestamps_str, "TRUE") != 0)
     STORE_TIMESTAMPS = 0;
 
   // Store hash for sequences
-  char* store_hashing_str = getenv("STORE_HASHING");
+  const char* store_hashing_str = getenv("STORE_HASHING");
   if (store_hashing_str && strcmp(store_hashing_str, "FALSE") != 0)
     STORE_HASHING = 1;
 }
@@ -645,6 +645,10 @@ static void _pallas_store_event(const char* base_dirname,
   const char* filename = _pallas_get_event_filename(base_dirname, th, event);
   FILE* file = _pallas_file_open(filename, "w");
   pallas_log(pallas::DebugLevel::Debug, "\tStore event %d {.nb_events=%zu}\n", event.id, e->nb_occurences);
+  if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
+    e->durations->print();
+    std::cout << "\n";
+  }
 
   _pallas_fwrite(&e->event, sizeof(pallas::Event), 1, file);
   _pallas_fwrite(&e->nb_occurences, sizeof(e->nb_occurences), 1, file);
@@ -689,7 +693,9 @@ static void _pallas_store_sequence(const char* base_dirname,
   pallas_log(pallas::DebugLevel::Debug, "\tStore sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, s->size(),
              s->durations->size);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_print_sequence(th, sequence);
+    th->printSequence(sequence);
+    s->durations->print();
+    std::cout << "\n";
   }
   size_t size = s->size();
   _pallas_fwrite(&size, sizeof(size), 1, file);
