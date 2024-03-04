@@ -4,8 +4,9 @@
  */
 #include <cstdlib>
 #include <cstring>
+#if __cplusplus >= 202002L
 #include <format>
-
+#endif
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_read.h"
@@ -45,8 +46,11 @@ void info_loop(Loop* l) {
   printf("]}\n");
 }
 
+#if __cplusplus >= 202002L
 #define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9) )
-
+#else
+#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9)
+#endif
 void info_thread(Thread* t) {
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
   printf("\tEvents {.nb_events: %d}\n", t->nb_events);
