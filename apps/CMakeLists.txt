@@ -8,6 +8,8 @@ configure_file(../config.json config.json COPYONLY)
 add_executable(pallas_print pallas_print.cpp)
 add_executable(pallas_info pallas_info.cpp)
 add_executable(pallas_comm_matrix pallas_comm_matrix.cpp)
+add_executable(pallas_test_durations pallas_test_durations.cpp)
+
 
 install(
   TARGETS pallas_print pallas_info
