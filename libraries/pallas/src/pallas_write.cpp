@@ -176,17 +176,20 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
   Loop* loop = createLoop(index_first_iteration, loop_len);
   auto& curTokenSeq = getCurrentTokenSequence();
 
-  // We need to go back in the current sequence in order to correctly calculate our durations
-  const Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
+  if (loop_len > 1 || curTokenSeq[index_first_iteration].type != TypeSequence) {
+    // We need to go back in the current sequence in order to correctly calculate our durations
+    // But only if those are new sequences
+    const Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
 
-  const pallas_duration_t duration_first_iteration =
-    thread_trace.getSequenceDuration(&curTokenSeq[index_first_iteration], 2 * loop_len, true);
-  const pallas_duration_t duration_second_iteration =
-    thread_trace.getSequenceDuration(&curTokenSeq[index_second_iteration], loop_len, true);
-  // We don't take into account the last token because it's not a duration yet
+    const pallas_duration_t duration_first_iteration =
+      thread_trace.getSequenceDuration(&curTokenSeq[index_first_iteration], 2 * loop_len, true);
+    const pallas_duration_t duration_second_iteration =
+      thread_trace.getSequenceDuration(&curTokenSeq[index_second_iteration], loop_len, true);
+    // We don't take into account the last token because it's not a duration yet
 
-  loop_seq->durations->add(duration_first_iteration - duration_second_iteration);
-  addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
+    loop_seq->durations->add(duration_first_iteration - duration_second_iteration);
+    addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
+  }
 
   // The current sequence last_timestamp does not need to be updated
 
@@ -212,50 +215,47 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   const size_t currentIndex = curTokenSeq.size() - 1;
   for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= currentIndex; loopLength++) {
     // search for a loop of loopLength tokens
-    const size_t s1Start = currentIndex + 1 - loopLength;
+    const size_t startS1 = currentIndex + 1 - loopLength;
     // First, check if there's a loop that start at loopStart
-    if (const size_t loopStart = s1Start - 1; curTokenSeq[loopStart].type == TypeLoop) {
+    if (const size_t loopStart = startS1 - 1;
+      curTokenSeq[loopStart].type == TypeLoop) {
       const Token l = curTokenSeq[loopStart];
       Loop* loop = thread_trace.getLoop(l);
       pallas_assert(loop);
 
-      Sequence* seq = thread_trace.getSequence(loop->repeated_token);
-      pallas_assert(seq);
+      Sequence* loopSeq = thread_trace.getSequence(loop->repeated_token);
+      pallas_assert(loopSeq);
 
-      if (_pallas_arrays_equal(&curTokenSeq[s1Start], loopLength, seq->tokens.data(), seq->size())) {
-        // The current sequence is just another iteration of the loop
-        // remove the sequence, and increment the iteration count
+      // First check for repetitions of sequences
+      if (loopLength == 1 && curTokenSeq[startS1] == loop->repeated_token) {
+        pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
+        loop->addIteration();
+        curTokenSeq.resize(startS1);
+        return;
+      }
+      // Then check for actual iterations of tokens which correspond to the one in the loop
+      if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, loopSeq->tokens.data(), loopSeq->size())) {
         pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
-
-        const pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[s1Start], loopLength, true);
-        addDurationToComplete(seq->durations->add(ts));
-        curTokenSeq.resize(s1Start);
-        return;
-      } else if (loopLength == 1 && curTokenSeq[s1Start].type == TypeSequence && curTokenSeq[s1Start].id == seq->id) {
-        pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
-        loop->addIteration();
-        curTokenSeq.resize(s1Start);
+        const pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[startS1], loopLength, true);
+        addDurationToComplete(loopSeq->durations->add(ts));
+        curTokenSeq.resize(startS1);
+        // Roundabount way to remove the tokens representing the loop
         return;
       }
     }
 
     if (currentIndex + 1 >= 2 * loopLength) {
-      size_t s2Start = currentIndex + 1 - 2 * loopLength;
+      const size_t startS2 = currentIndex + 1 - 2 * loopLength;
       /* search for a loop of loopLength tokens */
-      bool is_loop = true;
-      /* search for new loops */
-      is_loop = _pallas_arrays_equal(&curTokenSeq[s1Start], loopLength, &curTokenSeq[s2Start], loopLength);
-
-      if (is_loop) {
+      if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, &curTokenSeq[startS2], loopLength)) {
         if (debugLevel >= DebugLevel::Debug) {
-          printf("Found a loop of len %d:\n", loopLength);
-          thread_trace.printTokenArray(curTokenSeq.data(), s1Start, loopLength);
-          thread_trace.printTokenArray(curTokenSeq.data(), s2Start, loopLength);
+          pallas_log(DebugLevel::Debug, "Found a loop of len %d:", loopLength);
+          thread_trace.printTokenArray(curTokenSeq.data(), startS2, loopLength * 2);
           printf("\n");
         }
-        replaceTokensInLoop(loopLength, s1Start, s2Start);
+        replaceTokensInLoop(loopLength, startS1, startS2);
         return;
       }
     }
