@@ -28,6 +28,10 @@ static inline bool _pallas_arrays_equal(Token* array1, size_t size1, Token* arra
 }
 
 Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_len) {
+  if (array_len == 1 && token_array[0].type == TypeSequence) {
+    pallas_log(DebugLevel::Debug, "Searching for sequence {.size=1} containing sequence token\n");
+    return token_array[0];
+  }
   uint32_t hash;
   hash32(token_array, array_len, SEED, &hash);
   pallas_log(DebugLevel::Debug, "Searching for sequence {.size=%zu, .hash=%x}\n", array_len, hash);
@@ -36,7 +40,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     if (sequencesWithSameHash.size() > 1) {
       pallas_warn("Found more than one sequence with the same hash\n");
     }
-    for (auto& sid : sequencesWithSameHash) {
+    for (const auto sid : sequencesWithSameHash) {
       if (_pallas_arrays_equal(token_array, array_len, sequences[sid]->tokens.data(), sequences[sid]->size())) {
         pallas_log(DebugLevel::Debug, "\t found with id=%u\n", sid);
         return PALLAS_SEQUENCE_ID(sid);
@@ -52,8 +56,8 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     }
   }
 
-  TokenId index = nb_sequences++;
-  Token sid = PALLAS_SEQUENCE_ID(index);
+  const auto index = nb_sequences++;
+  const auto sid = PALLAS_SEQUENCE_ID(index);
   pallas_log(DebugLevel::Debug, "\tSequence not found. Adding it with id=S%x\n", index);
 
   Sequence* s = getSequence(sid);
