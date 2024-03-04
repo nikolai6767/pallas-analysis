@@ -49,7 +49,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   }
 
   if (nb_sequences >= nb_allocated_sequences) {
-    pallas_warn("Doubling mem space of sequence for thread trace %p\n", this);
+    pallas_log(DebugLevel::Debug, "Doubling mem space of sequence for thread trace %p\n", this);
     DOUBLE_MEMORY_SPACE(sequences, nb_allocated_sequences, Sequence*);
     for (uint i = nb_allocated_sequences / 2; i < nb_allocated_sequences; i++) {
       sequences[i] = new Sequence;
@@ -84,7 +84,7 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   }
   if (index == -1) {
     if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
-      pallas_warn("Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
+      pallas_log(DebugLevel::Debug, "Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
                   thread_trace.nb_allocated_loops);
       DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
     }
@@ -122,12 +122,12 @@ void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
   attribute_list->index = occurence_index;
   if (es->attribute_pos + attribute_list->struct_size >= es->attribute_buffer_size) {
     if (es->attribute_buffer_size == 0) {
-      pallas_warn("Allocating attribute memory for event %u\n", es->id);
+      pallas_log(DebugLevel::Debug, "Allocating attribute memory for event %u\n", es->id);
       es->attribute_buffer_size = NB_ATTRIBUTE_DEFAULT * sizeof(struct pallas::AttributeList);
       es->attribute_buffer = new uint8_t[es->attribute_buffer_size];
       pallas_assert(es->attribute_buffer != nullptr);
     } else {
-      pallas_warn("Doubling mem space of attributes for event %u\n", es->id);
+      pallas_log(DebugLevel::Debug, "Doubling mem space of attributes for event %u\n", es->id);
       DOUBLE_MEMORY_SPACE(es->attribute_buffer, es->attribute_buffer_size, uint8_t);
     }
     pallas_assert(es->attribute_pos + attribute_list->struct_size < es->attribute_buffer_size);
@@ -759,7 +759,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   }
 
   if (nb_events >= nb_allocated_events) {
-    pallas_warn("Doubling mem space of events for thread trace %p\n", this);
+    pallas_log(DebugLevel::Debug, "Doubling mem space of events for thread trace %p\n", this);
     DOUBLE_MEMORY_SPACE_CONSTRUCTOR(events, nb_allocated_events, EventSummary);
   }
 
