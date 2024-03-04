@@ -11,14 +11,10 @@
 #include "pallas/pallas_storage.h"
 
 using namespace pallas;
-void print_sequence(Thread* t, Sequence* s) {
+void print_sequence(Thread* t, const Sequence* s) {
   printf("{");
   for (unsigned i = 0; i < s->size(); i++) {
-    Token token = s->tokens[i];
-    if (token.type == TypeLoop) {
-      Loop* l = t->getLoop(token);
-      token = l->repeated_token;
-    }
+    const Token token = s->tokens[i];
     printf("%c%d", PALLAS_TOKEN_TYPE_C(token), token.id);
     if (i < s->size() - 1)
       printf(", ");
