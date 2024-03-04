@@ -226,7 +226,8 @@ static void display_sequence(pallas::ThreadReader* reader,
     }
   }
   if (occurence) {
-    occurence->full_sequence = current_level.data();
+    occurence->full_sequence = new pallas::TokenOccurence[current_level.size()];
+    memcpy(occurence->full_sequence, current_level.data(), current_level.size() * sizeof(pallas::TokenOccurence));
   }
   reader->leaveBlock();
 }
