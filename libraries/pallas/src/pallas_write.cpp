@@ -758,7 +758,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   return index;
 }
-pallas_duration_t Thread::getSequenceDuration(const Token* array, size_t size, bool ignoreLast) const {
+pallas_duration_t Thread::getSequenceDuration(const Token* array, size_t size, bool ignoreLastEvent) const {
   pallas_duration_t sum = 0;
   auto tokenCount = TokenCountMap();
   size_t i = size;
@@ -766,7 +766,7 @@ pallas_duration_t Thread::getSequenceDuration(const Token* array, size_t size, b
     i--;
     auto& token = array[i];
     tokenCount[token]++;
-    if (ignoreLast && i == size - 1)
+    if (ignoreLastEvent && i == size - 1 && token.type == TypeEvent)
       continue;
     switch (token.type) {
     case TypeInvalid: {
