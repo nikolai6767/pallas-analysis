@@ -389,6 +389,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
         referential_timestamp += outputVector[i].occurence->sequence_occurence.duration;
       }
+      tokenCount += thread_trace->getSequence(token)->getTokenCount(thread_trace);;
       break;
     }
     default:
