@@ -478,7 +478,9 @@ void ThreadWriter::threadClose() {
   // Then we need to close the main sequence
   auto& mainSequence = thread_trace.sequences[0];
   mainSequence->tokens = sequence_stack[0];
-  // TODO is this right ?
+  pallas_log(DebugLevel::Debug, "Last sequence token: (%d.%d)", mainSequence->tokens.back().type, mainSequence->tokens.back().id);
+  *last_duration = 0;
+  completeDurations(0);
   pallas_timestamp_t duration = last_timestamp;
   mainSequence->durations->add(duration);
   thread_trace.finalizeThread();
