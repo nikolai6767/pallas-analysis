@@ -29,12 +29,12 @@ static inline bool _pallas_arrays_equal(Token* array1, size_t size1, Token* arra
 
 Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_len) {
   if (array_len == 1 && token_array[0].type == TypeSequence) {
-    pallas_log(DebugLevel::Debug, "Searching for sequence {.size=1} containing sequence token\n");
+    pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=1} containing sequence token\n");
     return token_array[0];
   }
   uint32_t hash;
   hash32(token_array, array_len, SEED, &hash);
-  pallas_log(DebugLevel::Debug, "Searching for sequence {.size=%zu, .hash=%x}\n", array_len, hash);
+  pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len, hash);
   auto& sequencesWithSameHash = hashToSequence[hash];
   if (!sequencesWithSameHash.empty()) {
     if (sequencesWithSameHash.size() > 1) {
@@ -42,7 +42,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     }
     for (const auto sid : sequencesWithSameHash) {
       if (_pallas_arrays_equal(token_array, array_len, sequences[sid]->tokens.data(), sequences[sid]->size())) {
-        pallas_log(DebugLevel::Debug, "\t found with id=%u\n", sid);
+        pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: \t found with id=%u\n", sid);
         return PALLAS_SEQUENCE_ID(sid);
       }
     }
@@ -58,7 +58,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
 
   const auto index = nb_sequences++;
   const auto sid = PALLAS_SEQUENCE_ID(index);
-  pallas_log(DebugLevel::Debug, "\tSequence not found. Adding it with id=S%x\n", index);
+  pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: \tSequence not found. Adding it with id=S%x\n", index);
 
   Sequence* s = getSequence(sid);
   s->tokens.resize(array_len);
@@ -78,7 +78,7 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   for (int i = 0; i < thread_trace.nb_loops; i++) {
     if (thread_trace.loops[i].repeated_token.id == sid.id) {
       index = i;
-      pallas_log(DebugLevel::Debug, "\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
+      pallas_log(DebugLevel::Debug, "createLoop:\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
       break;
     }
   }
@@ -89,7 +89,7 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
       DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
     }
     index = thread_trace.nb_loops++;
-    pallas_log(DebugLevel::Debug, "\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
+    pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
   }
 
   Loop* l = &thread_trace.loops[index];
@@ -136,12 +136,12 @@ void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
   memcpy(&es->attribute_buffer[es->attribute_pos], attribute_list, attribute_list->struct_size);
   es->attribute_pos += attribute_list->struct_size;
 
-  pallas_log(DebugLevel::Debug, "store_attribute: {index: %d, struct_size: %d, nb_values: %d}\n", attribute_list->index,
+  pallas_log(DebugLevel::Debug, "storeAttributeList: {index: %d, struct_size: %d, nb_values: %d}\n", attribute_list->index,
              attribute_list->struct_size, attribute_list->nb_values);
 }
 
 void ThreadWriter::storeToken(std::vector<Token>& tokenSeq, Token t) {
-  pallas_log(DebugLevel::Debug, "store_token: (%c%d) in seq at callstack[%d] (size: %zu)\n",
+  pallas_log(DebugLevel::Debug, "storeToken: (%c%d) in seq at callstack[%d] (size: %zu)\n",
              PALLAS_TOKEN_TYPE_C(t), t.id, cur_depth, tokenSeq.size() + 1);
   tokenSeq.push_back(t);
   findLoop();
@@ -151,17 +151,7 @@ void ThreadWriter::storeToken(std::vector<Token>& tokenSeq, Token t) {
  * Adds an iteration of the given sequence to the loop.
  */
 void Loop::addIteration() {
-#if 0
-  //	SID used to be an argument for this function, but it isn't actually required.
-  //	It's only there for safety purposes.
-  //	We shouldn't ask it, since	it actually takes some computing power to at it, most times.
-  //	"Safety checks are made to prevent crashes, but if you program well, you don't need to prevent crashes"
-  struct Sequence *s1 = pallas_get_sequence(&thread_writer->thread_trace, sid);
-  struct Sequence *s2 = pallas_get_sequence(&thread_writer->thread_trace,
-					     PALLAS_TOKEN_TO_SEQUENCE_ID(loop->repeated_token));
-  pallas_assert(_pallas_sequences_equal(s1, s2));
-#endif
-  pallas_log(DebugLevel::Debug, "Adding an iteration to L%d n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
+  pallas_log(DebugLevel::Debug, "addIteration: + 1 to L%d n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
              nb_iterations.back() + 1);
   nb_iterations.back()++;
 }
@@ -228,14 +218,14 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
 
       // First check for repetitions of sequences
       if (loopLength == 1 && curTokenSeq[startS1] == loop->repeated_token) {
-        pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
+        pallas_log(DebugLevel::Debug, "findLoopBasic: Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
         loop->addIteration();
         curTokenSeq.resize(startS1);
         return;
       }
       // Then check for actual iterations of tokens which correspond to the one in the loop
       if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, loopSeq->tokens.data(), loopSeq->size())) {
-        pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
+        pallas_log(DebugLevel::Debug, "findLoopBasic: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
         const pallas_timestamp_t ts = thread_trace.getSequenceDuration(&curTokenSeq[startS1], loopLength, true);
@@ -251,7 +241,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       /* search for a loop of loopLength tokens */
       if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, &curTokenSeq[startS2], loopLength)) {
         if (debugLevel >= DebugLevel::Debug) {
-          pallas_log(DebugLevel::Debug, "Found a loop of len %d:", loopLength);
+          pallas_log(DebugLevel::Debug, "findLoopBasic: Found a loop of len %d:", loopLength);
           thread_trace.printTokenArray(curTokenSeq.data(), startS2, loopLength * 2);
           printf("\n");
         }
@@ -293,7 +283,7 @@ void ThreadWriter::findLoopFilter() {
     if (_pallas_arrays_equal(&curTokenSeq[endingIndex + 1], loopLength, &curTokenSeq[endingIndex + 1 - loopLength],
                              loopLength)) {
       if (debugLevel >= DebugLevel::Debug) {
-        printf("Found a loop of len %lu:\n", loopLength);
+        printf("findLoopFilter: Found a loop of len %lu:\n", loopLength);
         thread_trace.printTokenArray(curTokenSeq.data(), endingIndex + 1, loopLength);
         thread_trace.printTokenArray(curTokenSeq.data(), endingIndex + 1 - loopLength, loopLength);
         printf("\n");
@@ -308,7 +298,7 @@ void ThreadWriter::findLoopFilter() {
     auto* loop = thread_trace.getLoop(token);
     auto* sequence = thread_trace.getSequence(loop->repeated_token);
     if (_pallas_arrays_equal(&curTokenSeq[loopIndex + 1], loopLength, sequence->tokens.data(), sequence->size())) {
-      pallas_log(DebugLevel::Debug, "Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
+      pallas_log(DebugLevel::Debug, "findLoopFilter: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                  loop->repeated_token.id);
       loop->addIteration();
       // The current sequence last_timestamp does not need to be updated
@@ -318,7 +308,7 @@ void ThreadWriter::findLoopFilter() {
       curTokenSeq.resize(loopIndex + 1);
       return;
     } else if (loopLength == 1 && curTokenSeq[loopIndex + 1].type == TypeSequence && curTokenSeq[loopIndex + 1].id == sequence->id) {
-      pallas_log(DebugLevel::Debug, "Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
+      pallas_log(DebugLevel::Debug, "findLoopFilter: Last token was the sequence from L%d: S%d\n", loop->self_id.id, loop->repeated_token.id);
       loop->addIteration();
       curTokenSeq.resize(loopIndex + 1);
       return;
@@ -343,7 +333,7 @@ void ThreadWriter::findLoop() {
                              ? parameterHandler.getMaxLoopLength()
                              : SIZE_MAX;
     if (debugLevel >= DebugLevel::Debug) {
-      printf("Find loops using Basic Algorithm:\n");
+      printf("findLoop: Using Basic Algorithm:\n");
       size_t start_index = (currentIndex >= maxLoopLength) ? currentIndex - maxLoopLength : 0;
       size_t len = (currentIndex <= maxLoopLength) ? currentIndex + 1 : maxLoopLength;
       thread_trace.printTokenArray(curTokenSeq.data(), start_index, len);
@@ -524,7 +514,7 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 
   pallas_assert(archive->getThread(thread_id) == nullptr);
 
-  pallas_log(DebugLevel::Debug, "pallas_write_thread_open(%ux)\n", thread_id);
+  pallas_log(DebugLevel::Debug, "ThreadWriter(%ux)::open\n", thread_id);
 
   thread_trace.initThread(archive, thread_id);
   max_depth = CALLSTACK_DEPTH_DEFAULT;
@@ -747,13 +737,13 @@ void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
 }
 
 TokenId Thread::getEventId(pallas::Event* e) {
-  pallas_log(DebugLevel::Max, "Searching for event {.event_type=%d}\n", e->record);
+  pallas_log(DebugLevel::Max, "getEventId: Searching for event {.event_type=%d}\n", e->record);
 
   pallas_assert(e->event_size < 256);
 
   for (TokenId i = 0; i < nb_events; i++) {
     if (memcmp(e, &events[i].event, e->event_size) == 0) {
-      pallas_log(DebugLevel::Max, "\t found with id=%u\n", i);
+      pallas_log(DebugLevel::Max, "getEventId: \t found with id=%u\n", i);
       return i;
     }
   }
@@ -764,7 +754,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   }
 
   TokenId index = nb_events++;
-  pallas_log(DebugLevel::Max, "\tNot found. Adding it with id=%d\n", index);
+  pallas_log(DebugLevel::Max, "getEventId: \tNot found. Adding it with id=%d\n", index);
   auto* new_event = &events[index];
   new_event->initEventSummary(id, *e);
 
