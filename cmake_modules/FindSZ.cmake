@@ -7,11 +7,11 @@
 
 find_path(SZ_INCLUDE_DIRS
         NAMES sz.h
-        HINTS ${SZ_ROOT_DIR}/include/sz)
+        HINTS ${SZ_ROOT_DIR}/include/sz /usr/local/include/sz)
 
 find_library(SZ_LIBRARIES
         NAMES SZ
-        HINTS ${SZ_ROOT_DIR}/lib)
+        HINTS ${SZ_ROOT_DIR}/lib /usr/local/lib/)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SZ DEFAULT_MSG SZ_LIBRARIES SZ_INCLUDE_DIRS)

@@ -7,11 +7,11 @@
 
 find_path(ZFP_INCLUDE_DIRS
         NAMES zfp.h
-        HINTS ${ZFP_ROOT_DIR}/include)
+        HINTS ${ZFP_ROOT_DIR}/include /usr/local/include)
 
 find_library(ZFP_LIBRARIES
         NAMES zfp
-        HINTS ${ZFP_ROOT_DIR}/lib)
+        HINTS ${ZFP_ROOT_DIR}/lib /usr/local/lib)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ZFP DEFAULT_MSG ZFP_LIBRARIES ZFP_INCLUDE_DIRS)
