@@ -86,7 +86,7 @@ void info_archive(Archive* archive) {
   printf("\ttrace_name: %s\n", archive->trace_name);
   printf("\tfullpath:   %s\n", archive->fullpath);
   printf("\n");
-  printf("\tglobal_archive: %d\n", archive->global_archive ? (int)archive->global_archive->id : -1);
+  printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
 
   printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
   for (auto& string : archive->definitions.strings) {
