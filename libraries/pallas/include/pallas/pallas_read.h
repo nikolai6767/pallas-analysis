@@ -75,6 +75,10 @@ typedef struct TokenOccurence {
   const Token* token;
   /** Occurence corresponding to the Token. */
   Occurence* occurence;
+
+#ifdef __cplusplus
+  ~TokenOccurence();
+#endif
 } TokenOccurence;
 
 /**
@@ -146,7 +150,9 @@ typedef struct ThreadReader {
   [[nodiscard]] EventOccurence getEventOccurence(Token event_id, size_t occurence_id) const;
   /** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
-  [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id, size_t occurence_id) const;
+  [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id,
+                                                       size_t occurence_id,
+                                                       bool saveReaderState) const;
   /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, int occurence_id) const;
@@ -213,6 +219,7 @@ typedef struct Savestate {
   /** Creates a savestate of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
   Savestate(const ThreadReader* reader);
+  ~Savestate();
 #endif
 } Savestate;
 

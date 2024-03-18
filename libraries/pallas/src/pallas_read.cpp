@@ -149,7 +149,9 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
   return eventOccurence;
 }
 
-SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t occurence_id) const {
+SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
+                                                     size_t occurence_id,
+                                                     bool saveReaderState) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -158,7 +160,11 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t o
     sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
   }
   sequenceOccurence.full_sequence = nullptr;
-  sequenceOccurence.savestate = new Savestate(this);
+  if (saveReaderState) {
+    sequenceOccurence.savestate = new Savestate(this);
+  } else {
+    sequenceOccurence.savestate = nullptr;
+  }
 
   //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
@@ -186,7 +192,7 @@ Occurence* ThreadReader::getOccurence(pallas::Token id, int occurence_id) const 
     occurence->event_occurence = getEventOccurence(id, occurence_id);
     break;
   case TypeSequence:
-    occurence->sequence_occurence = getSequenceOccurence(id, occurence_id);
+    occurence->sequence_occurence = getSequenceOccurence(id, occurence_id, false);
     break;
   case TypeLoop:
     occurence->loop_occurence = getLoopOccurence(id, occurence_id);
@@ -347,7 +353,6 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
     switch (token.type) {
     case TypeEvent: {
       auto& occurence = outputVector[i].occurence->event_occurence;
-
       occurence = getEventOccurence(token, tokenCount[token]);
       if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
         referential_timestamp += occurence.duration;
@@ -371,7 +376,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       auto& sequenceTokenCount = thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace);
       occurence.duration = 0;
       DOFOR(j, occurence.nb_iterations) {
-        occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token]);
+        occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token], false);
         if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
           occurence.duration += occurence.full_loop[j].duration;
           referential_timestamp += occurence.full_loop[j].duration;
@@ -380,12 +385,11 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
         tokenCount += sequenceTokenCount;
       }
       leaveBlock();
-
       break;
     }
     case TypeSequence: {
       // Get the info
-      outputVector[i].occurence->sequence_occurence = getSequenceOccurence(token, tokenCount[token]);
+      outputVector[i].occurence->sequence_occurence = getSequenceOccurence(token, tokenCount[token], true);
       if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
         referential_timestamp += outputVector[i].occurence->sequence_occurence.duration;
       }
@@ -422,7 +426,39 @@ Savestate::Savestate(const ThreadReader* reader) {
   savestate_memory += reader->current_frame * sizeof(Token);
   savestate_memory += reader->current_frame * sizeof(int) * 2;
   savestate_memory += sizeof(tokenCount) + (tokenCount.size() * (sizeof(Token) + sizeof(size_t)));
+  pallas_log(DebugLevel::Debug, "New savestate created, memory usage for savestates: %lu bytes\n", savestate_memory );
 #endif
+}
+Savestate::~Savestate() {
+#ifdef DEBUG
+  savestate_memory -= sizeof(Savestate);
+  savestate_memory -= current_frame * sizeof(Token);
+  savestate_memory -= current_frame * sizeof(int) * 2;
+  savestate_memory -= sizeof(tokenCount) + (tokenCount.size() * (sizeof(Token) + sizeof(size_t)));
+#endif
+  delete[] callstack_index;
+  delete[] callstack_loop_iteration;
+  delete[] callstack_sequence;
+  pallas_log(DebugLevel::Debug, "Savestate deleted, memory usage for savestates: %lu bytes\n", savestate_memory );
+
+}
+TokenOccurence::~TokenOccurence() {
+  if (token == nullptr || occurence == nullptr) {
+    return;
+  }
+  if (token->type == TypeSequence) {
+//    delete[] occurence->sequence_occurence.full_sequence;
+    delete occurence->sequence_occurence.savestate;
+  }
+  if (token->type == TypeLoop) {
+    auto& loopOccurence = occurence->loop_occurence;
+    if (loopOccurence.full_loop) {
+      for (int i = 0; i < loopOccurence.nb_iterations; i++) {
+        delete loopOccurence.full_loop[i].savestate;
+      }
+      delete[] loopOccurence.full_loop;
+    }
+  }
 }
 } /* namespace pallas */
 
