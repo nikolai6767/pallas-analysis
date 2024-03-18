@@ -7,7 +7,8 @@
 
 find_path(SZ_INCLUDE_DIRS
         NAMES sz.h
-        HINTS ${SZ_ROOT_DIR}/include/sz /usr/local/include/sz)
+        HINTS ${SZ_ROOT_DIR}/include/sz /usr/local/include/sz
+        PATH_SUFFIXES sz)
 
 find_library(SZ_LIBRARIES
         NAMES SZ

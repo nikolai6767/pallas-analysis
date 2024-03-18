@@ -80,7 +80,7 @@ if (ENABLE_ZFP)
 endif (ENABLE_ZFP)
 
 if (ENABLE_SZ)
-    find_package(SZ)
+    find_package(SZ REQUIRED)
     if (SZ_FOUND)
         add_compile_definitions(WITH_SZ)
     endif ()
