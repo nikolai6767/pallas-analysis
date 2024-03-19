@@ -181,7 +181,7 @@ class ParameterHandler {
    * @returns Value of #loopFindingAlgorithm.
    */
   [[nodiscard]] LoopFindingAlgorithm getLoopFindingAlgorithm() const;
-  /** Creates a ParameterHandler from a config file loaded from CONFIG_FILE_PATH or config.json.
+  /** Creates a ParameterHandler from a config file loaded from PALLAS_CONFIG_PATH or config.json.
    */
 
   /**

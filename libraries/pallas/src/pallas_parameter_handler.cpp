@@ -4,8 +4,10 @@
  */
 
 #include "pallas/pallas_parameter_handler.h"
+
 #include <json/json.h>
 #include <json/value.h>
+#include <pallas_config.h>
 #include <fstream>
 #include <iostream>
 #include "pallas/pallas_dbg.h"
@@ -204,25 +206,25 @@ pallas::TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
 }
 
 namespace pallas {
-const char* defaultPath = "config.json";
+const char* defaultConfigFile = PALLAS_CONFIG_PATH;
 const ParameterHandler parameterHandler = ParameterHandler();
 
 ParameterHandler::ParameterHandler() {
   pallas_debug_level_init();
 
   std::ifstream configFile;
-  const char* possibleConfigFileName = getenv("CONFIG_FILE_PATH");
-  if (!possibleConfigFileName) {
-    pallas_warn("No config file provided, using default: %s\n", defaultPath);
-    possibleConfigFileName = defaultPath;
+  if (const char* givenConfigFile = getenv("PALLAS_CONFIG_PATH"); givenConfigFile) {
+    pallas_log(DebugLevel::Debug, "Loading configuration file from %s\n", givenConfigFile);
+    configFile.open(givenConfigFile);
+    if (!configFile.good()) {
+      pallas_warn("Provided config file didn't exist, or couldn't be read: %s.\n", givenConfigFile);
+      pallas_warn("No config file provided, using default: %s\n", defaultConfigFile);
+      configFile.open(defaultConfigFile);
+      if (!configFile.good()) {
+        pallas_warn("No config file found at default install path ! Check your installation.");
+      }
+    }
   }
-  pallas_log(DebugLevel::Debug, "Loading configuration file from %s\n", possibleConfigFileName);
-  configFile.open(possibleConfigFileName);
-  if (!configFile.good() && possibleConfigFileName != defaultPath) {
-    pallas_warn("Config file didn't exist: %s.\n", possibleConfigFileName);
-    return;
-  }
-
   Json::Value config;
   if (configFile.good()) {
     configFile >> config;

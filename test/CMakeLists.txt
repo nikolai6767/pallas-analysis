@@ -8,14 +8,14 @@ include_directories(${CMAKE_SOURCE_DIR}/src/)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 link_libraries(pallas Threads::Threads)
-configure_file(../config.json config.json COPYONLY)
+
 
 #####################################################
 # write_benchmark
 
 add_executable(write_benchmark write_benchmark.c)
 
-SET(TRACE_NAME "${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_trace")
+SET(TRACE_NAME ${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_trace)
 SET(N_THREADS 4)
 SET(N_ITER 40)
 
@@ -51,6 +51,9 @@ set_tests_properties(info_benchmark_logical print_benchmark_logical print_benchm
 set_tests_properties(benchmark_checks_logical PROPERTIES
         REQUIRED "info_benchmark_logical;print_benchmark_logical;print_benchmark_structure_logical")
 
+set_tests_properties(write_benchmark write_benchmark_logical PROPERTIES
+        ENVIRONMENT PALLAS_CONFIG_PATH="${CMAKE_SOURCE_DIR}/libraries/pallas/defaultConfig.json"
+)
 add_executable(find_loop find_loop.cpp)
 add_test(NAME find_loop COMMAND find_loop 50 100)
 

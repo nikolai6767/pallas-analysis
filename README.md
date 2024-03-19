@@ -35,7 +35,7 @@ It also implements the [Murmur3 hashing function](https://github.com/PeterScott/
 
 ## Configuration
 
-A JSON Config file can be given to Pallas with the CONFIG_FILE_PATH environment variable.
+A JSON Config file can be given to Pallas with the PALLAS_CONFIG_PATH environment variable.
 If that variable is empty, Pallas will try to load a config.json in the current directory.
 If that file does not exist, a default config will be loaded.
 That file is a mirror image of the ParameterHandler class in `libraries/pallas/src/ParameterHandler.h`

@@ -106,8 +106,6 @@ add_subdirectory(test)
 # endif()
 
 include(PrintOpts)
-configure_file(config.json config.json COPYONLY)
-
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pallas.pc.in
         ${CMAKE_CURRENT_BINARY_DIR}/pallas.pc)
