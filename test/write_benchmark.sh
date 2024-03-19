@@ -8,70 +8,52 @@ if [ $# -gt 0 ]; then
     BUILD_DIR="$1/test"
 fi
 
+use_logical=0
+n_threads=4
+n_iter=40
+for arg in "$@"; do
+  if [ "$next_is_thread" = "1" ]; then
+    n_threads="$arg";
+    next_is_thread=0;
+    continue
+  fi
+  if [ "$next_is_iter" = "1" ]; then
+    n_iter="$arg";
+    next_is_iter=0;
+    continue
+  fi
+  if [ "$arg" = "-l" ]; then
+    use_logical=1
+  fi
+  if [ "$arg" = "-n" ]; then
+    next_is_iter=1;
+  fi
+  if [ "$arg" = "-t" ]; then
+      next_is_thread=1;
+  fi
+done
+
 nb_failed=0
 nb_pass=0
 
-test_program="write_benchmark"
-
-# First, run the test program
-
-niter=20
-nthread=4
-
-# we need to move to the build dir to make sure the trace is not generated in the source directory
+trace_dir="$2"
+trace_filename="$trace_dir/main.pallas"
 cd "$BUILD_DIR"
-run_and_check_command  "./${test_program}"  -n $niter -t $nthread
-# Then, check that the generated trace is OK
-trace_filename="${test_program}_trace/main.pallas"
-
-trace_check_existence "$trace_filename"
-trace_check_pallas_print "$trace_filename"
-
-# TODO:
-# - check that pallas_info works:
-trace_check_pallas_info "$trace_filename"
-
 trace_check_enter_leave_parity "$trace_filename"
+trace_check_nb_function "$trace_filename" function_0 $(expr $n_iter \* $n_threads)
+trace_check_nb_function "$trace_filename" function_1 $(expr $n_iter \* $n_threads)
 
-trace_check_nb_function "$trace_filename" function_0 $(expr $niter \* $nthread)
-trace_check_nb_function "$trace_filename" function_1 $(expr $niter \* $nthread)
-
-#rm -rf "${test_program}_trace"
-
-
-# Run the benchmark again with a logical clock
-run_and_check_command  "./${test_program}"  -n $niter -t $nthread -l
-
-# Then, check that the generated trace is OK
-trace_filename="${test_program}_trace/main.pallas"
-
-trace_check_existence "$trace_filename"
-trace_check_pallas_print "$trace_filename"
-
-# TODO:
-# - check that pallas_info works:
-trace_check_pallas_info "$trace_filename"
-
-trace_check_enter_leave_parity "$trace_filename"
-
-trace_check_nb_function "$trace_filename" function_0 $(expr $niter \* $nthread)
-trace_check_nb_function "$trace_filename" function_1 $(expr $niter \* $nthread)
-
-trace_check_timestamp_order "$trace_filename" thread_0
-trace_check_timestamp_order "$trace_filename" thread_1
-trace_check_timestamp_order "$trace_filename" thread_2
-trace_check_timestamp_order "$trace_filename" thread_3
-
-trace_check_timestamp_values "$trace_filename" thread_0
-trace_check_timestamp_values "$trace_filename" thread_1
-trace_check_timestamp_values "$trace_filename" thread_2
-trace_check_timestamp_values "$trace_filename" thread_3
-
-#rm -rf "${test_program}_trace"
+if [ "$use_logical" = "1" ]; then
+  for ((i=1;i<n_threads;i++)); do
+      trace_check_timestamp_order "$trace_filename" thread_$i
+      trace_check_timestamp_values "$trace_filename" thread_$i
+  done
+fi
 
 echo "results: $nb_pass pass, $nb_failed failed"
 if [ $nb_failed -gt 0 ]; then
-    exit 1;
+  exit 1;
 else
-    exit 0;
+  rm -rf "$trace_dir"
+  exit 0;
 fi

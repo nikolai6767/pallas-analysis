@@ -15,11 +15,41 @@ configure_file(../config.json config.json COPYONLY)
 
 add_executable(write_benchmark write_benchmark.c)
 
-add_test(build_write_benchmark "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target write_benchmark)
-add_test (write_benchmark_tests bash
+SET(TRACE_NAME "${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_trace")
+SET(N_THREADS 4)
+SET(N_ITER 40)
+
+add_test(NAME write_benchmark COMMAND write_benchmark -n ${N_ITER} -t ${N_THREADS})
+
+add_test(NAME info_benchmark COMMAND pallas_info ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark COMMAND pallas_print ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark_structure COMMAND pallas_print -S ${TRACE_NAME}/main.pallas)
+
+add_test (benchmark_checks bash
         "${CMAKE_CURRENT_SOURCE_DIR}/write_benchmark.sh"
-        "${CMAKE_BINARY_DIR}"
-        DEPENDS build_write_benchmark)
+        "${CMAKE_BINARY_DIR}" ${TRACE_NAME} -n ${N_ITER} -t ${N_THREADS})
+
+set_tests_properties(info_benchmark print_benchmark print_benchmark_structure PROPERTIES
+        REQUIRED_FILES ${TRACE_NAME})
+set_tests_properties(benchmark_checks PROPERTIES
+        REQUIRED "info_benchmark;print_benchmark;print_benchmark_structure")
+
+
+add_test(NAME write_benchmark_logical COMMAND write_benchmark -n ${N_ITER} -t ${N_THREADS} -l)
+
+add_test(NAME info_benchmark_logical COMMAND pallas_info ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark_logical COMMAND pallas_print ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark_structure_logical COMMAND pallas_print -S ${TRACE_NAME}/main.pallas)
+
+add_test (benchmark_checks_logical bash
+        "${CMAKE_CURRENT_SOURCE_DIR}/write_benchmark.sh"
+        "${CMAKE_BINARY_DIR}" ${TRACE_NAME} -n ${N_ITER} -t ${N_THREADS} -l)
+
+
+set_tests_properties(info_benchmark_logical print_benchmark_logical print_benchmark_structure_logical PROPERTIES
+        REQUIRED_FILES ${TRACE_NAME})
+set_tests_properties(benchmark_checks_logical PROPERTIES
+        REQUIRED "info_benchmark_logical;print_benchmark_logical;print_benchmark_structure_logical")
 
 add_executable(find_loop find_loop.cpp)
 add_test(NAME find_loop COMMAND find_loop 50 100)
