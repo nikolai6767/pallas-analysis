@@ -42,7 +42,6 @@ void pallas_storage_option_init() {
   if (store_hashing_str && strcmp(store_hashing_str, "FALSE") != 0)
     STORE_HASHING = 1;
 }
-static long getOffset();
 
 static void pallasStoreEvent(pallas::EventSummary& event, FILE* eventFile, FILE* durationFile);
 static void pallasStoreSequence(pallas::Sequence& sequence, FILE* sequenceFile, FILE* durationFile);
@@ -140,7 +139,7 @@ static FILE* pallasFileOpen(const char* filename, const char* mode) {
  *  @returns Number of bytes written in the dest array.
  */
 inline static size_t _pallas_zstd_compress(void* src, size_t size, void* dest, size_t destSize) {
-  return ZSTD_compress(dest, destSize, src, size, pallas::parameterHandler.getZstdCompressionLevel());
+  return ZSTD_compress(dest, destSize, src, size, pallas::parameterHandler->getZstdCompressionLevel());
 }
 
 /**
@@ -379,7 +378,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
   uint64_t* encodedArray = nullptr;
   size_t encodedSize;
   // First we do the encoding
-  switch (pallas::parameterHandler.getEncodingAlgorithm()) {
+  switch (pallas::parameterHandler->getEncodingAlgorithm()) {
   case pallas::EncodingAlgorithm::None:
     break;
   case pallas::EncodingAlgorithm::Masking: {
@@ -397,7 +396,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
 
   byte* compressedArray = nullptr;
   size_t compressedSize;
-  switch (pallas::parameterHandler.getCompressionAlgorithm()) {
+  switch (pallas::parameterHandler->getCompressionAlgorithm()) {
   case pallas::CompressionAlgorithm::None:
     break;
   case pallas::CompressionAlgorithm::ZSTD: {
@@ -432,13 +431,13 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     pallas_error("Invalid Compression algorithm\n");
   }
 
-  if (pallas::parameterHandler.getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
+  if (pallas::parameterHandler->getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
     pallas_log(pallas::DebugLevel::Debug, "Compressing %lu bytes as %lu bytes\n", size, compressedSize);
     _pallas_fwrite(&compressedSize, sizeof(compressedSize), 1, file);
     _pallas_fwrite(compressedArray, compressedSize, 1, file);
     numberRawBytes += size;
     numberCompressedBytes += compressedSize;
-  } else if (pallas::parameterHandler.getEncodingAlgorithm() != pallas::EncodingAlgorithm::None) {
+  } else if (pallas::parameterHandler->getEncodingAlgorithm() != pallas::EncodingAlgorithm::None) {
     pallas_log(pallas::DebugLevel::Debug, "Encoding %lu bytes as %lu bytes\n", size, encodedSize);
     _pallas_fwrite(&encodedSize, sizeof(encodedSize), 1, file);
     _pallas_fwrite(encodedArray, encodedSize, 1, file);
@@ -447,9 +446,9 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     _pallas_fwrite(&size, sizeof(size), 1, file);
     _pallas_fwrite(src, size, 1, file);
   }
-  if (pallas::parameterHandler.getCompressionAlgorithm() != pallas::CompressionAlgorithm::None)
+  if (pallas::parameterHandler->getCompressionAlgorithm() != pallas::CompressionAlgorithm::None)
     delete[] compressedArray;
-  if (pallas::parameterHandler.getEncodingAlgorithm() != pallas::EncodingAlgorithm::None)
+  if (pallas::parameterHandler->getEncodingAlgorithm() != pallas::EncodingAlgorithm::None)
     delete[] encodedArray;
 }
 
@@ -470,8 +469,8 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
   size_t encodedSize;
   byte* encodedArray = nullptr;
 
-  auto compressionAlgorithm = pallas::parameterHandler.getCompressionAlgorithm();
-  auto encodingAlgorithm = pallas::parameterHandler.getEncodingAlgorithm();
+  auto compressionAlgorithm = pallas::parameterHandler->getCompressionAlgorithm();
+  auto encodingAlgorithm = pallas::parameterHandler->getEncodingAlgorithm();
   if (compressionAlgorithm != pallas::CompressionAlgorithm::None) {
     _pallas_fread(&compressedSize, sizeof(compressedSize), 1, file);
     compressedArray = new byte[compressedSize];
@@ -482,7 +481,7 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
   case pallas::CompressionAlgorithm::None:
     break;
   case pallas::CompressionAlgorithm::ZSTD: {
-    if (pallas::parameterHandler.getEncodingAlgorithm() == pallas::EncodingAlgorithm::None) {
+    if (pallas::parameterHandler->getEncodingAlgorithm() == pallas::EncodingAlgorithm::None) {
       size_t uncompressedSize;
       uncompressedArray = _pallas_zstd_read(uncompressedSize, compressedArray, compressedSize);
       pallas_assert(uncompressedSize == expectedSize);
@@ -516,7 +515,7 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
   case pallas::EncodingAlgorithm::None:
     break;
   case pallas::EncodingAlgorithm::Masking: {
-    if (pallas::parameterHandler.getCompressionAlgorithm() == pallas::CompressionAlgorithm::None) {
+    if (pallas::parameterHandler->getCompressionAlgorithm() == pallas::CompressionAlgorithm::None) {
       _pallas_fread(&encodedSize, sizeof(encodedSize), 1, file);
       encodedArray = new byte[encodedSize];  // Too big but don't care
       _pallas_fread(encodedArray, encodedSize, 1, file);
@@ -651,7 +650,7 @@ static void _pallas_store_attribute_values(pallas::EventSummary* e, FILE* file) 
   _pallas_fwrite(&e->attribute_pos, sizeof(e->attribute_pos), 1, file);
   if (e->attribute_pos > 0) {
     pallas_log(pallas::DebugLevel::Debug, "\t\tStore %lu attributes\n", e->attribute_pos);
-    if (pallas::parameterHandler.getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
+    if (pallas::parameterHandler->getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
       size_t compressedSize = ZSTD_compressBound(e->attribute_pos);
       byte* compressedArray = new byte[compressedSize];
       compressedSize = _pallas_zstd_compress(e->attribute_buffer, e->attribute_pos, compressedArray, compressedSize);
@@ -675,7 +674,7 @@ static void _pallas_read_attribute_values(pallas::EventSummary* e, FILE* file) {
     if (e->attribute_buffer == nullptr) {
       pallas_error("Cannot allocate memory\n");
     }
-    if (pallas::parameterHandler.getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
+    if (pallas::parameterHandler->getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
       size_t compressedSize;
       _pallas_fread(&compressedSize, sizeof(compressedSize), 1, file);
       byte* compressedArray = new byte[compressedSize];
@@ -838,18 +837,25 @@ static void pallasStoreString(pallas::Archive* a) {
   fclose(file);
 }
 
-static void pallasReadStringGeneric(FILE* file, pallas::String* s, int string_index) {
+static void pallasReadStringGeneric(FILE* file, pallas::String* s) {
   _pallas_fread(&s->string_ref, sizeof(s->string_ref), 1, file);
   _pallas_fread(&s->length, sizeof(s->length), 1, file);
   s->str = new char[s->length];
   pallas_assert(s->str);
   _pallas_fread(s->str, sizeof(char), s->length, file);
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index,
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad String {.ref=%d, .length=%d, .str='%s'}\n",
              s->string_ref, s->length, s->str);
 }
 
-static void pallasReadString(pallas::String* s, int string_index, FILE* stringFile) {
-  pallasReadStringGeneric(stringFile, s, string_index);
+static void pallasReadString(pallas::Archive* a) {
+  if (a->definitions.strings.empty())
+    return;
+
+  FILE* file = pallasGetStringFile(a, "r");
+  for (auto& s: a->definitions.strings) {
+    pallasReadStringGeneric(file, &s);
+  }
+  fclose(file);
 }
 
 static FILE* pallasGetRegionsFile(pallas::Archive* a, const char* mode) {
@@ -1158,6 +1164,7 @@ void pallas_storage_finalize(pallas::Archive* archive) {
   if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID) {
     uint8_t version = PALLAS_ABI_VERSION;
     _pallas_fwrite(&version, sizeof(version), 1, f);
+    pallas::parameterHandler->writeToFile(f);
   }
   size_t size = archive->definitions.strings.size();
   _pallas_fwrite(&size, sizeof(size), 1, f);
@@ -1209,6 +1216,24 @@ char* pallas_archive_fullpath(char* dir_name, char* trace_name) {
   return fullpath;
 }
 
+void pallas::ParameterHandler::writeToFile(FILE* file) const {
+  _pallas_fwrite(&compressionAlgorithm, sizeof(compressionAlgorithm), 1, file);
+  _pallas_fwrite(&encodingAlgorithm, sizeof(encodingAlgorithm), 1, file);
+  _pallas_fwrite(&zstdCompressionLevel, sizeof(zstdCompressionLevel), 1, file);
+  _pallas_fwrite(&loopFindingAlgorithm, sizeof(loopFindingAlgorithm), 1, file);
+  _pallas_fwrite(&maxLoopLength, sizeof(maxLoopLength), 1, file);
+  _pallas_fwrite(&timestampStorage, sizeof(timestampStorage), 1, file);
+}
+
+void pallas::ParameterHandler::readFromFile(FILE* file) {
+  _pallas_fread(&compressionAlgorithm, sizeof(compressionAlgorithm), 1, file);
+  _pallas_fread(&encodingAlgorithm, sizeof(encodingAlgorithm), 1, file);
+  _pallas_fread(&zstdCompressionLevel, sizeof(zstdCompressionLevel), 1, file);
+  _pallas_fread(&loopFindingAlgorithm, sizeof(loopFindingAlgorithm), 1, file);
+  _pallas_fread(&maxLoopLength, sizeof(maxLoopLength), 1, file);
+  _pallas_fread(&timestampStorage, sizeof(timestampStorage), 1, file);
+}
+
 static void pallasReadArchive(pallas::Archive* global_archive,
                               pallas::Archive* archive,
                               char* dir_name,
@@ -1236,6 +1261,8 @@ static void pallasReadArchive(pallas::Archive* global_archive,
     uint8_t abi_version;
     _pallas_fread(&abi_version, sizeof(abi_version), 1, f);
     pallas_assert_always(abi_version == PALLAS_ABI_VERSION);
+    pallas::parameterHandler = new pallas::ParameterHandler();
+    pallas::parameterHandler->readFromFile(f);
   }
   size_t size;
 
@@ -1265,12 +1292,7 @@ static void pallasReadArchive(pallas::Archive* global_archive,
   }
   archive->store_timestamps = STORE_TIMESTAMPS;
 
-  FILE* stringFile = pallasGetStringFile(archive, "r");
-  for (int i = 0; i < archive->definitions.strings.size(); i++) {
-    pallas_assert(strcmp(archive->dir_name, dir_name) == 0);
-    pallasReadString(&archive->definitions.strings[i], i, stringFile);
-  }
-  fclose(stringFile);
+  pallasReadString(archive);
 
   pallasReadRegions(archive);
   pallasReadAttributes(archive);

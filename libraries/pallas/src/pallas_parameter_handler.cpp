@@ -207,24 +207,41 @@ pallas::TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
 
 namespace pallas {
 const char* defaultConfigFile = PALLAS_CONFIG_PATH;
-const ParameterHandler parameterHandler = ParameterHandler();
+ParameterHandler* parameterHandler = nullptr;
+ParameterHandler::ParameterHandler(const std::string &stringConfig) {
+  Json::Reader reader;
+  Json::Value config;
+  reader.parse(stringConfig, config);
+
+  compressionAlgorithm = loadCompressionAlgorithmConfig(config);
+  encodingAlgorithm = loadEncodingAlgorithmConfig(config);
+  loopFindingAlgorithm = loadLoopFindingAlgorithmConfig(config);
+  maxLoopLength = loadMaxLoopLength(config);
+  zstdCompressionLevel = loadZSTDCompressionLevel(config);
+  timestampStorage = loadTimestampStorageConfig(config);
+
+  pallas_log(pallas::DebugLevel::Normal, "%s\n", to_string().c_str());
+}
 
 ParameterHandler::ParameterHandler() {
-  pallas_debug_level_init();
-
   std::ifstream configFile;
   if (const char* givenConfigFile = getenv("PALLAS_CONFIG_PATH"); givenConfigFile) {
     pallas_log(DebugLevel::Debug, "Loading configuration file from %s\n", givenConfigFile);
     configFile.open(givenConfigFile);
     if (!configFile.good()) {
       pallas_warn("Provided config file didn't exist, or couldn't be read: %s.\n", givenConfigFile);
-      pallas_warn("No config file provided, using default: %s\n", defaultConfigFile);
-      configFile.open(defaultConfigFile);
-      if (!configFile.good()) {
-        pallas_warn("No config file found at default install path ! Check your installation.");
-      }
+      goto elseJump;
+    }
+  } else {
+    elseJump:
+    pallas_warn("No config file provided, using default: %s\n", defaultConfigFile);
+    configFile.open(defaultConfigFile);
+    if (!configFile.good()) {
+      pallas_warn("No config file found at default install path ! Check your installation.\n");
+      return;
     }
   }
+
   Json::Value config;
   if (configFile.good()) {
     configFile >> config;

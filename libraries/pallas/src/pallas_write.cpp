@@ -317,20 +317,20 @@ void ThreadWriter::findLoopFilter() {
 }
 
 void ThreadWriter::findLoop() {
-  if (parameterHandler.getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
+  if (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
     return;
   }
 
   auto& curTokenSeq = getCurrentTokenSequence();
   size_t currentIndex = curTokenSeq.size() - 1;
 
-  switch (parameterHandler.getLoopFindingAlgorithm()) {
+  switch (parameterHandler->getLoopFindingAlgorithm()) {
   case LoopFindingAlgorithm::None:
     return;
   case LoopFindingAlgorithm::Basic:
   case LoopFindingAlgorithm::BasicTruncated: {
-    size_t maxLoopLength = (parameterHandler.getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated)
-                             ? parameterHandler.getMaxLoopLength()
+    size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated)
+                             ? parameterHandler->getMaxLoopLength()
                              : SIZE_MAX;
     if (debugLevel >= DebugLevel::Debug) {
       printf("findLoop: Using Basic Algorithm:\n");
@@ -491,7 +491,9 @@ void Archive::open(const char* dirname, const char* given_trace_name, LocationGr
     return;
   pallas_recursion_shield++;
   pallas_debug_level_init();
-
+  if (!parameterHandler) {
+    parameterHandler = new ParameterHandler();
+  }
   dir_name = strdup(dirname);
   trace_name = strdup(given_trace_name);
   fullpath = pallas_archive_fullpath(dir_name, trace_name);

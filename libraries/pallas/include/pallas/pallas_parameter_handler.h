@@ -189,7 +189,11 @@ class ParameterHandler {
    * @returns Value of #timestampStorage. */
   [[nodiscard]] TimestampStorage getTimestampStorage() const;
 
+  void writeToFile(FILE* file) const;
+  void readFromFile(FILE* file) ;
+
   ParameterHandler();
+  ParameterHandler(const std::string &stringConfig);
   /**
    * Prints a JSON of the ParameterHandler.
    * @return String containing a JSON of itself.
@@ -198,5 +202,5 @@ class ParameterHandler {
 };
 
 /** Global ParameterHandler. This is supposed to be the only instance of that class. */
-extern const ParameterHandler parameterHandler;
+extern ParameterHandler* parameterHandler;
 }  // namespace pallas
