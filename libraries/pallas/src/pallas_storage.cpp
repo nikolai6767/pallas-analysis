@@ -78,7 +78,8 @@ static void _pallas_read_locations(pallas::Archive* a);
 
 void pallas_read_thread(pallas::Archive* archive, pallas::ThreadId thread_id);
 
-static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive, pallas::LocationGroupId archive_id
+static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive,
+  pallas::LocationGroupId archive_id,
   bool print_warning=true);
 
 static void _pallas_mkdir(const char* dirname, mode_t mode) {
