@@ -1217,7 +1217,9 @@ static void _pallas_read_archive(pallas::Archive* global_archive,
   fclose(f);
 }
 
-static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive, pallas::LocationGroupId archive_id) {
+static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive,
+					    pallas::LocationGroupId archive_id,
+					    bool print_warning=true) {
   /* check if archive_id is already known */
   for (int i = 0; i < global_archive->nb_archives; i++) {
     if (global_archive->archive_list[i]->id == archive_id) {
@@ -1230,11 +1232,13 @@ static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive, pal
   char* filename = _archive_filename(global_archive, archive_id);
   char* fullpath = pallas_archive_fullpath(global_archive->dir_name, filename);
   if (access(fullpath, R_OK) < 0) {
-    printf("I can't read %s: %s\n", fullpath, strerror(errno));
+    if(print_warning)
+      pallas_warn("I can't read %s: %s\n", fullpath, strerror(errno));
     free(fullpath);
     return nullptr;
   }
-  printf("Reading archive %s\n", fullpath);
+
+  pallas_log(pallas::DebugLevel::Verbose, "Reading archive %s\n", fullpath);
   delete[] fullpath;
 
   while (global_archive->nb_archives >= global_archive->nb_allocated_archives) {
@@ -1284,7 +1288,10 @@ void pallas_read_archive(pallas::Archive* archive, char* main_filename) {
   }
 
   for (auto& location_group : archive->location_groups) {
-    _pallas_get_archive(global_archive, location_group.id);
+    _pallas_get_archive(global_archive, location_group.id, false);
+  }
+  for (auto& location : archive->locations) {
+    _pallas_get_archive(global_archive, location.id, false);
   }
 }
 
