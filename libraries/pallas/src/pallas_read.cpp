@@ -376,7 +376,7 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       auto& sequenceTokenCount = thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace);
       occurence.duration = 0;
       DOFOR(j, occurence.nb_iterations) {
-        occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token], false);
+        occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token], true);
         if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
           occurence.duration += occurence.full_loop[j].duration;
           referential_timestamp += occurence.full_loop[j].duration;
@@ -459,6 +459,7 @@ TokenOccurence::~TokenOccurence() {
       delete[] loopOccurence.full_loop;
     }
   }
+  delete occurence;
 }
 } /* namespace pallas */
 
