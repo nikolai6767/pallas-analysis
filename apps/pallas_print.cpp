@@ -310,6 +310,7 @@ void printTrace(pallas::Archive& trace) {
     });
     print_token(currentReader->thread_trace, tokenOccurence.token, tokenOccurence.occurence);
     // If you read the doc, you'll know that the memory of tokenOccurence is ours to manage
+    delete tokenOccurence.occurence;
     std::tie(threadId, tokenOccurence) = getNextToken(readers);
   }
 }
