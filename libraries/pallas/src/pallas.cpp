@@ -143,9 +143,9 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
 }
 
 Archive::~Archive() {
-  delete dir_name;
-  delete trace_name;
-  delete fullpath;
+  delete[] dir_name;
+  delete[] trace_name;
+  delete[] fullpath;
   delete[] threads;
   delete[] archive_list;
 }
