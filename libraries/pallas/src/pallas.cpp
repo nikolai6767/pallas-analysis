@@ -151,6 +151,10 @@ Archive::~Archive() {
 }
 
 Thread::~Thread() {
+  DOFOR(i, nb_events) {
+    delete events[i].durations;
+    delete[] events[i].attribute_buffer;
+  }
   delete[] events;
   DOFOR(i, nb_sequences) {
     delete sequences[i];
