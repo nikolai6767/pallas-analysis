@@ -243,7 +243,7 @@ static void print_thread(pallas::Archive& trace, pallas::Thread* thread) {
   int reader_options = pallas::ThreadReaderOptions::None;
   if (show_structure)
     reader_options |= pallas::ThreadReaderOptions::ShowStructure;
-  if (!store_timestamps || trace.store_timestamps == 0)
+  if (!store_timestamps || !trace.store_timestamps)
     reader_options |= pallas::ThreadReaderOptions::NoTimestamps;
 
   auto reader = pallas::ThreadReader(&trace, thread->id, reader_options);
@@ -380,7 +380,9 @@ int main(int argc, char** argv) {
 
   auto trace = pallas::Archive();
   pallas_read_archive(&trace, trace_name);
-  store_timestamps = trace.store_timestamps;
+  if (trace.store_timestamps == 0)
+    store_timestamps = 0;
+
 
   if (per_thread) {
     for (int i = 0; i < trace.nb_threads; i++) {

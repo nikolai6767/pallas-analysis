@@ -732,6 +732,7 @@ static void _pallas_read_sequence(const char* base_dirname,
     pallas_assert(stored_hash == s->hash);
   }
   if (STORE_TIMESTAMPS) {
+    delete s->durations; // durations is created when making a new Sequence
     s->durations = new pallas::LinkedVector(file, filename);
   }
   fclose(file);
@@ -1141,8 +1142,8 @@ static void _pallas_read_archive(pallas::Archive* global_archive,
                                  char* dir_name,
                                  char* trace_name) {
   archive->fullpath = pallas_archive_fullpath(dir_name, trace_name);
-  archive->dir_name = strdup(dir_name);
-  archive->trace_name = strdup(trace_name);
+  archive->dir_name = dir_name;
+  archive->trace_name = trace_name;
   archive->global_archive = global_archive;
   archive->nb_archives = 0;
   archive->nb_allocated_archives = 1;
