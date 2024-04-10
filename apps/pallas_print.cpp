@@ -254,7 +254,8 @@ static void printThread(pallas::Archive& trace, pallas::Thread* thread) {
 
 /**
  * Compare the timestamps of the current token on each thread and select the smallest timestamp.
- * @returns Tuple containing the ThreadId and a TokenOccurence.
+ * Sets the values of tokenOccurence.
+ * @returns The ThreadId of the earliest thread.
  *          You are responsible for the memory of the TokenOccurence.
  */
 static pallas::ThreadId getNextToken(std::vector<pallas::ThreadReader>& threadReaders,
