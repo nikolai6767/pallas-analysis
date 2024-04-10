@@ -296,7 +296,7 @@ void printTrace(pallas::Archive& trace) {
   int reader_options = pallas::ThreadReaderOptions::None;
   //  if (show_structure)
   //    reader_options |= pallas::ThreadReaderOptions::ShowStructure;
-
+  readers.reserve(trace.nb_threads);
   for (int i = 0; i < trace.nb_threads; i++) {
     readers.emplace_back(&trace, trace.threads[i]->id, reader_options);
   }

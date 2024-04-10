@@ -69,18 +69,20 @@ typedef struct Archive {
   char* fullpath;       /**< \todo Complete this. */
   pthread_mutex_t lock; /**< Archive-wise lock, used for synchronising some threads. */
 
-  LocationGroupId id;             /**< ID for the pallas::LocationGroup of that Archive. */
+  LocationGroupId id d CXX({PALLAS_LOCATION_GROUP_ID_INVALID}); /**< ID for the pallas::LocationGroup of that Archive. */
   struct Archive* global_archive; /**< The Global Archive is the archive encompassing the whole execution. NULL if
                                    * this is the global archive. */
 
-  Definition definitions;   /**< Definitions. */
-  struct Thread** threads;  /**< Array of Thread. */
+  Definition definitions; /**< Definitions. */
+  struct Thread** threads
+    CXX({nullptr});         /**< Array of Thread.
+                             * The memory of each thread is handled by their reader / writer individually. */
   int nb_threads;           /**< Number of Thread in #threads. */
   int nb_allocated_threads; /**< Size of #threads. */
 
-  struct Archive** archive_list; /**< Array of Archive *. */
-  int nb_archives;               /**< Number of Archive in #archive_list. */
-  int nb_allocated_archives;     /**< Size of #archive_list. */
+  struct Archive** archive_list CXX({nullptr}); /**< Array of Archive *. */
+  int nb_archives;                              /**< Number of Archive in #archive_list. */
+  int nb_allocated_archives;                    /**< Size of #archive_list. */
 
   DEFINE_Vector(Location, locations);            /**< Vector of Location. */
   DEFINE_Vector(LocationGroup, location_groups); /**< Vector of LocationGroup. */
@@ -136,8 +138,8 @@ extern struct PALLAS(Thread) * pallas_archive_get_thread(PALLAS(Archive) * archi
 
 /**
  * Getter for a LocationGroup from its id.
- * @returns First LocationGroup matching the given pallas::LocationGroupId in this archive, or in the global_archive if it
- * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
+ * @returns First LocationGroup matching the given pallas::LocationGroupId in this archive, or in the global_archive if
+ * it doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
 extern const struct PALLAS(LocationGroup) *
   pallas_archive_get_location_group(PALLAS(Archive) * archive, PALLAS(LocationGroupId) location_group);
@@ -147,7 +149,8 @@ extern const struct PALLAS(LocationGroup) *
  * @returns First Location matching the given pallas::ThreadId in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-extern const struct PALLAS(Location) * pallas_archive_get_location(PALLAS(Archive) * archive, PALLAS(ThreadId) thread_id);
+extern const struct PALLAS(Location) *
+  pallas_archive_get_location(PALLAS(Archive) * archive, PALLAS(ThreadId) thread_id);
 
 /**
  * Creates a new String and adds it to that Archive.
@@ -162,8 +165,8 @@ extern void pallas_archive_register_string(PALLAS(Archive) * archive, PALLAS(Str
  * Locks and unlocks the mutex for that operation.
  */
 extern void pallas_archive_register_region(PALLAS(Archive) * archive,
-                                        PALLAS(RegionRef) region_ref,
-                                        PALLAS(StringRef) string_ref);
+                                           PALLAS(RegionRef) region_ref,
+                                           PALLAS(StringRef) string_ref);
 
 /**
  * Creates a new Attribute and adds it to that Archive.
@@ -171,10 +174,10 @@ extern void pallas_archive_register_region(PALLAS(Archive) * archive,
  * Locks and unlocks the mutex for that operation.
  */
 extern void pallas_archive_register_attribute(PALLAS(Archive) * archive,
-                                           PALLAS(AttributeRef) attribute_ref,
-                                           PALLAS(StringRef) name_ref,
-                                           PALLAS(StringRef) description_ref,
-                                           PALLAS(pallas_type_t) type);
+                                              PALLAS(AttributeRef) attribute_ref,
+                                              PALLAS(StringRef) name_ref,
+                                              PALLAS(StringRef) description_ref,
+                                              PALLAS(pallas_type_t) type);
 
 /**
  * Getter for a String from its id.
@@ -195,7 +198,8 @@ extern const struct PALLAS(Region) * pallas_archive_get_region(PALLAS(Archive) *
  * @returns First Attribute matching the given pallas::AttributeRef in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-extern const struct PALLAS(Attribute) * pallas_archive_get_attribute(PALLAS(Archive) * archive, PALLAS(AttributeRef) attribute_ref);
+extern const struct PALLAS(Attribute) *
+  pallas_archive_get_attribute(PALLAS(Archive) * archive, PALLAS(AttributeRef) attribute_ref);
 #ifdef __cplusplus
 };
 #endif /* __cplusplus */

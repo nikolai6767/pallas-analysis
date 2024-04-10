@@ -53,9 +53,9 @@ int main(int argc, char** argv __attribute__((unused))) {
   int NUM_LOOPS = std::stoi(argv[2]);
 
   /* Make a dummy archive and a dummy thread writer. */
-  struct Archive archive;
+  Archive archive;
   archive.open(dummyTraceName.c_str(), dummyTraceName.c_str(), 0);
-  struct ThreadWriter thread_writer;
+  ThreadWriter thread_writer;
   thread_writer.open(&archive, 0);
 
   /* Start recording some events.*/

@@ -146,9 +146,6 @@ Archive::~Archive() {
   delete dir_name;
   delete trace_name;
   delete fullpath;
-  DOFOR(i, nb_threads) {
-    delete threads[i];
-  }
   delete[] threads;
   delete[] archive_list;
 }

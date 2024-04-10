@@ -403,6 +403,18 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
   }
   return outputVector;
 }
+ThreadReader::~ThreadReader() {
+  bool hasStilThreads = false;
+  DOFOR(i, archive->nb_threads) {
+    hasStilThreads = hasStilThreads || archive->threads[i] != nullptr;
+    if (archive->threads[i] == thread_trace) {
+      archive->threads[i] = nullptr;
+    }
+  }
+  delete thread_trace;
+  if (!hasStilThreads)
+    delete archive;
+}
 
 Savestate::Savestate(const ThreadReader* reader) {
   if ((reader->options & ThreadReaderOptions::NoTimestamps) == 0) {

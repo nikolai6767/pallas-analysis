@@ -148,7 +148,7 @@ const Attribute* Archive::getAttribute(AttributeRef attribute_ref) {
  */
 Thread* Archive::getThread(ThreadId thread_id) const {
   for (int i = 0; i < nb_threads; i++) {
-    if (threads[i]->id == thread_id)
+    if (threads[i] && threads[i]->id == thread_id)
       return threads[i];
   }
   return nullptr;

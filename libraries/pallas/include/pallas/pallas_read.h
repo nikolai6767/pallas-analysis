@@ -191,6 +191,7 @@ typedef struct ThreadReader {
   [[nodiscard]] std::vector<TokenOccurence> readCurrentLevel();
   /** Skips the given Sequence and updates the reader. */
   void skipSequence([[maybe_unused]] Token token) { pallas_error("Not implemented yet\n"); };
+  ~ThreadReader();
 #endif
 } ThreadReader;
 
