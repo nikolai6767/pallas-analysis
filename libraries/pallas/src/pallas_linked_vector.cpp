@@ -80,6 +80,15 @@ void LinkedVector::print() {
   } else
     std::cout << "]";
 }
+LinkedVector::~LinkedVector() {
+  auto* sub = first;
+  while (sub) {
+    delete[] sub->array;
+    auto* temp = sub->next;
+    delete sub;
+    sub = temp;
+  }
+}
 
 /* C++ Callbacks for C Usage */
 LinkedVector* linked_vector_new() {

@@ -228,6 +228,7 @@ typedef struct LinkedVector {
   /** Returns an iterator pointing to the **past-the*end** element in the LinkedVector.
    * Here, it means nullptr.*/
   [[nodiscard]] Iterator end() const { return {nullptr}; };
+  ~LinkedVector();
 #endif
 } LinkedVector;
 
