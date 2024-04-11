@@ -36,21 +36,7 @@
 #define NB_LOCATIONS_DEFAULT NB_THREADS_DEFAULT
 
 
-#if WITH_SZ
-
-#define SZ_CONFIG_PATH "@CMAKE_INSTALL_FULL_DATADIR@/sz.config"
-
-#endif
-#define PALLAS_CONFIG_PATH "@CMAKE_INSTALL_FULL_SYSCONFDIR@/pallas.json"
-#ifdef __cplusplus
-#include <cstdint>
-#include <cstring>
-#else
-#include <stdint.h>
-#include <string.h>
-#endif
-typedef int64_t hdf5_id;
-
+#define PALLAS_CONFIG_PATH "@CMAKE_INSTALL_FULL_SYSCONFDIR@/pallas.config"
 /* -*-
    mode: c++;
    c-file-style: "k&r";
