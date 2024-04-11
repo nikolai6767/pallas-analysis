@@ -116,6 +116,7 @@ typedef struct Archive {
 
   [[nodiscard]] const LocationGroup* getLocationGroup(LocationGroupId) const;
   [[nodiscard]] const Location* getLocation(ThreadId) const;
+  ~Archive();
 #endif
 } Archive;
 

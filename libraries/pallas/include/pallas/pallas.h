@@ -281,6 +281,7 @@ typedef struct Sequence {
    * alreadyReadTokens is used when you read the trace, it's supposed to be threadReader.tokenCount.
    * @returns Reference to #tokenCount.*/
   const TokenCountMap& getTokenCount(const struct Thread* thread, const TokenCountMap* alreadyReadTokens = nullptr);
+  ~Sequence() { delete durations; };
 #endif
 } Sequence;
 
@@ -462,6 +463,7 @@ typedef struct Thread {
   // Make sure this object is never copied
   Thread(const Thread&) = delete;
   void operator=(const Thread&) = delete;
+  ~Thread();
 #endif
 } Thread;
 

@@ -142,6 +142,26 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   pthread_mutex_unlock(&archive->lock);
 }
 
+Archive::~Archive() {
+  delete dir_name;
+  delete trace_name;
+  delete fullpath;
+  DOFOR(i, nb_threads) {
+    delete threads[i];
+  }
+  delete[] threads;
+  delete[] archive_list;
+}
+
+Thread::~Thread() {
+  delete[] events;
+  DOFOR(i, nb_sequences) {
+    delete sequences[i];
+  }
+  delete[] sequences;
+  delete[] loops;
+}
+
 const char* Thread::getName() const {
   return archive->getString(archive->getLocation(id)->name)->str;
 }
