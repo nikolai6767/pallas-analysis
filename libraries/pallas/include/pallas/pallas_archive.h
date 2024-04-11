@@ -69,7 +69,7 @@ typedef struct Archive {
   char* fullpath;       /**< \todo Complete this. */
   pthread_mutex_t lock; /**< Archive-wise lock, used for synchronising some threads. */
 
-  LocationGroupId id d CXX({PALLAS_LOCATION_GROUP_ID_INVALID}); /**< ID for the pallas::LocationGroup of that Archive. */
+  LocationGroupId id CXX({PALLAS_LOCATION_GROUP_ID_INVALID}); /**< ID for the pallas::LocationGroup of that Archive. */
   struct Archive* global_archive; /**< The Global Archive is the archive encompassing the whole execution. NULL if
                                    * this is the global archive. */
 
