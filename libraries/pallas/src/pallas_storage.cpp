@@ -550,11 +550,7 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
   if (size == 1) {
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
   }
-  if (size == 2) {
-    _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
-    _pallas_fwrite(&max, sizeof(max), 1, vectorFile);
-  }
-  if (size >= 3) {
+  if (size >= 2) {
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
     _pallas_fwrite(&max, sizeof(max), 1, vectorFile);
     _pallas_fwrite(&mean, sizeof(mean), 1, vectorFile);
@@ -713,7 +709,7 @@ static void pallasReadEvent(pallas::EventSummary& event,
   _pallas_fread(&event.attribute_buffer_size, sizeof(event.attribute_buffer_size), 1, eventFile);
   event.attribute_pos = 0;
   event.attribute_buffer = nullptr;
-  if (event.attribute_buffer_size) {
+  if (event.attribute_buffer_size > 0) {
     event.attribute_buffer = new byte[event.attribute_buffer_size];
     _pallas_fread(event.attribute_buffer, sizeof(byte), event.attribute_buffer_size, eventFile);
   }
