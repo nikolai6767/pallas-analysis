@@ -818,8 +818,8 @@ static FILE* pallasGetStringFile(pallas::Archive* a, const char* mode) {
   return pallasFileOpen(filename, mode);
 }
 
-static void pallasStoreStringGeneric(FILE* file, pallas::String* s, int string_index) {
-  pallas_log(pallas::DebugLevel::Debug, "\tStore String %d {.ref=%d, .length=%d, .str='%s'}\n", string_index,
+static void pallasStoreStringGeneric(FILE* file, pallas::String* s) {
+  pallas_log(pallas::DebugLevel::Debug, "\tStore String {.ref=%d, .length=%d, .str='%s'}\n",
              s->string_ref, s->length, s->str);
 
   _pallas_fwrite(&s->string_ref, sizeof(s->string_ref), 1, file);
@@ -827,8 +827,15 @@ static void pallasStoreStringGeneric(FILE* file, pallas::String* s, int string_i
   _pallas_fwrite(s->str, sizeof(char), s->length, file);
 }
 
-static void pallasStoreString(pallas::String* s, int string_index, FILE* stringFile) {
-  pallasStoreStringGeneric(stringFile, s, string_index);
+static void pallasStoreString(pallas::Archive* a) {
+  if (a->definitions.strings.empty())
+    return;
+
+  FILE* file = pallasGetStringFile(a, "w");
+  for (auto& s: a->definitions.strings) {
+    pallasStoreStringGeneric(file, &s);
+  }
+  fclose(file);
 }
 
 static void pallasReadStringGeneric(FILE* file, pallas::String* s, int string_index) {
@@ -1167,12 +1174,7 @@ void pallas_storage_finalize(pallas::Archive* archive) {
   _pallas_fwrite(&STORE_HASHING, sizeof(STORE_HASHING), 1, f);
   _pallas_fwrite(&STORE_TIMESTAMPS, sizeof(STORE_TIMESTAMPS), 1, f);
 
-  FILE* stringFile = pallasGetStringFile(archive, "w");
-  for (int i = 0; i < archive->definitions.strings.size(); i++) {
-    pallasStoreString(&archive->definitions.strings[i], i, stringFile);
-  }
-  fclose(stringFile);
-
+  pallasStoreString(archive);
   pallasStoreRegions(archive);
   pallasStoreAttributes(archive);
 
