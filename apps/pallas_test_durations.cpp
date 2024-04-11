@@ -119,7 +119,7 @@ int main(const int argc, char* argv[]) {
   }
 
   auto trace = pallas::Archive();
-  pallas_read_archive(&trace, trace_name);
+  pallas_read_main_archive(&trace, trace_name);
 
   for (int i = 0; i < trace.nb_threads; i++) {
     printf("\n");

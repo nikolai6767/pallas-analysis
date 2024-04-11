@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 
   /* Reading archive */
   pallas::Archive trace = pallas::Archive();
-  pallas_read_archive(&trace, const_cast<char *>(trace_name.c_str()));
+  pallas_read_main_archive(&trace, const_cast<char*>(trace_name.c_str()));
 
 
   /* Create and initialize matrix with dimensions = number of threads */

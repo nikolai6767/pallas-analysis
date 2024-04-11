@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
   }
 
   Archive trace = Archive();
-  pallas_read_archive(&trace, trace_name);
+  pallas_read_main_archive(&trace, trace_name);
   info_trace(&trace);
 
   return EXIT_SUCCESS;

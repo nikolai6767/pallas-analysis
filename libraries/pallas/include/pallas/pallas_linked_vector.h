@@ -35,6 +35,7 @@ typedef struct LinkedVector {
   uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
   CXX(private:)
   const char* filePath; /**< Path to the file storing the durations. */
+  FILE* file;
   long offset;          /**< Offset in the file. */
 
 #ifdef __cplusplus
@@ -121,7 +122,7 @@ typedef struct LinkedVector {
   /** Loads a LinkedVector from a file.
    * If size is given, does so without reading the size.
    * */
-  LinkedVector(FILE* file, const char* filePath, size_t size = 0);
+  LinkedVector(FILE* vectorFile, FILE* valueFile, const char* valueFilePath);
   /**
    * Adds a new element at the end of the vector, after its current last element.
    * The content of `val` is copied to the new element.
@@ -168,10 +169,10 @@ typedef struct LinkedVector {
    * You may write the size of the vector as a header.
    * Then its min, max, and mean are written.
    * Finally, writes the array.
-   * @param file File descriptor.
+   * @param vectorFile File descriptor.
    * @param writeSize Boolean indicating wether you should write the size of the LinkedVector as a header.
    */
-  void writeToFile(FILE* file, bool writeSize);
+  void writeToFile(FILE* vectorFile, FILE* valueFile);
 
   /**
    * Classic ForwardIterator for LinkedVector.
