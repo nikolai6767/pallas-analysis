@@ -1248,7 +1248,7 @@ static pallas::Archive* _pallas_get_archive(pallas::Archive* global_archive,
     INCREMENT_MEMORY_SPACE(global_archive->archive_list, global_archive->nb_allocated_archives, pallas::Archive*);
   }
 
-  _pallas_read_archive(global_archive, arch, global_archive->dir_name, filename);
+  _pallas_read_archive(global_archive, arch, strdup(global_archive->dir_name), filename);
 
   int index = global_archive->nb_archives++;
   global_archive->archive_list[index] = arch;
@@ -1275,8 +1275,10 @@ void pallas_read_thread(pallas::Archive* archive, pallas::ThreadId thread_id) {
 }
 
 void pallas_read_archive(pallas::Archive* archive, char* main_filename) {
-  char* dir_name = dirname(strdup(main_filename));
-  char* trace_name = basename(strdup(main_filename));
+  auto* temp_main_filename = strdup(main_filename);
+  char* trace_name = strdup(basename(temp_main_filename));
+  char* dir_name = strdup(dirname(temp_main_filename));
+  free(temp_main_filename);
 
   _pallas_read_archive(nullptr, archive, dir_name, trace_name);
 
