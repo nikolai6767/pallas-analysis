@@ -549,11 +549,12 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
   if (size == 1) {
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
-  }
-  if (size >= 2) {
+  } else if (size >= 4) {
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
     _pallas_fwrite(&max, sizeof(max), 1, vectorFile);
     _pallas_fwrite(&mean, sizeof(mean), 1, vectorFile);
+  }
+  if (size >= 2) {
     offset = ftell(valueFile);
     _pallas_fwrite(&offset, sizeof(offset), 1, vectorFile);
 
@@ -583,11 +584,30 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, FILE* valueFile, const char
     _pallas_fread(&min, sizeof(min), 1, vectorFile);
     max, mean = min;
   }
-  if (size >= 2) {
+  if (size >= 4) {
     _pallas_fread(&min, sizeof(min), 1, vectorFile);
     _pallas_fread(&max, sizeof(max), 1, vectorFile);
     _pallas_fread(&mean, sizeof(mean), 1, vectorFile);
+  }
+  if (size >= 2) {
     _pallas_fread(&offset, sizeof(offset), 1, vectorFile);
+    if (size < 4) {
+      load_timestamps();
+      if (size == 2) {
+        size_t f = front();
+        size_t b = back();
+        min = std::min(f, b);
+        max = std::max(f, b);
+        mean = (f + b) / 2;
+      } else {
+        size_t a = at(0);
+        size_t b = at(1);
+        size_t c = at(2);
+        min = std::min(a,std::min(b,c));
+        max = std::max(a, std::max(b,c));
+        mean = (a+b+c) / 3;
+      }
+    }
   }
   first = nullptr;
   last = nullptr;
