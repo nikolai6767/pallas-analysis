@@ -35,7 +35,6 @@ typedef struct LinkedVector {
   uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
   CXX(private:)
   const char* filePath; /**< Path to the file storing the durations. */
-  FILE* file;
   long offset;          /**< Offset in the file. */
 
 #ifdef __cplusplus
@@ -122,7 +121,7 @@ typedef struct LinkedVector {
   /** Loads a LinkedVector from a file.
    * If size is given, does so without reading the size.
    * */
-  LinkedVector(FILE* vectorFile, FILE* valueFile, const char* valueFilePath);
+  LinkedVector(FILE* vectorFile, const char* valueFilePath);
   /**
    * Adds a new element at the end of the vector, after its current last element.
    * The content of `val` is copied to the new element.
