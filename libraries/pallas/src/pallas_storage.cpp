@@ -590,6 +590,7 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, FILE* valueFile, const char
     _pallas_fread(&mean, sizeof(mean), 1, vectorFile);
   }
   if (size >= 2) {
+    offset = 0;
     _pallas_fread(&offset, sizeof(offset), 1, vectorFile);
     if (size < 4) {
       load_timestamps();
@@ -614,10 +615,6 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, FILE* valueFile, const char
 }
 
 void pallas::LinkedVector::load_timestamps() {
-  if (size < 3) {
-    pallas_log(DebugLevel::Debug, "Skipping timestamps from %s\n", filePath);
-    return;
-  }
   pallas_log(DebugLevel::Debug, "Loading timestamps from %s\n", filePath);
 
   int ret = fseek(file, offset, 0);
