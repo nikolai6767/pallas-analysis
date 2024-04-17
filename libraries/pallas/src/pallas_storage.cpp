@@ -113,7 +113,6 @@ class File {
         pallas_warn("Could not find any more duration files to close: %lu files opened.\n", numberOpenFiles);
         break;
       }
-      std::cout << "Closing file because of limit" << std::endl;
       openedFilePath->close();
     }
     file = pallasFileOpen(path, mode);
