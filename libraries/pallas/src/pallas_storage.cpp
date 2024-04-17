@@ -911,12 +911,11 @@ static void pallasStoreStringGeneric(const pallas::File& file, pallas::String* s
 }
 
 static void pallasStoreString(pallas::Archive* a) {
-  if (a->definitions.strings.empty())
-    return;
-
   pallas::File file = pallasGetStringFile(a, "w");
+  size_t size = a->definitions.strings.size();
+  file.write(&size, sizeof(size), 1);
   for (auto& s : a->definitions.strings) {
-    pallasStoreStringGeneric(file, &s);
+    pallasStoreStringGeneric(file, &s.second);
   }
   file.close();
 }
@@ -932,12 +931,19 @@ static void pallasReadStringGeneric(const pallas::File& file, pallas::String* s)
 }
 
 static void pallasReadString(pallas::Archive* a) {
-  if (a->definitions.strings.empty())
-    return;
-
   pallas::File file = pallasGetStringFile(a, "r");
-  for (auto& s : a->definitions.strings) {
-    pallasReadStringGeneric(file, &s);
+  size_t size;
+  file.read(&size, sizeof(size), 1);
+  pallas::String tempString;
+  for (size_t i = 0; i < size; i ++) {
+    file.read(&tempString.string_ref, sizeof(tempString.string_ref), 1);
+    file.read(&tempString.length, sizeof(tempString.length), 1);
+    tempString.str = new char[tempString.length];
+    pallas_assert(tempString.str);
+    file.read(tempString.str, sizeof(char), tempString.length);
+    pallas_log(pallas::DebugLevel::Debug, "\tLoad String {.ref=%d, .length=%d, .str='%s'}\n", tempString.string_ref,
+               tempString.length, tempString.str);
+    a->definitions.strings[tempString.string_ref] = tempString;
   }
   file.close();
 }
@@ -956,33 +962,30 @@ static void pallasStoreRegionsGeneric(const pallas::File& file, pallas::Definiti
     return;
 
   pallas_log(pallas::DebugLevel::Debug, "\tStore %zu Regions\n", d->regions.size());
-  file.write(d->regions.data(), sizeof(pallas::Region), d->regions.size());
+  for (auto& region: d->regions) {
+    file.write(&region.second, sizeof(pallas::Region), 1);
+  }
 }
 
 static void pallasStoreRegions(pallas::Archive* a) {
-  if (a->definitions.regions.empty())
-    return;
-
   pallas::File file = pallasGetRegionsFile(a, "w");
+  size_t size = a->definitions.regions.size();
+  file.write(&size, sizeof(size), 1);
   pallasStoreRegionsGeneric(file, &a->definitions);
   file.close();
 }
 
-static void pallasReadRegionsGeneric(const pallas::File& file, pallas::Definition* d) {
-  if (d->regions.empty())
-    return;
-
-  file.read(d->regions.data(), sizeof(pallas::Region), d->regions.size());
-
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu regions\n", d->regions.size());
-}
-
 static void pallasReadRegions(pallas::Archive* a) {
-  if (a->definitions.regions.empty())
-    return;
-
   pallas::File file = pallasGetRegionsFile(a, "r");
-  pallasReadRegionsGeneric(file, &a->definitions);
+  size_t size;
+  file.read(&size, sizeof(size), 1);
+  pallas::Region tempRegion;
+  for (size_t i = 0; i < size; i ++) {
+    file.read(&tempRegion, sizeof(pallas::Region), 1);
+    a->definitions.regions[tempRegion.region_ref] = tempRegion;
+  }
+
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu regions\n", a->definitions.regions.size());
   file.close();
 }
 
@@ -996,41 +999,36 @@ static pallas::File pallasGetAttributesFile(pallas::Archive* a, const char* mode
 }
 
 static void pallasStoreAttributesGeneric(const pallas::File& file, pallas::Definition* d) {
-  if (d->attributes.empty())
-    return;
-
   pallas_log(pallas::DebugLevel::Debug, "\tStore %zu Attributes\n", d->attributes.size());
   for (int i = 0; i < d->attributes.size(); i++) {
     pallas_log(pallas::DebugLevel::Debug, "\t\t[%d] {ref=%d, name=%d, type=%d}\n", i, d->attributes[i].attribute_ref,
                d->attributes[i].name, d->attributes[i].type);
   }
 
-  file.write(d->attributes.data(), sizeof(pallas::Attribute), d->attributes.size());
+  for (auto& attribute: d->attributes) {
+    file.write(&attribute.second, sizeof(pallas::Attribute), 1);
+  }
 }
 
 static void pallasStoreAttributes(pallas::Archive* a) {
-  if (a->definitions.attributes.empty())
-    return;
-
   pallas::File file = pallasGetAttributesFile(a, "w");
+  size_t size = a->definitions.attributes.size();
+  file.write(&size, sizeof(size), 1);
   pallasStoreAttributesGeneric(file, &a->definitions);
   file.close();
 }
 
-static void pallasReadAttributesGeneric(const pallas::File& file, pallas::Definition* d) {
-  if (d->attributes.empty())
-    return;
-  file.read(d->attributes.data(), sizeof(pallas::Attribute), d->attributes.size());
-
-  pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu attributes\n", d->attributes.size());
-}
-
 static void pallasReadAttributes(pallas::Archive* a) {
-  if (a->definitions.attributes.empty())
-    return;
-
   pallas::File file = pallasGetAttributesFile(a, "r");
-  pallasReadAttributesGeneric(file, &a->definitions);
+  size_t size;
+  file.read(&size, sizeof(size), 1);
+  pallas::Attribute tempAttribute;
+  for (size_t i = 0; i < size; i ++) {
+    file.read(&tempAttribute, sizeof(pallas::Attribute), 1);
+    a->definitions.attributes[tempAttribute.attribute_ref] = tempAttribute;
+  }
+
+  pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu attributes\n", a->definitions.attributes.size());
   file.close();
 }
 
@@ -1252,12 +1250,7 @@ void pallas_storage_finalize(pallas::Archive* archive) {
     file.write(&version, sizeof(version), 1);
     pallas::parameterHandler->writeToFile(file.file);
   }
-  size_t size = archive->definitions.strings.size();
-  file.write(&size, sizeof(size), 1);
-  size = archive->definitions.regions.size();
-  file.write(&size, sizeof(size), 1);
-  size = archive->definitions.attributes.size();
-  file.write(&size, sizeof(size), 1);
+  size_t size;
   size = archive->location_groups.size();
   file.write(&size, sizeof(size), 1);
   size = archive->locations.size();
@@ -1352,12 +1345,6 @@ static void pallasReadArchive(pallas::Archive* global_archive,
   }
   size_t size;
 
-  file.read(&size, sizeof(size), 1);
-  archive->definitions.strings.resize(size);
-  file.read(&size, sizeof(size), 1);
-  archive->definitions.regions.resize(size);
-  file.read(&size, sizeof(size), 1);
-  archive->definitions.attributes.resize(size);
   file.read(&size, sizeof(size), 1);
   archive->location_groups.resize(size);
   file.read(&size, sizeof(size), 1);

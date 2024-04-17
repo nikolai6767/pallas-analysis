@@ -45,11 +45,23 @@ struct Location {
  */
 typedef struct Definition {
   /** List of String stored in that Definition. */
-  DEFINE_Vector(String, strings);
+#ifdef __cplusplus
+  std::map<StringRef, String> strings;
+#else
+  byte strings[MAP_SIZE];
+#endif
   /** List of Region stored in that Definition. */
-  DEFINE_Vector(Region, regions);
+#ifdef __cplusplus
+  std::map<RegionRef, Region> regions;
+#else
+  byte regions[MAP_SIZE];
+#endif
   /** List of Attribute stored in that Definition. */
-  DEFINE_Vector(Attribute, attributes);
+#ifdef __cplusplus
+  std::map<AttributeRef, Attribute> attributes;
+#else
+  byte attributes[MAP_SIZE];
+#endif
 #ifdef __cplusplus
   [[nodiscard]] const String* getString(StringRef) const;
   void addString(StringRef, const char*);

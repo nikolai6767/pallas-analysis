@@ -9,18 +9,14 @@
 #include "pallas/pallas_write.h"
 
 namespace pallas {
-
 /**
  * Getter for a String from its id.
  * @returns First String matching the given pallas::StringRef, nullptr if it doesn't have a match.
  */
 const String* Definition::getString(StringRef string_ref) const {
-  for (auto& s : strings) {
-    if (s.string_ref == string_ref) {
-      return &s;
-    }
-  }
-  return nullptr;
+  if (strings.contains(string_ref))
+    return &strings.at(string_ref);
+  else return nullptr;
 }
 
 /**
@@ -36,7 +32,7 @@ void Definition::addString(StringRef string_ref, const char* string) {
   s.length = strlen(string) + 1;
   s.str = new char[s.length];
   strncpy(s.str, string, s.length);
-  strings.push_back(s);
+  strings[string_ref] = s;
 
   pallas_log(DebugLevel::Verbose, "Register string #%zu{.ref=%d, .length=%d, .str='%s'}\n", strings.size() - 1,
           s.string_ref, s.length, s.str);
@@ -47,12 +43,9 @@ void Definition::addString(StringRef string_ref, const char* string) {
  * @returns First Region matching the given pallas::RegionRef, nullptr if it doesn't have a match.
  */
 const Region* Definition::getRegion(RegionRef region_ref) const {
-  for (auto& r : regions) {
-    if (r.region_ref == region_ref) {
-      return &r;
-    }
-  }
-  return nullptr;
+  if (regions.contains(region_ref))
+    return &regions.at(region_ref);
+  else return nullptr;
 }
 
 /**
@@ -66,7 +59,7 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
   auto r = Region();
   r.region_ref = region_ref;
   r.string_ref = string_ref;
-  regions.push_back(r);
+  regions[region_ref] = r;
 
   pallas_log(DebugLevel::Verbose, "Register region #%zu{.ref=%d, .str=%d}\n", regions.size() - 1, r.region_ref,
           r.string_ref);
@@ -77,11 +70,8 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
  * @returns First Attribute matching the given pallas::AttributeRef, nullptr if it doesn't have a match.
  */
 const Attribute* Definition::getAttribute(AttributeRef attribute_ref) const {
-  for (auto& a : attributes) {
-    if (a.attribute_ref == attribute_ref) {
-      return &a;
-    }
-  }
+  if (attributes.contains(attribute_ref))
+    return &attributes.at(attribute_ref);
   return nullptr;
 }
 
@@ -100,7 +90,7 @@ void Definition::addAttribute(AttributeRef attribute_ref,
   a.name = name_ref;
   a.description = description_ref;
   a.type = type;
-  attributes.push_back(a);
+  attributes[attribute_ref] = (a);
 
   pallas_log(DebugLevel::Verbose, "Register attribute #%zu{.ref=%d, .name=%d, .description=%d, .type=%d}\n",
           attributes.size() - 1, a.attribute_ref, a.name, a.description, a.type);
