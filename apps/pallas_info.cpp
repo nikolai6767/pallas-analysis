@@ -89,15 +89,15 @@ void info_archive(Archive* archive) {
   printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
 
   printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
-  for (auto& string : archive->definitions.strings) {
-    printf("\t\t%d: '%s'\n", string.string_ref, string.str);
+  for (auto& stringPair : archive->definitions.strings) {
+    printf("\t\t%d: '%s'\n", stringPair.second.string_ref, stringPair.second.str);
   }
 
   printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
-  for (unsigned i = 0; i < archive->definitions.regions.size(); i++) {
-    printf("\t\t%d: %d ('%s')\n", archive->definitions.regions[i].region_ref,
-           archive->definitions.regions[i].string_ref,
-           archive->getString(archive->definitions.regions[i].string_ref)->str);
+  for (auto& regionPair: archive->definitions.regions) {
+    printf("\t\t%d: %d ('%s')\n", regionPair.second.region_ref,
+           regionPair.second.string_ref,
+           archive->getString(regionPair.second.string_ref)->str);
   }
 
   printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
