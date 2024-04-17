@@ -717,6 +717,7 @@ static const char* pallasGetEventFilename(const char* base_dirname, pallas::Thre
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
   snprintf(filename, 1024, "%s/%s/event.pallas", base_dirname, threadPath);
+  delete[] threadPath;
   return filename;
 }
 
@@ -724,6 +725,7 @@ static const char* pallasGetEventDurationFilename(const char* base_dirname, pall
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
   snprintf(filename, 1024, "%s/%s/event_durations.dat", base_dirname, threadPath);
+  delete[] threadPath;
   return filename;
 }
 
@@ -814,6 +816,7 @@ static const char* pallasGetSequenceDurationFilename(const char* base_dirname, p
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
   snprintf(filename, 1024, "%s/%s/sequence_durations.dat", base_dirname, threadPath);
+  delete[] threadPath;
   return filename;
 }
 
@@ -854,6 +857,7 @@ static pallas::File pallasGetLoopFile(const char* base_dirname, pallas::Thread* 
   char filename[1024];
   const char* threadPath = getThreadPath(th);
   snprintf(filename, 1024, "%s/%s/loop.pallas", base_dirname, threadPath);
+  delete[] threadPath;
   return pallas::File(filename, mode);
 }
 
@@ -1104,6 +1108,7 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
   char filename[1024];
   const char* threadPath = getThreadPath(thread);
   snprintf(filename, 1024, "%s/%s/thread.pallas", dir_name, threadPath);
+  delete[] threadPath;
   return pallas::File(filename, mode);
 }
 
@@ -1187,7 +1192,7 @@ static void pallasReadThread(pallas::Archive* global_archive, pallas::Thread* th
   const char* eventFilename = pallasGetEventFilename(global_archive->dir_name, th);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
   pallas::File eventFile = pallas::File(eventFilename, "r");
-  pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename, "r");
+  pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename);
   fileMap[eventDurationFilename] = &eventDurationFile;
   for (int i = 0; i < th->nb_events; i++) {
     th->events[i].id = i;
@@ -1199,7 +1204,7 @@ static void pallasReadThread(pallas::Archive* global_archive, pallas::Thread* th
   const char* sequenceFilename = pallasGetSequenceFilename(global_archive->dir_name, th);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(global_archive->dir_name, th);
   pallas::File sequenceFile = pallas::File(sequenceFilename, "r");
-  pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename, "r");
+  pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename);
   fileMap[sequenceDurationFilename] = &sequenceDurationFile;
   for (int i = 0; i < th->nb_sequences; i++) {
     th->sequences[i]->id = i;
