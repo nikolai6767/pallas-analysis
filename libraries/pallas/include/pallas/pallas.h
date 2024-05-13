@@ -412,6 +412,7 @@ typedef struct Thread {
   unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
   unsigned nb_loops;           /**< Number of pallas::Loop in #loops. */
 #ifdef __cplusplus
+  void loadTimestamps(); /**< Loads all the timestamps for all the Events and Sequences. */
   /** Returns the ID corresponding to the given Event.
    * If there isn't already one, creates a corresponding EventSummary.
    */

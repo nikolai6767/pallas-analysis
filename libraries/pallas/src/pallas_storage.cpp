@@ -608,7 +608,8 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
 }
 
 void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
-  finalUpdateStats();
+  if (first)
+    finalUpdateStats();
   // Write the statistics to the vectorFile
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
   if (size == 1) {
@@ -634,6 +635,15 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
     pallas_assert(cur_index == size);
     _pallas_compress_write(buffer, size, valueFile);
     delete[] buffer;
+    sub_vec = first;
+    while (sub_vec) {
+      delete[] sub_vec->array;
+      auto temp = sub_vec;
+      sub_vec = sub_vec->next;
+      delete temp;
+    }
+    first = nullptr;
+    last = nullptr;
   }
 }
 
@@ -938,7 +948,7 @@ static void pallasReadString(pallas::Archive* a) {
   size_t size;
   file.read(&size, sizeof(size), 1);
   pallas::String tempString;
-  for (size_t i = 0; i < size; i ++) {
+  for (size_t i = 0; i < size; i++) {
     file.read(&tempString.string_ref, sizeof(tempString.string_ref), 1);
     file.read(&tempString.length, sizeof(tempString.length), 1);
     tempString.str = new char[tempString.length];
@@ -965,7 +975,7 @@ static void pallasStoreRegionsGeneric(const pallas::File& file, pallas::Definiti
     return;
 
   pallas_log(pallas::DebugLevel::Debug, "\tStore %zu Regions\n", d->regions.size());
-  for (auto& region: d->regions) {
+  for (auto& region : d->regions) {
     file.write(&region.second, sizeof(pallas::Region), 1);
   }
 }
@@ -983,7 +993,7 @@ static void pallasReadRegions(pallas::Archive* a) {
   size_t size;
   file.read(&size, sizeof(size), 1);
   pallas::Region tempRegion;
-  for (size_t i = 0; i < size; i ++) {
+  for (size_t i = 0; i < size; i++) {
     file.read(&tempRegion, sizeof(pallas::Region), 1);
     a->definitions.regions[tempRegion.region_ref] = tempRegion;
   }
@@ -1008,7 +1018,7 @@ static void pallasStoreAttributesGeneric(const pallas::File& file, pallas::Defin
                d->attributes[i].name, d->attributes[i].type);
   }
 
-  for (auto& attribute: d->attributes) {
+  for (auto& attribute : d->attributes) {
     file.write(&attribute.second, sizeof(pallas::Attribute), 1);
   }
 }
@@ -1026,7 +1036,7 @@ static void pallasReadAttributes(pallas::Archive* a) {
   size_t size;
   file.read(&size, sizeof(size), 1);
   pallas::Attribute tempAttribute;
-  for (size_t i = 0; i < size; i ++) {
+  for (size_t i = 0; i < size; i++) {
     file.read(&tempAttribute, sizeof(pallas::Attribute), 1);
     a->definitions.attributes[tempAttribute.attribute_ref] = tempAttribute;
   }

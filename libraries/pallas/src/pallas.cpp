@@ -7,6 +7,14 @@
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
+void Thread::loadTimestamps() {
+  DOFOR(i, nb_events) {
+    events[i].durations->front();
+  }
+  DOFOR(i, nb_sequences) {
+    sequences[i]->durations->front();
+  }
+}
 
 Event* Thread::getEvent(Token token) const {
   return &getEventSummary(token)->event;
