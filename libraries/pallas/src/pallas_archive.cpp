@@ -14,7 +14,7 @@ namespace pallas {
  * @returns First String matching the given pallas::StringRef, nullptr if it doesn't have a match.
  */
 const String* Definition::getString(StringRef string_ref) const {
-  if (strings.contains(string_ref))
+  if (strings.count(string_ref) > 0)
     return &strings.at(string_ref);
   else return nullptr;
 }
@@ -43,7 +43,7 @@ void Definition::addString(StringRef string_ref, const char* string) {
  * @returns First Region matching the given pallas::RegionRef, nullptr if it doesn't have a match.
  */
 const Region* Definition::getRegion(RegionRef region_ref) const {
-  if (regions.contains(region_ref))
+  if (regions.count(region_ref) > 0)
     return &regions.at(region_ref);
   else return nullptr;
 }
@@ -70,7 +70,7 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
  * @returns First Attribute matching the given pallas::AttributeRef, nullptr if it doesn't have a match.
  */
 const Attribute* Definition::getAttribute(AttributeRef attribute_ref) const {
-  if (attributes.contains(attribute_ref))
+  if (attributes.count(attribute_ref) > 0)
     return &attributes.at(attribute_ref);
   return nullptr;
 }
