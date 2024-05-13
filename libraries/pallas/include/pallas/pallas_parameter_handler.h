@@ -34,29 +34,29 @@ enum class CompressionAlgorithm {
   Invalid
 };
 
-  const enum CompressionAlgorithm CompressionAlgorithmDefault = CompressionAlgorithm::None;
-  const size_t zstdCompressionLevelDefault = 3;
+const enum CompressionAlgorithm CompressionAlgorithmDefault = CompressionAlgorithm::None;
+const size_t zstdCompressionLevelDefault = 3;
 
-  /**
-   * Converts a compression algorithm to its string name.
-   * @param alg Algorithm to compress.
-   * @return String such that it shall be parsed to that algorithm's enum.
-   */
-  std::string toString(CompressionAlgorithm alg);
+/**
+ * Converts a compression algorithm to its string name.
+ * @param alg Algorithm to compress.
+ * @return String such that it shall be parsed to that algorithm's enum.
+ */
+std::string toString(CompressionAlgorithm alg);
 
-  /**
-   * Converts a string to a  compression algorithm.
-   * @param str the string.
-   * @return Compression Algorithm that corresponds to the string.
-   */
-  pallas::CompressionAlgorithm compressionAlgorithmFromString(std::string str);
+/**
+ * Converts a string to a  compression algorithm.
+ * @param str the string.
+ * @return Compression Algorithm that corresponds to the string.
+ */
+CompressionAlgorithm compressionAlgorithmFromString(std::string str);
 
-  /** Returns whether a compression algorithm is lossy or not. */
-  inline bool isLossy(CompressionAlgorithm alg) {
-    return alg != CompressionAlgorithm::None && alg != CompressionAlgorithm::ZSTD;
-  }
+/** Returns whether a compression algorithm is lossy or not. */
+inline bool isLossy(CompressionAlgorithm alg) {
+  return alg != CompressionAlgorithm::None && alg != CompressionAlgorithm::ZSTD;
+}
 
-  /** A set of various encoding algorithms supported by Pallas */
+/** A set of various encoding algorithms supported by Pallas */
 enum class EncodingAlgorithm {
   /** No encoding. */
   None,
@@ -69,22 +69,22 @@ enum class EncodingAlgorithm {
   Invalid
 };
 
-  const enum EncodingAlgorithm EncodingAlgorithmDefault = EncodingAlgorithm::None;
+const enum EncodingAlgorithm EncodingAlgorithmDefault = EncodingAlgorithm::None;
 
 /**
  * Converts an EncodingAlgorithm to its string name.
  * @param alg the EncodingAlgorithm.
  * @return String such that it shall be parsed to that algorithm's enum.
  */
-  std::string toString(EncodingAlgorithm alg);
+std::string toString(EncodingAlgorithm alg);
 
-  /**
-   * Converts a string to an EncodingAlgorithm.
-   * @param str the string.
-   * @return EncodingAlgorithm that corresponds to the string.
-   */
-  pallas::EncodingAlgorithm encodingAlgorithmFromString(std::string str);
-  
+/**
+ * Converts a string to an EncodingAlgorithm.
+ * @param str the string.
+ * @return EncodingAlgorithm that corresponds to the string.
+ */
+EncodingAlgorithm encodingAlgorithmFromString(std::string str);
+
 /** A set of various loop-finding algorithms used by Pallas */
 enum class LoopFindingAlgorithm {
   /** No loop finding */
@@ -100,24 +100,24 @@ enum class LoopFindingAlgorithm {
   Filter,
   Invalid
 };
-  const enum LoopFindingAlgorithm LoopFindingAlgorithmDefault = LoopFindingAlgorithm::BasicTruncated;
-  const size_t maxLoopLengthDefault = 100;
+const enum LoopFindingAlgorithm LoopFindingAlgorithmDefault = LoopFindingAlgorithm::BasicTruncated;
+const size_t maxLoopLengthDefault = 100;
 
 /**
  * Converts a LoopFindingAlgorithm to its string name.
  * @param alg the LoopFindingAlgorithm.
  * @return String such that it shall be parsed to that algorithm's enum.
  */
-  std::string toString(LoopFindingAlgorithm alg);
+std::string toString(LoopFindingAlgorithm alg);
 
-  /**
-   * Converts a string to an LoopFindingAlgorithm.
-   * @param str the string.
-   * @return LoopFindingAlgorithm that corresponds to the string.
-   */
-  pallas::LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str);
+/**
+ * Converts a string to an LoopFindingAlgorithm.
+ * @param str the string.
+ * @return LoopFindingAlgorithm that corresponds to the string.
+ */
+LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str);
 
-  /** A set of various encoding algorithms supported by Pallas */
+/** A set of various encoding algorithms supported by Pallas */
 enum class TimestampStorage {
   /** Do not store timestamps. */
   None,
@@ -128,27 +128,27 @@ enum class TimestampStorage {
 
   Invalid,
 };
-  const enum TimestampStorage TimestampStorageDefault = TimestampStorage::Delta;
+const enum TimestampStorage TimestampStorageDefault = TimestampStorage::Delta;
 
-  /**
-   * Converts a TimestampStorage to its string name.
-   * @param alg the TimestampStorage.
-   * @return String such that it shall be parsed to that TimestampStorage's enum.
-   */
-  std::string toString(TimestampStorage alg);
+/**
+ * Converts a TimestampStorage to its string name.
+ * @param alg the TimestampStorage.
+ * @return String such that it shall be parsed to that TimestampStorage's enum.
+ */
+std::string toString(TimestampStorage alg);
 
-  /**
-   * Converts a string to an TimestampStorage.
-   * @param str the string.
-   * @return TimestampStorage that corresponds to the string.
-   */
-  pallas::TimestampStorage timestampStorageFromString(std::string str);
-
+/**
+ * Converts a string to an TimestampStorage.
+ * @param str the string.
+ * @return TimestampStorage that corresponds to the string.
+ */
+TimestampStorage timestampStorageFromString(std::string str);
 
 /**
  * A simple data class that contains information on different parameters.
  */
 class ParameterHandler {
+ public:
   /** The compression algorithm used during the execution. */
   CompressionAlgorithm compressionAlgorithm{CompressionAlgorithmDefault};
   /** The ZSTD compression level. */
@@ -190,10 +190,10 @@ class ParameterHandler {
   [[nodiscard]] TimestampStorage getTimestampStorage() const;
 
   void writeToFile(FILE* file) const;
-  void readFromFile(FILE* file) ;
+  void readFromFile(FILE* file);
 
   ParameterHandler();
-  ParameterHandler(const std::string &stringConfig);
+  ParameterHandler(const std::string& stringConfig);
   /**
    * Prints a JSON of the ParameterHandler.
    * @return String containing a JSON of itself.

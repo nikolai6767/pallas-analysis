@@ -12,6 +12,8 @@
 #include <iostream>
 #include "pallas/pallas_dbg.h"
 
+
+namespace pallas {
 std::string loadStringFromConfig(Json::Value& config, std::string fieldName) {
   if (config[fieldName]) {
     if (config[fieldName].isString()) {
@@ -45,34 +47,34 @@ uint64_t loadUInt64FromEnv(std::string envName) {
   return UINT64_MAX;
 }
 
-std::map<pallas::CompressionAlgorithm, std::string> CompressionAlgorithmMap = {
-  {pallas::CompressionAlgorithm::None, "None"},
-  {pallas::CompressionAlgorithm::ZSTD, "ZSTD"},
-  {pallas::CompressionAlgorithm::Histogram, "Histogram"},
+std::map<CompressionAlgorithm, std::string> CompressionAlgorithmMap = {
+  {CompressionAlgorithm::None, "None"},
+  {CompressionAlgorithm::ZSTD, "ZSTD"},
+  {CompressionAlgorithm::Histogram, "Histogram"},
 #ifdef WITH_SZ
-  {pallas::CompressionAlgorithm::SZ, "SZ"},
+  {CompressionAlgorithm::SZ, "SZ"},
 #endif
 #ifdef WITH_ZFP
-  {pallas::CompressionAlgorithm::ZFP, "ZFP"},
+  {CompressionAlgorithm::ZFP, "ZFP"},
 #endif
-  {pallas::CompressionAlgorithm::Invalid, "Invalid"},
+  {CompressionAlgorithm::Invalid, "Invalid"},
 };
 
-std::string pallas::toString(pallas::CompressionAlgorithm alg) {
+std::string toString(CompressionAlgorithm alg) {
   return CompressionAlgorithmMap[alg];
 }
 
-pallas::CompressionAlgorithm compressionAlgorithmFromString(std::string str) {
+CompressionAlgorithm compressionAlgorithmFromString(std::string str) {
   for (auto& it : CompressionAlgorithmMap) {
     if (it.second.compare(str) == 0) {
       return it.first;
     }
   }
-  return pallas::CompressionAlgorithm::Invalid;
+  return CompressionAlgorithm::Invalid;
 }
 
-pallas::CompressionAlgorithm loadCompressionAlgorithmConfig(Json::Value& config) {
-  pallas::CompressionAlgorithm ret = pallas::CompressionAlgorithm::None;
+CompressionAlgorithm loadCompressionAlgorithmConfig(Json::Value& config) {
+  CompressionAlgorithm ret = CompressionAlgorithm::None;
 
   std::string value = loadStringFromEnv("PALLAS_COMPRESSION");
   if (value.empty() && ! config.empty()) {
@@ -84,28 +86,28 @@ pallas::CompressionAlgorithm loadCompressionAlgorithmConfig(Json::Value& config)
   return ret;
 }
 
-std::map<pallas::EncodingAlgorithm, std::string> EncodingAlgorithmMap = {
-  {pallas::EncodingAlgorithm::None, "None"},
-  {pallas::EncodingAlgorithm::Masking, "Masking"},
-  {pallas::EncodingAlgorithm::LeadingZeroes, "LeadingZeroes"},
-  {pallas::EncodingAlgorithm::Invalid, "Invalid"},
+std::map<EncodingAlgorithm, std::string> EncodingAlgorithmMap = {
+  {EncodingAlgorithm::None, "None"},
+  {EncodingAlgorithm::Masking, "Masking"},
+  {EncodingAlgorithm::LeadingZeroes, "LeadingZeroes"},
+  {EncodingAlgorithm::Invalid, "Invalid"},
 };
 
-std::string pallas::toString(pallas::EncodingAlgorithm alg) {
+std::string toString(EncodingAlgorithm alg) {
   return EncodingAlgorithmMap[alg];
 }
 
-pallas::EncodingAlgorithm encodingAlgorithmFromString(std::string str) {
+EncodingAlgorithm encodingAlgorithmFromString(std::string str) {
   for (auto& it : EncodingAlgorithmMap) {
     if (it.second.compare(str) == 0) {
       return it.first;
     }
   }
-  return pallas::EncodingAlgorithm::Invalid;
+  return EncodingAlgorithm::Invalid;
 }
 
-pallas::EncodingAlgorithm loadEncodingAlgorithmConfig(Json::Value& config) {
-  pallas::EncodingAlgorithm ret = pallas::EncodingAlgorithm::None;
+EncodingAlgorithm loadEncodingAlgorithmConfig(Json::Value& config) {
+  EncodingAlgorithm ret = EncodingAlgorithm::None;
 
   std::string value = loadStringFromEnv("PALLAS_ENCODING");
   if (value.empty() && ! config.empty()) {
@@ -116,29 +118,29 @@ pallas::EncodingAlgorithm loadEncodingAlgorithmConfig(Json::Value& config) {
   return ret;
 }
 
-std::map<pallas::LoopFindingAlgorithm, std::string> LoopFindingAlgorithmMap = {
-  {pallas::LoopFindingAlgorithm::None, "None"},
-  {pallas::LoopFindingAlgorithm::Basic, "Basic"},
-  {pallas::LoopFindingAlgorithm::BasicTruncated, "BasicTruncated"},
-  {pallas::LoopFindingAlgorithm::Filter, "Filter"},
-  {pallas::LoopFindingAlgorithm::Invalid, "Invalid"},
+std::map<LoopFindingAlgorithm, std::string> LoopFindingAlgorithmMap = {
+  {LoopFindingAlgorithm::None, "None"},
+  {LoopFindingAlgorithm::Basic, "Basic"},
+  {LoopFindingAlgorithm::BasicTruncated, "BasicTruncated"},
+  {LoopFindingAlgorithm::Filter, "Filter"},
+  {LoopFindingAlgorithm::Invalid, "Invalid"},
 };
 
-std::string pallas::toString(pallas::LoopFindingAlgorithm alg) {
+std::string toString(LoopFindingAlgorithm alg) {
   return LoopFindingAlgorithmMap[alg];
 }
 
-pallas::LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str) {
+LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str) {
   for (auto& it : LoopFindingAlgorithmMap) {
     if (it.second.compare(str) == 0) {
       return it.first;
     }
   }
-  return pallas::LoopFindingAlgorithm::Invalid;
+  return LoopFindingAlgorithm::Invalid;
 }
 
-pallas::LoopFindingAlgorithm loadLoopFindingAlgorithmConfig(Json::Value& config) {
-  pallas::LoopFindingAlgorithm ret = pallas::LoopFindingAlgorithm::BasicTruncated;
+LoopFindingAlgorithm loadLoopFindingAlgorithmConfig(Json::Value& config) {
+  LoopFindingAlgorithm ret = LoopFindingAlgorithm::BasicTruncated;
 
   std::string value = loadStringFromEnv("PALLAS_LOOP_FINDING");
   if (value.empty() && ! config.empty()) {
@@ -174,27 +176,27 @@ uint64_t loadZSTDCompressionLevel(Json::Value& config) {
   return value;
 }
 
-std::map<pallas::TimestampStorage, std::string> TimestampStorageMap = {
-  {pallas::TimestampStorage::None, "None"},
-  {pallas::TimestampStorage::Delta, "Delta"},
-  {pallas::TimestampStorage::Timestamp, "Timestamp"},
-  {pallas::TimestampStorage::Invalid, "Invalid"}};
+std::map<TimestampStorage, std::string> TimestampStorageMap = {
+  {TimestampStorage::None, "None"},
+  {TimestampStorage::Delta, "Delta"},
+  {TimestampStorage::Timestamp, "Timestamp"},
+  {TimestampStorage::Invalid, "Invalid"}};
 
-std::string pallas::toString(pallas::TimestampStorage alg) {
+std::string toString(TimestampStorage alg) {
   return TimestampStorageMap[alg];
 }
 
-pallas::TimestampStorage timestampStorageFromString(std::string str) {
+TimestampStorage timestampStorageFromString(std::string str) {
   for (auto& it : TimestampStorageMap) {
     if (it.second.compare(str) == 0) {
       return it.first;
     }
   }
-  return pallas::TimestampStorage::Invalid;
+  return TimestampStorage::Invalid;
 }
 
-pallas::TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
-  pallas::TimestampStorage ret = pallas::TimestampStorage::Delta;
+TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
+  TimestampStorage ret = TimestampStorage::Delta;
 
   std::string value = loadStringFromEnv("PALLAS_TIMESTAMP_STORAGE");
   if (value.empty() && ! config.empty()) {
@@ -205,7 +207,6 @@ pallas::TimestampStorage loadTimestampStorageConfig(Json::Value& config) {
   return ret;
 }
 
-namespace pallas {
 const char* defaultConfigFile = PALLAS_CONFIG_PATH;
 ParameterHandler* parameterHandler = nullptr;
 ParameterHandler::ParameterHandler(const std::string &stringConfig) {
@@ -220,7 +221,7 @@ ParameterHandler::ParameterHandler(const std::string &stringConfig) {
   zstdCompressionLevel = loadZSTDCompressionLevel(config);
   timestampStorage = loadTimestampStorageConfig(config);
 
-  pallas_log(pallas::DebugLevel::Normal, "%s\n", to_string().c_str());
+  pallas_log(DebugLevel::Normal, "%s\n", to_string().c_str());
 }
 
 ParameterHandler::ParameterHandler() {
@@ -256,7 +257,7 @@ ParameterHandler::ParameterHandler() {
   zstdCompressionLevel = loadZSTDCompressionLevel(config);
   timestampStorage = loadTimestampStorageConfig(config);
 
-  pallas_log(pallas::DebugLevel::Normal, "%s\n", to_string().c_str());
+  pallas_log(DebugLevel::Normal, "%s\n", to_string().c_str());
 }
 
 size_t ParameterHandler::getMaxLoopLength() const {
