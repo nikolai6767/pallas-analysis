@@ -1365,6 +1365,8 @@ static void pallasReadArchive(pallas::Archive* global_archive,
   archive->locations.resize(size);
 
   file.read(&archive->nb_threads, sizeof(int), 1);
+  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID)
+    archive->nb_threads = 0;
 
   archive->threads = (pallas::Thread**)calloc(sizeof(pallas::Thread*), archive->nb_threads);
   archive->nb_allocated_threads = archive->nb_threads;
@@ -1441,7 +1443,7 @@ static pallas::Archive* pallasGetArchive(pallas::Archive* global_archive,
 
 void pallasLoadThread(pallas::Archive* archive, pallas::ThreadId thread_id) {
   for (int i = 0; i < archive->nb_threads; i++) {
-    if (archive->threads[i]->id == thread_id) {
+    if (archive->threads[i] != NULL && archive->threads[i]->id == thread_id) {
       /* thread_id is already loaded */
       return;
     }
