@@ -724,7 +724,7 @@ static const char* getThreadPath(pallas::Thread* th) {
 static const char* pallasGetEventFilename(const char* base_dirname, pallas::Thread* th) {
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/event.pallas", base_dirname, threadPath);
+  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
   delete[] threadPath;
   return filename;
 }
@@ -816,7 +816,7 @@ static void pallasReadEvent(pallas::EventSummary& event,
 static const char* pallasGetSequenceFilename(const char* base_dirname, pallas::Thread* th) {
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/sequence.pallas", base_dirname, threadPath);
+  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
   return filename;
 }
 
@@ -864,7 +864,7 @@ static void pallasReadSequence(pallas::Sequence& sequence,
 static pallas::File pallasGetLoopFile(const char* base_dirname, pallas::Thread* th, const char* mode) {
   char filename[1024];
   const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/loop.pallas", base_dirname, threadPath);
+  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
   delete[] threadPath;
   return pallas::File(filename, mode);
 }
@@ -1127,44 +1127,36 @@ static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
     abort();
   }
 
-  pallas::File tokenFile = pallasGetThreadFile(dir_name, th, "w");
+  pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
 
-  tokenFile.write(&th->id, sizeof(th->id), 1);
-  tokenFile.write(&th->archive->id, sizeof(th->archive->id), 1);
+  threadFile.write(&th->id, sizeof(th->id), 1);
+  threadFile.write(&th->archive->id, sizeof(th->archive->id), 1);
 
-  tokenFile.write(&th->nb_events, sizeof(th->nb_events), 1);
-  tokenFile.write(&th->nb_sequences, sizeof(th->nb_sequences), 1);
-  tokenFile.write(&th->nb_loops, sizeof(th->nb_loops), 1);
+  threadFile.write(&th->nb_events, sizeof(th->nb_events), 1);
+  threadFile.write(&th->nb_sequences, sizeof(th->nb_sequences), 1);
+  threadFile.write(&th->nb_loops, sizeof(th->nb_loops), 1);
 
-  tokenFile.close();
 
-  const char* eventFilename = pallasGetEventFilename(dir_name, th);
   const char* eventDurationFilename = pallasGetEventDurationFilename(dir_name, th);
-  pallas::File eventFile = pallas::File(eventFilename, "w");
   pallas::File eventDurationFile = pallas::File(eventDurationFilename, "w");
   for (int i = 0; i < th->nb_events; i++) {
-    pallasStoreEvent(th->events[i], eventFile, eventDurationFile);
+    pallasStoreEvent(th->events[i], threadFile, eventDurationFile);
   }
-  eventFile.close();
   eventDurationFile.close();
 
-  const char* sequenceFilename = pallasGetSequenceFilename(dir_name, th);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(dir_name, th);
-  pallas::File sequenceFile = pallas::File(sequenceFilename, "w");
   pallas::File sequenceDurationFile = pallas::File(sequenceDurationFilename, "w");
   for (int i = 0; i < th->nb_sequences; i++) {
-    pallasStoreSequence(*th->sequences[i], sequenceFile, sequenceDurationFile);
+    pallasStoreSequence(*th->sequences[i], threadFile, sequenceDurationFile);
   }
-  sequenceFile.close();
   sequenceDurationFile.close();
 
-  pallas::File loopFile = pallasGetLoopFile(dir_name, th, "w");
   for (int i = 0; i < th->nb_loops; i++)
-    pallasStoreLoop(th->loops[i], loopFile);
-  loopFile.close();
+    pallasStoreLoop(th->loops[i], threadFile);
+  threadFile.close();
   pallas_log(pallas::DebugLevel::Debug, "Average compression ratio: %.2f\n",
              (numberRawBytes + .0) / numberCompressedBytes);
 }
@@ -1197,36 +1189,28 @@ static void pallasReadThread(pallas::Archive* global_archive, pallas::Thread* th
   th->loops = new pallas::Loop[th->nb_allocated_loops];
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %d events\n", th->nb_events);
-  const char* eventFilename = pallasGetEventFilename(global_archive->dir_name, th);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
-  pallas::File eventFile = pallas::File(eventFilename, "r");
   pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename);
   fileMap[eventDurationFilename] = &eventDurationFile;
   for (int i = 0; i < th->nb_events; i++) {
     th->events[i].id = i;
-    pallasReadEvent(th->events[i], eventFile, eventDurationFile, eventDurationFilename);
+    pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
   }
-  eventFile.close();
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %d sequences\n", th->nb_sequences);
-  const char* sequenceFilename = pallasGetSequenceFilename(global_archive->dir_name, th);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(global_archive->dir_name, th);
-  pallas::File sequenceFile = pallas::File(sequenceFilename, "r");
   pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename);
   fileMap[sequenceDurationFilename] = &sequenceDurationFile;
   for (int i = 0; i < th->nb_sequences; i++) {
     th->sequences[i]->id = i;
-    pallasReadSequence(*th->sequences[i], sequenceFile, sequenceDurationFilename);
+    pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
   }
-  sequenceFile.close();
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %d loops\n", th->nb_loops);
-  pallas::File loopFile = pallasGetLoopFile(global_archive->dir_name, th, "r");
   for (int i = 0; i < th->nb_loops; i++) {
     th->loops[i].self_id = PALLAS_LOOP_ID(i);
-    pallasReadLoop(th->loops[i], loopFile);
+    pallasReadLoop(th->loops[i], threadFile);
   }
-  loopFile.close();
   threadFile.close();
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u: {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
