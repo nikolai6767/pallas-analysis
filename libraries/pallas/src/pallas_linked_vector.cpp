@@ -42,9 +42,6 @@ uint64_t& LinkedVector::at(size_t pos) {
   if (pos >= size) {
     pallas_error("Getting an element whose index (%lu) is bigger than vector size (%lu)\n", pos, size);
   }
-  if (size == 1) {
-    return min;
-  }
   if (first == nullptr) {
     load_timestamps();
   }

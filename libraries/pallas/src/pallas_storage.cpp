@@ -327,16 +327,22 @@ inline static size_t _pallas_histogram_compress(const uint64_t* src, size_t n, b
   }
   size_t width = max - min;
   size_t stepSize = ((double)width) / MAX_BIT;
-  printf("Min: %lu; Max: %lu\n", min, max);
-  // TODO Check size is sufficient
+  // printf("Min: %lu; Max: %lu\n", min, max);
+  //  TODO Check size is sufficient
+  //  TODO Assert stepSize > 0
   memcpy(dest, &min, sizeof(min));
   dest = &dest[sizeof(min)];
   memcpy(dest, &max, sizeof(max));
   dest = &dest[sizeof(max)];
   for (size_t i = 0; i < n; i++) {
-    auto temp = (size_t)std::round((src[i] - min) / stepSize);
-    temp = (temp > MAX_BIT) ? MAX_BIT : temp;
-    printf("Writing %lu as %lu\n", src[i], temp);
+    size_t temp;
+    if (stepSize) {
+      temp = (size_t)std::round((src[i] - min) / stepSize);
+      temp = (temp > MAX_BIT) ? MAX_BIT : temp;
+    } else {
+      temp = (src[i] - min);
+    }
+    // printf("Writing %lu as %lu\n", src[i], temp);
     memcpy(&dest[i * N_BYTES], &temp, N_BYTES);
   }
 
@@ -477,6 +483,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     compressedSize = (n + 2) * sizeof(uint64_t);  // Take into account that we add the min and the max.
     compressedArray = new uint8_t[compressedSize];
     compressedSize = _pallas_histogram_compress(src, n, compressedArray, compressedSize);
+    // TODO Implement Histogram + ZSTD
     break;
   }
 #ifdef WITH_ZFP
@@ -612,14 +619,12 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
     finalUpdateStats();
   // Write the statistics to the vectorFile
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
-  if (size == 1) {
-    _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
+  if (size <= 3) {
+    _pallas_fwrite(first->array, sizeof(size_t), size, vectorFile);
   } else if (size >= 4) {
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
     _pallas_fwrite(&max, sizeof(max), 1, vectorFile);
     _pallas_fwrite(&mean, sizeof(mean), 1, vectorFile);
-  }
-  if (size >= 2) {
     offset = ftell(valueFile);
     _pallas_fwrite(&offset, sizeof(offset), 1, vectorFile);
 
@@ -649,42 +654,36 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
 
 pallas::LinkedVector::LinkedVector(FILE* vectorFile, const char* valueFilePath) {
   filePath = valueFilePath;
+  first = nullptr;
+  last = nullptr;
   _pallas_fread(&size, sizeof(size), 1, vectorFile);
   if (size == 0) {
     min, max, mean = 0;
   }
-  if (size == 1) {
-    _pallas_fread(&min, sizeof(min), 1, vectorFile);
-    max, mean = min;
-  }
-  if (size >= 4) {
+  if (size <= 3) {
+    auto temp = new size_t[size];
+    _pallas_fread(temp, sizeof(size_t), size, vectorFile);
+    last = new SubVector(size, temp);
+    first = last;
+    if (size == 1) {
+      max = min;
+      mean = min;
+    } else if (size == 2) {
+        min = std::min(temp[0], temp[1]);
+        max = std::max(temp[0], temp[1]);
+        mean = (temp[0] + temp[1]) / 2;
+    } else {
+      min = std::min(temp[0], std::min(temp[1], temp[2]));
+      max = std::max(temp[0], std::max(temp[1], temp[2]));
+      mean = (temp[0] + temp[1] + temp[3]) / 3;
+    }
+  } else if (size >= 4) {
     _pallas_fread(&min, sizeof(min), 1, vectorFile);
     _pallas_fread(&max, sizeof(max), 1, vectorFile);
     _pallas_fread(&mean, sizeof(mean), 1, vectorFile);
-  }
-  if (size >= 2) {
     offset = 0;
     _pallas_fread(&offset, sizeof(offset), 1, vectorFile);
-    if (size < 4) {
-      load_timestamps();
-      if (size == 2) {
-        size_t f = front();
-        size_t b = back();
-        min = std::min(f, b);
-        max = std::max(f, b);
-        mean = (f + b) / 2;
-      } else {
-        size_t a = at(0);
-        size_t b = at(1);
-        size_t c = at(2);
-        min = std::min(a, std::min(b, c));
-        max = std::max(a, std::max(b, c));
-        mean = (a + b + c) / 3;
-      }
-    }
   }
-  first = nullptr;
-  last = nullptr;
 }
 
 void pallas::LinkedVector::load_timestamps() {
