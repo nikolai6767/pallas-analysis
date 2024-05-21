@@ -54,10 +54,10 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
  * 'U' otherwise
  */
 #define PALLAS_TOKEN_TYPE_C(t)     \
-  (t.type) == TypeInvalid    ? 'I' \
-  : (t.type) == TypeEvent    ? 'E' \
-  : (t.type) == TypeSequence ? 'S' \
-  : (t.type) == TypeLoop     ? 'L' \
+  ((t).type) == TypeInvalid    ? 'I' \
+  : ((t).type) == TypeEvent    ? 'E' \
+  : ((t).type) == TypeSequence ? 'S' \
+  : ((t).type) == TypeLoop     ? 'L' \
                              : 'U'
 
 /**
