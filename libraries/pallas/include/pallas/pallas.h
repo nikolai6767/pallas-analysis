@@ -17,6 +17,7 @@
 #ifdef __cplusplus
 #include <cstring>
 #include <map>
+#include <unordered_map>
 #else
 #include <string.h>
 #endif
@@ -404,9 +405,9 @@ typedef struct Thread {
 
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
-  std::map<uint32_t, std::vector<TokenId>> hashToSequence;
+  std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;
 #else
-  byte hashToSequence[MAP_SIZE];
+  byte hashToSequence[UNO_MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
