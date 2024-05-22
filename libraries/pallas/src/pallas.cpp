@@ -9,10 +9,10 @@
 namespace pallas {
 void Thread::loadTimestamps() {
   DOFOR(i, nb_events) {
-    events[i].durations->front();
+    size_t loaded_duration = events[i].durations->front();
   }
   DOFOR(i, nb_sequences) {
-    sequences[i]->durations->front();
+    size_t loaded_duration = sequences[i]->durations->front();
   }
 }
 
