@@ -318,6 +318,8 @@ inline static uint64_t* _pallas_sz_decompress(size_t n, byte* compressedArray, s
  *  @returns Number of bytes written in the dest array.
  */
 inline static size_t _pallas_histogram_compress(const uint64_t* src, size_t n, byte* dest, size_t destSize) {
+  // This method works by filling "bins" between the min and the max of the array.
+  // First check that the destination size of enough to write everything in case you can't compress enough
   pallas_assert(destSize >= (N_BYTES * n + 2 * sizeof(uint64_t)));
   // Compute the min and max
   uint64_t min = UINT64_MAX, max = 0;
@@ -326,24 +328,32 @@ inline static size_t _pallas_histogram_compress(const uint64_t* src, size_t n, b
     max = (src[i] > max) ? src[i] : max;
   }
   size_t width = max - min;
-  size_t stepSize = ((double)width) / MAX_BIT;
-  // printf("Min: %lu; Max: %lu\n", min, max);
-  //  TODO Check size is sufficient
-  //  TODO Assert stepSize > 0
+  // TODO Skip the previous step using the stats from the vector.
+  size_t stepSize = (width) / MAX_BIT;
+
+  // Write min/max
   memcpy(dest, &min, sizeof(min));
-  dest = &dest[sizeof(min)];
+  dest = &dest[sizeof(min)]; // Offset the address
   memcpy(dest, &max, sizeof(max));
-  dest = &dest[sizeof(max)];
-  for (size_t i = 0; i < n; i++) {
-    size_t temp;
-    if (stepSize) {
-      temp = (size_t)std::round((src[i] - min) / stepSize);
-      temp = (temp > MAX_BIT) ? MAX_BIT : temp;
-    } else {
-      temp = (src[i] - min);
+  dest = &dest[sizeof(max)]; // Offset the address
+
+  if (stepSize > 1) {
+    // Write each bin
+    for (size_t i = 0; i < n; i++) {
+      size_t binNumber = (src[i] - min) / stepSize;
+      binNumber = (binNumber > MAX_BIT) ? MAX_BIT : binNumber;
+      // This last check is here in the rare cases of overflow.
+      // printf("Writing %lu as %lu\n", src[i], temp);
+      memcpy(&dest[i * N_BYTES], &binNumber, N_BYTES);
+      // TODO This will not work on small endians architectures.
     }
-    // printf("Writing %lu as %lu\n", src[i], temp);
-    memcpy(&dest[i * N_BYTES], &temp, N_BYTES);
+  } else {
+    for (size_t i = 0; i < n; i++) {
+      size_t toWrite = src[i] - min;
+      // This MUST be < MAX_BIT
+      pallas_assert(toWrite < MAX_BIT);
+      memcpy(&dest[i * N_BYTES], &toWrite, N_BYTES);
+    }
   }
 
   return N_BYTES * n + 2 * sizeof(uint64_t);
@@ -365,16 +375,25 @@ inline static uint64_t* _pallas_histogram_read(size_t n, byte* compArray, size_t
   memcpy(&max, compArray, sizeof(max));
   compArray = &compArray[sizeof(max)];
   size_t width = max - min;
-  size_t stepSize = width / (1 << N_BITS);
+  size_t stepSize = width / MAX_BIT;
 
 //  printf("Min: %lu; Max: %lu\n", min, max);
 
-  for (size_t i = 0; i < n; i++) {
-    size_t factor = 0;
-    memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
-    dest[i] = min + factor * stepSize;
-//    printf("Reading %lu as %lu\n", factor, dest[i]);
-  }
+    if (stepSize > 1) {
+      for (size_t i = 0; i < n; i++) {
+        size_t factor = 0;
+        memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
+        dest[i] = min + factor * stepSize;
+    //    printf("Reading %lu as %lu\n", factor, dest[i]);
+      }
+    } else {
+      for (size_t i = 0; i < n; i++) {
+        size_t factor = 0;
+        memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
+        dest[i] = min + factor;
+        //    printf("Reading %lu as %lu\n", factor, dest[i]);
+      }
+    }
   return dest;
 }
 
@@ -480,14 +499,14 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     break;
   }
   case pallas::CompressionAlgorithm::Histogram: {
-    compressedSize = (n + 2) * sizeof(uint64_t);  // Take into account that we add the min and the max.
+    compressedSize = N_BYTES * n + 2 * sizeof(uint64_t);;  // Take into account that we add the min and the max.
     compressedArray = new uint8_t[compressedSize];
     compressedSize = _pallas_histogram_compress(src, n, compressedArray, compressedSize);
     break;
   }
   case pallas::CompressionAlgorithm::ZSTD_Histogram: {
     // We first do the Histogram compress
-    auto tempCompressedSize = (n + 2) * sizeof(uint64_t);
+    auto tempCompressedSize = N_BYTES * n + 2 * sizeof(uint64_t);
     auto tempCompressedArray = new byte[tempCompressedSize];
     tempCompressedSize = _pallas_histogram_compress(src, n, tempCompressedArray, tempCompressedSize);
     std::cout << tempCompressedSize << std::endl;
