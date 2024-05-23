@@ -51,6 +51,7 @@ std::map<CompressionAlgorithm, std::string> CompressionAlgorithmMap = {
   {CompressionAlgorithm::None, "None"},
   {CompressionAlgorithm::ZSTD, "ZSTD"},
   {CompressionAlgorithm::Histogram, "Histogram"},
+  {CompressionAlgorithm::ZSTD_Histogram, "ZSTD_Histogram"},
 #ifdef WITH_SZ
   {CompressionAlgorithm::SZ, "SZ"},
 #endif
@@ -266,7 +267,7 @@ size_t ParameterHandler::getMaxLoopLength() const {
   pallas_error("Asked for the max loop length but wasn't using a LoopFindingBasicTruncated algorithm.\n");
 }
 u_int8_t ParameterHandler::getZstdCompressionLevel() const {
-  if (compressionAlgorithm == CompressionAlgorithm::ZSTD) {
+  if (compressionAlgorithm == CompressionAlgorithm::ZSTD || compressionAlgorithm == CompressionAlgorithm::ZSTD_Histogram) {
     return zstdCompressionLevel;
   }
   pallas_error("Asked for ZSTD Compression Level but wasn't using a CompressionZSTD algorithm.\n");

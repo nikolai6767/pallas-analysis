@@ -211,7 +211,7 @@ inline static size_t _pallas_zstd_compress(void* src, size_t size, void* dest, s
  * @param realSize Size of the uncompressed data.
  * @param compArray The compressed array.
  * @param compSize Size of the compressed array.
- * @returns Uncompressed array.
+ * @returns The uncompressed array.
  */
 inline static uint64_t* _pallas_zstd_read(size_t& realSize, void* compArray, size_t compSize) {
   realSize = ZSTD_getFrameContentSize(compArray, compSize);
@@ -367,13 +367,13 @@ inline static uint64_t* _pallas_histogram_read(size_t n, byte* compArray, size_t
   size_t width = max - min;
   size_t stepSize = width / (1 << N_BITS);
 
-  printf("Min: %lu; Max: %lu\n", min, max);
+//  printf("Min: %lu; Max: %lu\n", min, max);
 
   for (size_t i = 0; i < n; i++) {
     size_t factor = 0;
     memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
     dest[i] = min + factor * stepSize;
-    printf("Reading %lu as %lu\n", factor, dest[i]);
+//    printf("Reading %lu as %lu\n", factor, dest[i]);
   }
   return dest;
 }
@@ -483,7 +483,20 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
     compressedSize = (n + 2) * sizeof(uint64_t);  // Take into account that we add the min and the max.
     compressedArray = new uint8_t[compressedSize];
     compressedSize = _pallas_histogram_compress(src, n, compressedArray, compressedSize);
-    // TODO Implement Histogram + ZSTD
+    break;
+  }
+  case pallas::CompressionAlgorithm::ZSTD_Histogram: {
+    // We first do the Histogram compress
+    auto tempCompressedSize = (n + 2) * sizeof(uint64_t);
+    auto tempCompressedArray = new byte[tempCompressedSize];
+    tempCompressedSize = _pallas_histogram_compress(src, n, tempCompressedArray, tempCompressedSize);
+    std::cout << tempCompressedSize << std::endl;
+
+    // And then the ZSTD compress
+    compressedSize = ZSTD_compressBound(tempCompressedSize);
+    compressedArray = new byte[compressedSize];
+    compressedSize = _pallas_zstd_compress(tempCompressedArray, tempCompressedSize, compressedArray, compressedSize);
+    delete[] tempCompressedArray;
     break;
   }
 #ifdef WITH_ZFP
@@ -503,7 +516,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
   }
 
   if (pallas::parameterHandler->getCompressionAlgorithm() != pallas::CompressionAlgorithm::None) {
-    pallas_log(pallas::DebugLevel::Debug, "Compressing %lu bytes as %lu bytes\n", size, compressedSize);
+    pallas_log(pallas::DebugLevel::Normal, "Compressing %lu bytes as %lu bytes\n", size, compressedSize);
     _pallas_fwrite(&compressedSize, sizeof(compressedSize), 1, file);
     _pallas_fwrite(compressedArray, compressedSize, 1, file);
     numberRawBytes += size;
@@ -565,6 +578,14 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
   }
   case pallas::CompressionAlgorithm::Histogram: {
     uncompressedArray = _pallas_histogram_read(n, compressedArray, compressedSize);
+    break;
+  }
+  case pallas::CompressionAlgorithm::ZSTD_Histogram: {
+    // First ZSTD Decode
+    size_t histogramSize;
+    auto tempUncompressedArray = reinterpret_cast<byte*>(_pallas_zstd_read(histogramSize, compressedArray, compressedSize));
+    uncompressedArray = _pallas_histogram_read(n, tempUncompressedArray, histogramSize);
+    pallas_assert(n * sizeof(uint64_t) == expectedSize);
     break;
   }
 #ifdef WITH_ZFP
