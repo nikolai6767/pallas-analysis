@@ -235,7 +235,7 @@ ParameterHandler::ParameterHandler() {
     }
   } else {
     elseJump:
-    pallas_warn("No config file provided, using default: %s\n", defaultConfigFile);
+    pallas_log(DebugLevel::Debug, "No config file provided, using default: %s\n", defaultConfigFile);
     configFile.open(defaultConfigFile);
     if (!configFile.good()) {
       pallas_warn("No config file found at default install path ! Check your installation.\n");
@@ -257,7 +257,7 @@ ParameterHandler::ParameterHandler() {
   zstdCompressionLevel = loadZSTDCompressionLevel(config);
   timestampStorage = loadTimestampStorageConfig(config);
 
-  pallas_log(DebugLevel::Normal, "%s\n", to_string().c_str());
+  pallas_log(DebugLevel::Debug, "%s\n", to_string().c_str());
 }
 
 size_t ParameterHandler::getMaxLoopLength() const {
