@@ -43,7 +43,7 @@ static void testSequenceDuration(pallas::ThreadReader* reader,
   }
   if (sequenceOccurence) {
     sequenceOccurence->full_sequence = new pallas::TokenOccurence[currentLevel.size()];
-    memcpy(sequenceOccurence->full_sequence, currentLevel.data(), currentLevel.size() * sizeof(pallas::TokenOccurence));
+    // memcpy(sequenceOccurence->full_sequence, currentLevel.data(), currentLevel.size() * sizeof(pallas::TokenOccurence));
   }
   std::cout << "Sequence " << token.id << ":\n";
   long double actualDuration = 0;
