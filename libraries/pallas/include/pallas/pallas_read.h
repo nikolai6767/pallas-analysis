@@ -155,7 +155,7 @@ typedef struct ThreadReader {
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, size_t occurence_id) const;
 
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
-  [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, int occurence_id) const;
+  [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
   /** Skips the given Token and updates the reader. */
   static void skipToken([[maybe_unused]] Token token) { pallas_error("Not implemented yet\n"); };
