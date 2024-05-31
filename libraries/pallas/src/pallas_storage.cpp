@@ -105,7 +105,8 @@ class File {
   void open(const char* mode) {
     if (isOpen) {
       pallas_log(DebugLevel::Verbose, "Trying to open file that is already open: %s\n", path);
-      close();
+      // close();
+      return;
     }
     while (numberOpenFiles >= maxNumberFilesOpen) {
       auto* openedFilePath = static_cast<pallas::File*>(getFirstOpenFile());
@@ -120,12 +121,14 @@ class File {
     isOpen = true;
   };
   void close() {
+    // TODO grab the lock
     if (!isOpen) {
-      pallas_log(DebugLevel::Verbose, "Trying to close file that is already closed: %s\n", path);
+      pallas_log(DebugLevel::Debug, "Trying to close file that is already closed: %s\n", path);
     }
     isOpen = false;
     fclose(file);
-    numberOpenFiles--;
+    if (numberOpenFiles)
+      numberOpenFiles--;
   };
   void read(void* ptr, size_t size, size_t n) const { _pallas_fread(ptr, size, n, file); }
   void write(void* ptr, size_t size, size_t n) const { _pallas_fwrite(ptr, size, n, file); }
