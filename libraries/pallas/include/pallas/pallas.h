@@ -345,7 +345,7 @@ typedef uint32_t Ref;
 /** Reference for a pallas::String */
 typedef Ref StringRef;
 /** Invalid StringRef */
-#define PALLAS_STRING_REF_INVALID ((StringRef)PALLAS_UNDEFINED_UINT32)
+#define PALLAS_STRINGREF_INVALID ((PALLAS(StringRef))PALLAS_UNDEFINED_UINT32)
 /**
  * Define a String reference structure used by PALLAS format.
  *
@@ -360,7 +360,7 @@ typedef struct String {
 /** Reference for a pallas::Region */
 typedef Ref RegionRef;
 /** Invalid RegionRef */
-#define PALLAS_REGIONREF_INVALID ((RegionRef)PALLAS_UNDEFINED_UINT32)
+#define PALLAS_REGIONREF_INVALID ((PALLAS(RegionRef))PALLAS_UNDEFINED_UINT32)
 /**
  * Define a Region that has an ID and a description.
  */
