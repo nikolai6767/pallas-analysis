@@ -100,7 +100,7 @@ namespace pallas {
 class File {
  public:
   FILE* file = nullptr;
-  const char* path = nullptr;
+  char* path = nullptr;
   bool isOpen = false;
   void open(const char* mode) {
     if (isOpen) {
@@ -143,7 +143,7 @@ class File {
       close();
     }
     // delete file;
-    delete path;
+    free(path);
   }
 };
 }  // namespace pallas
@@ -755,7 +755,7 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, const char* valueFilePath) 
     } else {
       min = std::min(temp[0], std::min(temp[1], temp[2]));
       max = std::max(temp[0], std::max(temp[1], temp[2]));
-      mean = (temp[0] + temp[1] + temp[3]) / 3;
+      mean = (temp[0] + temp[1] + temp[2]) / 3;
     }
   } else if (size >= 4) {
     _pallas_fread(&min, sizeof(min), 1, vectorFile);
