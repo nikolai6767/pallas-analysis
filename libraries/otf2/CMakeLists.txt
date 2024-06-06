@@ -122,7 +122,7 @@ target_compile_options(otf2
         PUBLIC
         -D_GNU_SOURCE
         PRIVATE
-        -Wno-unused-parameter
+        -Wno-unused-parameter -Wno-unused
         -Wall -Wextra -Wno-sign-compare
 )
 
