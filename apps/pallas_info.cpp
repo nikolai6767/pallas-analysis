@@ -48,7 +48,8 @@ void info_loop(Loop* l) {
 }
 
 #ifdef HAS_FORMAT
-#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9) )
+#define UINT64_FILTER(d) \
+  ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9))
 #else
 #define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9))
 #endif
@@ -65,7 +66,7 @@ void info_thread(Thread* t) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
     print_sequence(t->sequences[i]);
     if (t->sequences[i]->durations->size > 1) {
-      std::cout <<   "\t\t\tMin:  " << UINT64_FILTER(t->sequences[i]->durations->min)
+      std::cout << "\t\t\tMin:  " << UINT64_FILTER(t->sequences[i]->durations->min)
                 << "\n\t\t\tMax:  " << UINT64_FILTER(t->sequences[i]->durations->max)
                 << "\n\t\t\tMean: " << UINT64_FILTER(t->sequences[i]->durations->mean) << std::endl;
     } else {
@@ -81,39 +82,44 @@ void info_thread(Thread* t) {
 }
 
 void info_archive(Archive* archive) {
-  printf("Archive %d:\n", archive->id);
+  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID)
+    printf("Main archive:\n");
+  else
+    printf("Archive %d:\n", archive->id);
   printf("\tdir_name:   %s\n", archive->dir_name);
   printf("\ttrace_name: %s\n", archive->trace_name);
   printf("\tfullpath:   %s\n", archive->fullpath);
   printf("\n");
-  printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
+  // printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
+  if (archive->definitions.strings.size())
+    printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
-  printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
   for (auto& stringPair : archive->definitions.strings) {
     printf("\t\t%d: '%s'\n", stringPair.second.string_ref, stringPair.second.str);
   }
-
-  printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
-  for (auto& regionPair: archive->definitions.regions) {
-    printf("\t\t%d: %d ('%s')\n", regionPair.second.region_ref,
-           regionPair.second.string_ref,
+  if (archive->definitions.regions.size())
+    printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
+  for (auto& regionPair : archive->definitions.regions) {
+    printf("\t\t%d: %d ('%s')\n", regionPair.second.region_ref, regionPair.second.string_ref,
            archive->getString(regionPair.second.string_ref)->str);
   }
 
-  printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
+  if (archive->location_groups.size())
+    printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
   for (unsigned i = 0; i < archive->location_groups.size(); i++) {
     printf("\t\t%d: %d ('%s'), parent: %d\n", archive->location_groups[i].id, archive->location_groups[i].name,
            archive->getString(archive->location_groups[i].name)->str, archive->location_groups[i].parent);
   }
 
-  printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
+  if (archive->locations.size())
+    printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
   for (unsigned i = 0; i < archive->locations.size(); i++) {
     printf("\t\t%d: %d ('%s'), parent: %d\n", archive->locations[i].id, archive->locations[i].name,
            archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
   }
 
-  printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
-
+  if (archive->nb_threads)
+    printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {
       if (archive->threads[i]) {
@@ -124,7 +130,8 @@ void info_archive(Archive* archive) {
     }
   }
 
-  printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
+  if (archive->nb_archives)
+    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
 }
 
 void info_trace(Archive* trace) {
@@ -133,8 +140,11 @@ void info_trace(Archive* trace) {
     info_archive(trace->archive_list[i]);
   }
 
-  for (int i = 0; i < trace->nb_threads; i++) {
-    info_thread(trace->threads[i]);
+  for (int i = 0; i < trace->nb_archives; i++) {
+    for (int j = 0; j < trace->archive_list[i]->nb_threads; j++) {
+      if (trace->archive_list[i]->threads[j])
+      info_thread(trace->archive_list[i]->threads[j]);
+    }
   }
 }
 

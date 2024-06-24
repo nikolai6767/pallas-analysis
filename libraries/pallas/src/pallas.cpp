@@ -143,6 +143,7 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   for (int i = 0; i < nb_allocated_sequences; i++) {
     sequences[i] = new Sequence();
   }
+  printf("%d more threads: %d\n", archive->id, thread_id);
   archive->threads[archive->nb_threads++] = this;
   pthread_mutex_unlock(&archive->lock);
 }

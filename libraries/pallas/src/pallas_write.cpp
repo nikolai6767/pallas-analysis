@@ -543,12 +543,13 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 /**
  * Creates a new LocationGroup and adds it to that Archive.
  */
-void Archive::defineLocationGroup(LocationGroupId id, StringRef name, LocationGroupId parent) {
+void Archive::defineLocationGroup(LocationGroupId lg_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   LocationGroup l = LocationGroup();
-  l.id = id;
+  l.id = lg_id;
   l.name = name;
   l.parent = parent;
+  l.mainLoc = PALLAS_THREAD_ID_INVALID;
   location_groups.push_back(l);
   pthread_mutex_unlock(&lock);
 }
@@ -556,13 +557,19 @@ void Archive::defineLocationGroup(LocationGroupId id, StringRef name, LocationGr
 /**
  * Creates a new Location and adds it to that Archive.
  */
-void Archive::defineLocation(ThreadId id, StringRef name, LocationGroupId parent) {
+void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   Location l = Location();
-  l.id = id;
+  l.id = l_id;
   pallas_assert(l.id != PALLAS_THREAD_ID_INVALID);
   l.name = name;
   l.parent = parent;
+  for (auto& locationGroup: location_groups) {
+    if (locationGroup.id == parent && locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID) {
+      locationGroup.mainLoc = l_id;
+      break;
+    }
+  }
   locations.push_back(l);
   pthread_mutex_unlock(&lock);
 }

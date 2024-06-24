@@ -26,6 +26,8 @@ struct LocationGroup {
   StringRef name;
   /** Parent of that group. */
   LocationGroupId parent;
+  /* Main location of that group. */
+  ThreadId mainLoc;
 };
 
 /**
