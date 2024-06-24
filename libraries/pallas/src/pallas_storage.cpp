@@ -891,6 +891,7 @@ static void pallasReadEvent(pallas::EventSummary& event,
     eventFile.read(event.attribute_buffer, sizeof(byte), event.attribute_buffer_size);
   }
   event.durations = new pallas::LinkedVector(eventFile.file, durationFileName);
+  event.nb_occurences = event.durations->size;
 }
 
 static const char* pallasGetSequenceFilename(const char* base_dirname, pallas::Thread* th) {
