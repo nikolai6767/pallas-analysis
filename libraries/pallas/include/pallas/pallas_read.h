@@ -193,6 +193,7 @@ typedef struct ThreadReader {
   /** Skips the given Sequence and updates the reader. */
   void skipSequence([[maybe_unused]] Token token) { pallas_error("Not implemented yet\n"); };
   ~ThreadReader();
+  ThreadReader(ThreadReader&& other);
 #endif
 } ThreadReader;
 

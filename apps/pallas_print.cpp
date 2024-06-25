@@ -258,9 +258,9 @@ void printTrace(pallas::Archive& trace) {
   int reader_options = pallas::ThreadReaderOptions::None;
   //  if (show_structure)
   //    reader_options |= pallas::ThreadReaderOptions::ShowStructure;
-  readers.reserve(trace.nb_threads);
-  for (int i = 0; i < trace.nb_threads; i++) {
-    readers.emplace_back(&trace, trace.threads[i]->id, reader_options);
+  for (int i = 0; i < trace.nb_archives; i++) {
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++)
+      readers.emplace_back(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
   }
 
   _print_timestamp_header();
@@ -350,9 +350,13 @@ int main(int argc, char** argv) {
     store_timestamps = 0;
 
   if (per_thread) {
-    for (int i = 0; i < trace.nb_threads; i++) {
-      printf("\n");
-      printThread(trace, trace.threads[i]);
+    for (int i = 0; i < trace.nb_archives; i++) {
+      for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
+        if (trace.archive_list[i]->threads[j]) {
+          printf("\n");
+          printThread(*trace.archive_list[i], trace.archive_list[i]->threads[j]);
+        }
+      }
     }
   } else {
     printTrace(trace);
