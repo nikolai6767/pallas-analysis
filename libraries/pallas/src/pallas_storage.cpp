@@ -1434,7 +1434,7 @@ void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
     int index = 0;
     while (thread->archive->threads[index] != nullptr) {
       index++;
-      if (index >= global_archive->nb_archives) {
+      if (index >= thread->archive->nb_threads) {
         pallas_error("Tried to load more archives than there are.\n");
       }
     }
