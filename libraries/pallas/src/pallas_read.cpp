@@ -417,15 +417,29 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
 }
 ThreadReader::~ThreadReader() {
   bool hasStilThreads = false;
-  DOFOR(i, archive->nb_threads) {
-    hasStilThreads = hasStilThreads || archive->threads[i] != nullptr;
-    if (archive->threads[i] == thread_trace) {
-      archive->threads[i] = nullptr;
+  if (archive) {
+    DOFOR(i, archive->nb_threads) {
+      hasStilThreads = hasStilThreads || archive->threads[i] != nullptr;
+      if (archive->threads[i] == thread_trace) {
+        archive->threads[i] = nullptr;
+      }
     }
   }
   delete thread_trace;
   if (!hasStilThreads)
     delete archive;
+}
+
+ThreadReader::ThreadReader(ThreadReader&& other) {
+  archive = other.archive;
+  thread_trace = other.thread_trace;
+  referential_timestamp = other.referential_timestamp;
+  std::memcpy(callstack_iterable, other.callstack_iterable, sizeof(Token) *MAX_CALLSTACK_DEPTH);
+  std::memcpy(callstack_index, other.callstack_index, sizeof(int) *MAX_CALLSTACK_DEPTH);
+  current_frame = other.current_frame;
+  tokenCount = TokenCountMap(other.tokenCount);
+  options = other.options;
+  std::memset(&other, 0, sizeof( ThreadReader));
 }
 
 Savestate::Savestate(const ThreadReader* reader) {

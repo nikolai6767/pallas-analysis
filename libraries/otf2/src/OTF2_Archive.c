@@ -186,13 +186,6 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
 
   pallas_write_thread_open(archive->archive, archive->def_writers[index]->thread_writer, location);
 
-#if 0
-  pallas_write_init_thread(&archive->trace,
-			,
-			location,
-			index);
-#endif
-
   archive->evt_writers[index] = malloc(sizeof(OTF2_EvtWriter));
   archive->evt_writers[index]->locationRef = location;
   archive->evt_writers[index]->archive = archive->archive;
