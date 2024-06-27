@@ -20,7 +20,6 @@
 #ifdef WITH_SZ
 #include <sz.h>
 #endif
-
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_parameter_handler.h"
@@ -1426,18 +1425,16 @@ void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
     global_archive = archive;
   }
 
+  for (auto& locationGroup : archive->location_groups) {
+    pallasGetArchive(global_archive, locationGroup.mainLoc);
+  }
+
   for (auto& location : archive->locations) {
     auto* thread = new pallas::Thread();
     auto parent = global_archive->getLocationGroup(location.parent);
     thread->archive = pallasGetArchive(global_archive, parent->mainLoc);
     pallasReadThread(global_archive, thread, location.id);
-    int index = 0;
-    while (thread->archive->threads[index] != nullptr) {
-      index++;
-      if (index >= thread->archive->nb_threads) {
-        pallas_error("Tried to load more archives than there are.\n");
-      }
-    }
+    int index = location.id - parent->mainLoc;
     thread->archive->threads[index] = thread;
   }
 }
