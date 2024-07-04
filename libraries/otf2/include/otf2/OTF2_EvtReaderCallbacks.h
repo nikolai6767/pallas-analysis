@@ -4214,6 +4214,7 @@ typedef OTF2_CallbackCode (*OTF2_EvtReaderCallback_CommDestroy)(OTF2_LocationRef
 OTF2_ErrorCode OTF2_EvtReaderCallbacks_SetCommDestroyCallback(OTF2_EvtReaderCallbacks* evtReaderCallbacks,
                                                               OTF2_EvtReaderCallback_CommDestroy commDestroyCallback);
 
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
