@@ -223,7 +223,7 @@ class ConfigFile {
       while (getline(configFile, line)) {
         auto separator = line.find('=');
         auto key = line.substr(0, separator);
-        auto value = line.substr(separator, line.length());
+        auto value = line.substr(separator + 1, line.length());
         config[key] = value;
       }
     }
