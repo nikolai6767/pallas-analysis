@@ -209,7 +209,7 @@ class ConfigFile {
 
     std::string value = loadStringFromEnv("PALLAS_TIMESTAMP_STORAGE");
     if (value.empty() && !config.empty()) {
-      value = loadStringFromConfig("timestampStorage");
+      value = loadStringFromConfig("timestampStorageAlgorithm");
     }
     if (!value.empty())
       ret = timestampStorageFromString(value);
