@@ -42,7 +42,7 @@ add_executable(otf2-estimator src/otf2_estimator.cpp)
 
 target_compile_options(otf2-estimator
         PRIVATE
-        -Wall -Wextra -Wpedantic
+        -Wall -Wextra -Wpedantic -Wno-unused-parameter
 )
 
 target_link_libraries(otf2-estimator
@@ -141,8 +141,8 @@ target_compile_options(otf2
         PUBLIC
         -D_GNU_SOURCE
         PRIVATE
-        -Wno-unused-parameter -Wno-unused
         -Wall -Wextra -Wno-sign-compare
+        -Wno-unused-parameter -Wno-unused
 )
 
 target_include_directories(otf2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} include)
