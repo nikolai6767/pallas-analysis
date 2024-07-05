@@ -3,7 +3,7 @@
 Pallas provides an interface to write and read trace data.
 
 ## Building
-You need to have ZSTD and JSONCPP installed before you try to build this.
+You need to have ZSTD installed before you try to build this.
 To build and install, simply run:
 ```bash
 mkdir build && cd build
@@ -35,11 +35,11 @@ It also implements the [Murmur3 hashing function](https://github.com/PeterScott/
 
 ## Configuration
 
-A JSON Config file can be given to Pallas with the PALLAS_CONFIG_PATH environment variable.
-If that variable is empty, Pallas will try to load a config.json in the current directory.
+A config file can be given to Pallas with the PALLAS_CONFIG_PATH environment variable.
+If that variable is empty, Pallas will try to load a pallas.config in the current directory.
 If that file does not exist, a default config will be loaded.
 That file is a mirror image of the ParameterHandler class in `libraries/pallas/src/ParameterHandler.h`
-An example config file is given here as config.json.
+An example config file is given here as pallas.config, each line has one `key=value` pair.
 
 Here are the configuration options with specific values:
 
@@ -69,7 +69,7 @@ Here are the configuration options with number values:
 You can also override each of these configuration manually with an environment variable.
 Here are the default values for each of them:
 
-| JSON Name            | Env Variable Name   | Default Value  |
+| Config Key Name      | Env Variable Name   | Default Value  |
 |----------------------|---------------------|----------------|
 | compressionAlgorithm | PALLAS_COMPRESSION  | None           |
 | encodingAlgorithm    | PALLAS_ENCODING     | None           |

@@ -50,7 +50,6 @@ target_include_directories(pallas
         ${CMAKE_CURRENT_SOURCE_DIR}
         include
         ${ZSTD_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
         ${CMAKE_CURRENT_BINARY_DIR}/include/pallas/
 )
 if (ZFP_FOUND)
@@ -83,9 +82,8 @@ target_link_libraries(pallas
         rt
         m
         ${ZSTD_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
 )
-target_link_directories(pallas PRIVATE ${JSONCPP_LIBRARY_DIRS} ${ZSTD_LIBRARY_DIRS})
+target_link_directories(pallas PRIVATE ${ZSTD_LIBRARY_DIRS})
 if (DOXYGEN_FOUND AND BUILD_DOC)
     # set input and output files
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)

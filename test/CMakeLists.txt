@@ -51,9 +51,6 @@ set_tests_properties(info_benchmark_logical print_benchmark_logical print_benchm
 set_tests_properties(benchmark_checks_logical PROPERTIES
         REQUIRED "info_benchmark_logical;print_benchmark_logical;print_benchmark_structure_logical")
 
-set_tests_properties(write_benchmark write_benchmark_logical PROPERTIES
-        ENVIRONMENT PALLAS_CONFIG_PATH="${CMAKE_SOURCE_DIR}/libraries/pallas/defaultConfig.json"
-)
 add_executable(find_loop find_loop.cpp)
 add_test(NAME find_loop COMMAND find_loop 50 100)
 
