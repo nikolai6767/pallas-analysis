@@ -125,7 +125,7 @@ class ConfigFile {
 
  public:
   std::string loadStringFromConfig(const std::string& fieldName) {
-    if (config.contains(fieldName)) {
+    if (config.find(fieldName) != config.end()) {
       return config[fieldName];
     }
     pallas_warn("Invalid key in config: %s\n", fieldName.c_str());
@@ -133,7 +133,7 @@ class ConfigFile {
   }
 
   uint64_t loadUInt64FromConfig(const std::string& fieldName) {
-    if (config.contains(fieldName)) {
+    if (config.find(fieldName) != config.end()) {
       try {
         return std::stoull(config[fieldName]);
       } catch (std::invalid_argument& e) {

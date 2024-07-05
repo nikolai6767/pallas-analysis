@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 #ifdef WITH_ZFP
 #include <zfp.h>
