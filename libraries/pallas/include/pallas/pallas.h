@@ -410,8 +410,10 @@ typedef struct Thread {
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;
+  std::unordered_map<uint32_t, std::vector<TokenId>> hashToEvent;
 #else
   byte hashToSequence[UNO_MAP_SIZE];
+  byte hashToEvent[UNO_MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */

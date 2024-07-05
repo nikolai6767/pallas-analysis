@@ -131,6 +131,7 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   sequences = new Sequence*[nb_allocated_sequences];
   nb_sequences = 0;
   hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();
+  hashToEvent = std::unordered_map<uint32_t, std::vector<TokenId>>();
 
   nb_allocated_loops = NB_LOOP_DEFAULT;
   loops = new Loop[nb_allocated_loops];

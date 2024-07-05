@@ -33,7 +33,8 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
                "getSequenceIdFromArray: Searching for sequence {.size=1} containing sequence token\n");
     return token_array[0];
   }
-  uint32_t hash = hash32(token_array, array_len, SEED);
+
+  uint32_t hash = hash32(reinterpret_cast<uint8_t*>(token_array), array_len * (sizeof(pallas::Token) / sizeof(uint8_t)), SEED);
   pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len,
              hash);
   auto& sequencesWithSameHash = hashToSequence[hash];
@@ -761,10 +762,17 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   pallas_assert(e->event_size < 256);
 
-  for (TokenId i = 0; i < nb_events; i++) {
-    if (memcmp(e, &events[i].event, e->event_size) == 0) {
-      pallas_log(DebugLevel::Max, "getEventId: \t found with id=%u\n", i);
-      return i;
+  uint32_t hash = hash32(reinterpret_cast<uint8_t *>(e), sizeof(EventSummary), SEED);
+  auto& eventWithSameHash = hashToEvent[hash];
+  if (!eventWithSameHash.empty()) {
+    if (eventWithSameHash.size() > 1) {
+      pallas_warn("Found more than one event with the same hash\n");
+    }
+    for (const auto eid : eventWithSameHash) {
+      if (memcmp(e, &events[eid].event, e->event_size) == 0) {
+        pallas_log(DebugLevel::Debug, "getEventId: \t found with id=%u\n", eid);
+        return eid;
+      }
     }
   }
 
@@ -777,6 +785,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   pallas_log(DebugLevel::Max, "getEventId: \tNot found. Adding it with id=%d\n", index);
   auto* new_event = &events[index];
   new_event->initEventSummary(id, *e);
+  hashToEvent[hash].push_back(index);
 
   return index;
 }
