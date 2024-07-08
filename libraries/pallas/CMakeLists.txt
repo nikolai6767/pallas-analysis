@@ -26,6 +26,7 @@ set(PALLAS_HEADERS
         include/pallas/pallas_storage.h
         include/pallas/pallas_timestamp.h
         include/pallas/pallas_write.h
+        include/pallas/pallas_record.h
 )
 
 target_sources(pallas
@@ -41,6 +42,7 @@ target_sources(pallas
         src/pallas_write.cpp
         src/pallas_linked_vector.cpp
         src/pallas_parameter_handler.cpp
+        src/pallas_record.cpp
         PUBLIC
         ${PALLAS_HEADERS}
 )

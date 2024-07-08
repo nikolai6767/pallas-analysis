@@ -9,6 +9,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_record.h"
 
 static struct Archive* global_archive;
 static struct Archive* trace;
