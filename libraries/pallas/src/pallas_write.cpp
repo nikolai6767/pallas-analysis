@@ -742,7 +742,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
              communicator, root, sizeSent, sizeReceived);
     break;
   }
-  case PALLAS_EVENT_OTHER: {
+  case PALLAS_EVENT_GENERIC: {
     StringRef eventNameRef;
     pop_data(e, &eventNameRef, sizeof(eventNameRef), cursor);
     auto eventName = archive->getString(eventNameRef);
@@ -877,12 +877,12 @@ void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
 
-void pallas_record_other(pallas::ThreadWriter* thread_writer,
+void pallas_record_generic(pallas::ThreadWriter* thread_writer,
                          struct pallas::AttributeList* attribute_list,
                          pallas_timestamp_t time,
                          pallas::StringRef event_name) {
   pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_OTHER);
+  init_event(&e, pallas::PALLAS_EVENT_GENERIC);
   push_data(&e, &event_name, sizeof(event_name));
   pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
   thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);

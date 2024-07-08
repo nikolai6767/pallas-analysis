@@ -18,8 +18,38 @@ If you want to enable SZ and ZFP, you should install them, and then add `-DSZ_RO
 and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line. Documentation is built automatically if Doxygen is installed.
 
 ## Usage
+### In your application
+These few lines are all you need
+```C
+#include <pallas/pallas.h>
+#include <pallas/pallas_write.h>
 
-After compiling Pallas, install [ezTrace](https://eztrace.gitlab.io/eztrace).
+int main() {
+    // Setup everything
+    Archive global_archive = pallas_archive_new(); // Create the main trace
+    pallas_write_global_archive_open(global_archive, "<your trace name>", "main");
+    // You can also create subprocesses by creating new archives under the global archive.
+    
+    pallas_archive_register_string(...)     // Register a String (you have to give a StringRef)
+    pallas_write_define_location_group(...) // Register a LocationGroup
+    pallas_write_define_location(...)       // Register a Location
+    
+    ThreadWriter threadWriter;
+    pallas_write_thread_open(global_archive, &thread_writer, <customThreadID>);
+    
+    // Start logging
+    pallas_record_generic(&thread_writer, <custom Attribute>, <timestamp>, <name>);
+    
+    // Write the trace to file
+    pallas_write_thread_close(thread_writer);
+    pallas_write_global_archive_close(global_archive);
+}
+```
+
+
+### Using EZTrace
+
+After compiling Pallas and its OTF2 API, install [EZTrace](https://eztrace.gitlab.io/eztrace).
 Make sure to build it from source, and to use the Pallas OTF2 library, not the normal OTF2 library.
 You can check `which otf2-config` to see if you have the correct one. If not, check your PATH and LD_LIBRARY_PATH variables.
 

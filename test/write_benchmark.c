@@ -93,7 +93,7 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 L_f1 E_f2 L_f2 E_f3 L_f3 ...
        */
       for (int j = 0; j < nb_functions; j++) {
-        pallas_record_other(thread_writer, NULL, get_timestamp(), strings[j]);
+        pallas_record_generic(thread_writer, NULL, get_timestamp(), strings[j]);
       }
       break;
 

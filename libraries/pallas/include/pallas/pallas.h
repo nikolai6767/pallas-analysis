@@ -191,7 +191,7 @@ enum Record {
                                                        * event. */
   PALLAS_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
   PALLAS_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
-  PALLAS_EVENT_OTHER = 58,                            /**< Event record identifier for any other event. */
+  PALLAS_EVENT_GENERIC = 58,                            /**< Event record identifier for any other event. */
 
   PALLAS_EVENT_MAX_ID /**< Max Event Record ID */
 };
