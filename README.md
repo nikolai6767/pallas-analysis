@@ -21,6 +21,7 @@ and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line. Document
 ### In your application
 These few lines are all you need
 ```C
+// In C
 #include <pallas/pallas.h>
 #include <pallas/pallas_write.h>
 
@@ -30,11 +31,11 @@ int main() {
     pallas_write_global_archive_open(global_archive, "<your trace name>", "main");
     // You can also create subprocesses by creating new archives under the global archive.
     
-    pallas_archive_register_string(...)     // Register a String (you have to give a StringRef)
+    pallas_archive_register_string(...)     // Register a String
     pallas_write_define_location_group(...) // Register a LocationGroup
     pallas_write_define_location(...)       // Register a Location
     
-    ThreadWriter threadWriter;
+    ThreadWriter thread_writer;
     pallas_write_thread_open(global_archive, &thread_writer, <customThreadID>);
     
     // Start logging
@@ -45,6 +46,34 @@ int main() {
     pallas_write_global_archive_close(global_archive);
 }
 ```
+```CPP
+// In C++
+#include <pallas/pallas.h>
+#include <pallas/pallas_write.h>
+namespace pallas;
+int main() {
+    // Setup everything
+    Archive globalArchive = Archive(); // Create the main trace
+    globalArchive.openGlobal("<your trace name>", "main");
+    // You can also create subprocesses by creating new archives under the global archive.
+
+    globalArchive.addString(...)           // Register a String
+    globalArchive.addLocationGroup(...)    // Register a LocationGroup
+    globalArchive.addLocation(...)         // Register a Location
+    
+    ThreadWriter threadWriter;
+    threadWriter.openThread(globalArchive, <customThreadID>);
+    
+    // Start logging
+    pallas_record_generic(&threadWriter, <custom Attribute>, <timestamp>, <name>);
+    
+    // Write the trace to file
+    threadWriter.close();
+    globalArchive.close();
+}
+```
+
+
 
 
 ### Using EZTrace
