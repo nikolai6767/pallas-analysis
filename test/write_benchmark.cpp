@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <atomic>
+#include <sstream>
 
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
