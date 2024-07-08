@@ -221,10 +221,16 @@ extern void pallas_record_mpi_collective_end(PALLAS(ThreadWriter) * thread_write
                                              uint64_t sizeSent,
                                              uint64_t sizeReceived);
 
-extern void pallas_record_generic(PALLAS(ThreadWriter *) thread_writer,
-                                PALLAS(AttributeList) * attribute_list,
-                                pallas_timestamp_t time,
-                                PALLAS(StringRef) event_name);
+extern void pallas_record_generic(PALLAS(ThreadWriter*) thread_writer,
+                                  PALLAS(AttributeList) * attribute_list,
+                                  pallas_timestamp_t time,
+                                  PALLAS(StringRef) event_name);
+
+extern void pallas_record(PALLAS(ThreadWriter*) thread_writer,
+                          PALLAS(AttributeList) * attribute_list,
+                          enum PALLAS(Record) record,
+                          pallas_timestamp_t time,
+                          PALLAS(StringRef) event_name);
 
 #ifdef __cplusplus
 };

@@ -565,7 +565,7 @@ void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId pare
   pallas_assert(l.id != PALLAS_THREAD_ID_INVALID);
   l.name = name;
   l.parent = parent;
-  for (auto& locationGroup: location_groups) {
+  for (auto& locationGroup : location_groups) {
     if (locationGroup.id == parent && locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID) {
       locationGroup.mainLoc = l_id;
       break;
@@ -609,7 +609,7 @@ static inline void pop_data(Event* e, void* data, size_t data_size, byte*& curso
 
 void Thread::printEvent(pallas::Event* e) const {
   char output_str[1024];
-  size_t buffer_size=1024;
+  size_t buffer_size = 1024;
   printEventToString(e, output_str, buffer_size);
   printf("%s", output_str);
 }
@@ -660,7 +660,8 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     pop_data(e, &communicator, sizeof(communicator), cursor);
     pop_data(e, &msgTag, sizeof(msgTag), cursor);
     pop_data(e, &msgLength, sizeof(msgLength), cursor);
-    snprintf(output_str, buffer_size, "MPI_SEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ")", receiver, communicator, msgTag, msgLength);
+    snprintf(output_str, buffer_size, "MPI_SEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ")", receiver, communicator,
+             msgTag, msgLength);
     break;
   }
   case PALLAS_EVENT_MPI_ISEND: {
@@ -675,8 +676,8 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     pop_data(e, &msgTag, sizeof(msgTag), cursor);
     pop_data(e, &msgLength, sizeof(msgLength), cursor);
     pop_data(e, &requestID, sizeof(requestID), cursor);
-    snprintf(output_str, buffer_size, "MPI_ISEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIx64 ")", receiver, communicator, msgTag,
-             msgLength, requestID);
+    snprintf(output_str, buffer_size, "MPI_ISEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIx64 ")", receiver,
+             communicator, msgTag, msgLength, requestID);
     break;
   }
   case PALLAS_EVENT_MPI_ISEND_COMPLETE: {
@@ -702,7 +703,8 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     pop_data(e, &msgTag, sizeof(msgTag), cursor);
     pop_data(e, &msgLength, sizeof(msgLength), cursor);
 
-    snprintf(output_str, buffer_size, "MPI_RECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ")", sender, communicator, msgTag, msgLength);
+    snprintf(output_str, buffer_size, "MPI_RECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ")", sender, communicator,
+             msgTag, msgLength);
     break;
   }
   case PALLAS_EVENT_MPI_IRECV: {
@@ -717,8 +719,8 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     pop_data(e, &msgLength, sizeof(msgLength), cursor);
     pop_data(e, &requestID, sizeof(requestID), cursor);
 
-    snprintf(output_str, buffer_size, "MPI_IRECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIu64 ")", sender, communicator, msgTag,
-             msgLength, requestID);
+    snprintf(output_str, buffer_size, "MPI_IRECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIu64 ")", sender,
+             communicator, msgTag, msgLength, requestID);
     break;
   }
   case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN: {
@@ -738,7 +740,8 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     pop_data(e, &sizeSent, sizeof(sizeSent), cursor);
     pop_data(e, &sizeReceived, sizeof(sizeReceived), cursor);
 
-    snprintf(output_str, buffer_size, "MPI_COLLECTIVE_END(op=%x, comm=%x, root=%d, sent=%" PRIu64 ", recved=%" PRIu64 ")", collectiveOp,
+    snprintf(output_str, buffer_size,
+             "MPI_COLLECTIVE_END(op=%x, comm=%x, root=%d, sent=%" PRIu64 ", recved=%" PRIu64 ")", collectiveOp,
              communicator, root, sizeSent, sizeReceived);
     break;
   }
@@ -769,7 +772,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   pallas_assert(e->event_size < 256);
 
-  uint32_t hash = hash32(reinterpret_cast<uint8_t *>(e), sizeof(Event), SEED);
+  uint32_t hash = hash32(reinterpret_cast<uint8_t*>(e), sizeof(Event), SEED);
   auto& eventWithSameHash = hashToEvent[hash];
   if (!eventWithSameHash.empty()) {
     if (eventWithSameHash.size() > 1) {
@@ -878,11 +881,23 @@ void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
 };
 
 void pallas_record_generic(pallas::ThreadWriter* thread_writer,
-                         struct pallas::AttributeList* attribute_list,
-                         pallas_timestamp_t time,
-                         pallas::StringRef event_name) {
+                           struct pallas::AttributeList* attribute_list,
+                           pallas_timestamp_t time,
+                           pallas::StringRef event_name) {
   pallas::Event e;
   init_event(&e, pallas::PALLAS_EVENT_GENERIC);
+  push_data(&e, &event_name, sizeof(event_name));
+  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
+  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
+}
+
+void pallas_record(pallas::ThreadWriter* thread_writer,
+                   struct pallas::AttributeList* attribute_list,
+                   pallas::Record record,
+                   pallas_timestamp_t time,
+                   pallas::StringRef event_name) {
+  pallas::Event e;
+  init_event(&e, record);
   push_data(&e, &event_name, sizeof(event_name));
   pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
   thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);

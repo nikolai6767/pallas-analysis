@@ -27,20 +27,6 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
   }
 }
 
-static void init_dummy_event(ThreadWriter* thread_writer, int id) {
-  check_event_allocation(&thread_writer->thread_trace, id);
-  auto& es = thread_writer->thread_trace.events[id];
-  if (es.durations == nullptr) {
-    es.id = id;
-    es.nb_occurences = 0;
-    es.attribute_buffer = nullptr;
-    es.attribute_buffer_size = 0;
-    es.attribute_pos = 0;
-    es.durations = new LinkedVector();
-  }
-  thread_writer->storeEvent(PALLAS_SINGLETON, id, get_timestamp(), nullptr);
-}
-
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
   /* Make a dummy archive and a dummy thread writer. */
   Archive archive;
@@ -63,6 +49,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   int OUTER_LOOP_SIZE = 2;
   int INNER_LOOP_SIZE = 10;
   int MAX_SUBSEQUENCE_NUMBER = 10;
+
   for (int outer_loop_number = 1; outer_loop_number <= OUTER_LOOP_SIZE; outer_loop_number++) {
     // Outer loop for S_n
     for (int sequence_number = 1; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
@@ -70,11 +57,11 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
       for (int loop = 0; loop < INNER_LOOP_SIZE; loop++) {
         // Finally, doing the sequence
         for (int eid = 0; eid <= sequence_number; eid++)
-          init_dummy_event(&thread_writer, sequence_number + eid);
+          pallas_record_generic(&thread_writer, nullptr, get_timestamp(), sequence_number * MAX_SUBSEQUENCE_NUMBER + eid);
       }
     }
   }
-  init_dummy_event(&thread_writer, 0);
+  pallas_record_generic(&thread_writer, nullptr, get_timestamp(), 0);
   thread_writer.thread_trace.events[0].durations->at(0) = 0;
   thread_writer.threadClose();
   archive.close();

@@ -7,6 +7,10 @@
 #include <string.h>
 #include <atomic>
 #include <sstream>
+#if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
+#include <format>
+#define HAS_FORMAT
+#endif
 
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
@@ -75,10 +79,14 @@ void* worker(void* arg __attribute__((unused))) {
   pthread_mutex_lock(&globalArchive.lock);
   ThreadId threadID = _new_thread();
   auto threadWriter = ThreadWriter();
+
+#ifdef HAS_FORMAT
+  StringRef threadNameRef = _register_string(std::format("thread_{}", threadID));
+#else
   std::ostringstream os("thread_");
   os << threadID;
   StringRef threadNameRef = _register_string(os.str().c_str());
-
+#endif
   globalArchive.defineLocation(threadID, threadNameRef, processID);
   threadWriter.open(&mainProcess, threadID);
 

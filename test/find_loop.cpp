@@ -3,6 +3,10 @@
  * See LICENSE in top-level directory.
  */
 #include <filesystem>
+#if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
+#include <format>
+#define HAS_FORMAT
+#endif
 #include "pallas/pallas.h"
 #include "pallas/pallas_write.h"
 using namespace pallas;
@@ -28,20 +32,6 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
   }
 }
 
-static void init_dummy_event(ThreadWriter* thread_writer, int id) {
-  check_event_allocation(&thread_writer->thread_trace, id);
-  auto& es = thread_writer->thread_trace.events[id];
-  if (es.durations == nullptr) {
-    es.id = id;
-    es.nb_occurences = 0;
-    es.attribute_buffer = nullptr;
-    es.attribute_buffer_size = 0;
-    es.attribute_pos = 0;
-    es.durations = new LinkedVector();
-  }
-  thread_writer->storeEvent(PALLAS_SINGLETON, id, get_timestamp(), nullptr);
-}
-
 int main(int argc, char** argv __attribute__((unused))) {
   if (argc < 2) {
     pallas_error("Not enough arguments ! 2 argument required.\n");
@@ -59,8 +49,14 @@ int main(int argc, char** argv __attribute__((unused))) {
   thread_writer.open(&archive, 0);
 
   /* Start recording some events.*/
-  for (int eid = 0; eid < MAX_EVENT; eid++)
-    init_dummy_event(&thread_writer, (Record)eid);
+  for (int eid = 0; eid < MAX_EVENT; eid++) {
+#ifdef HAS_FORMAT
+    archive.addString(eid, std::format("dummyEvent{}", eid).c_str());
+#else
+    archive.addString(eid, "dummyEvent");
+#endif
+    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), eid);
+  }
 
   /* Check they've been correctly registered. */
   pallas_assert_always(thread_writer.cur_depth == 0);
@@ -72,7 +68,7 @@ int main(int argc, char** argv __attribute__((unused))) {
 
   /* Start recording some more events. This should make a first loop. */
   for (int eid = 0; eid < MAX_EVENT; eid++)
-    init_dummy_event(&thread_writer, eid);
+    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), eid);
 
   /* This should have been recognized as a loop, so now there should be some changes. */
   pallas_assert_always(thread_writer.cur_depth == 0);
@@ -94,16 +90,21 @@ int main(int argc, char** argv __attribute__((unused))) {
 
   /* Start recording even more events. The first loop happens 3 times now.*/
   for (int eid = 0; eid < MAX_EVENT; eid++)
-    init_dummy_event(&thread_writer, eid);
+    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), eid);
   pallas_assert_always(thread_writer.cur_depth == 0);
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 1);
   pallas_assert_always(l->nb_iterations[0] == 3);
 
   /* Now start recording one more event and then loop again. */
-  init_dummy_event(&thread_writer, MAX_EVENT);
+#ifdef HAS_FORMAT
+  archive.addString(MAX_EVENT, std::format("dummyEvent{}", MAX_EVENT).c_str());
+#else
+  archive.addString(MAX_EVENT, "dummyEvent");
+#endif
+  pallas_record_generic(&thread_writer, nullptr, get_timestamp(), MAX_EVENT);
   DOFOR(loop_number, NUM_LOOPS) {
     DOFOR(eid, MAX_EVENT)
-    init_dummy_event(&thread_writer, eid);
+    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), eid);
   }
   pallas_assert_always(thread_writer.cur_depth == 0);
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 3);  // L0 E L0
