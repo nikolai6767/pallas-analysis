@@ -762,11 +762,11 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   pallas_assert(e->event_size < 256);
 
-  uint32_t hash = hash32(reinterpret_cast<uint8_t *>(e), sizeof(EventSummary), SEED);
+  uint32_t hash = hash32(reinterpret_cast<uint8_t *>(e), sizeof(Event), SEED);
   auto& eventWithSameHash = hashToEvent[hash];
   if (!eventWithSameHash.empty()) {
     if (eventWithSameHash.size() > 1) {
-      pallas_warn("Found more than one event with the same hash\n");
+      pallas_warn("Found more than one event with the same hash: %lu\n", eventWithSameHash.size());
     }
     for (const auto eid : eventWithSameHash) {
       if (memcmp(e, &events[eid].event, e->event_size) == 0) {
