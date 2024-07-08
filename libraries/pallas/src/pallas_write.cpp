@@ -611,7 +611,7 @@ void Thread::printEvent(pallas::Event* e) const {
   char output_str[1024];
   size_t buffer_size=1024;
   printEventToString(e, output_str, buffer_size);
-  printf(output_str);
+  printf("%s", output_str);
 }
 
 void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const {
@@ -742,6 +742,13 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
              communicator, root, sizeSent, sizeReceived);
     break;
   }
+  case PALLAS_EVENT_OTHER: {
+    StringRef eventNameRef;
+    pop_data(e, &eventNameRef, sizeof(eventNameRef), cursor);
+    auto eventName = archive->getString(eventNameRef);
+    snprintf(output_str, buffer_size, "%s", eventName->str);
+    break;
+  }
   default:
     snprintf(output_str, buffer_size, "{.record: %x, .size:%x}", e->record, e->event_size);
   }
@@ -869,6 +876,17 @@ void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
                         PALLAS(AttributeList) * attribute_list) {
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
+
+void pallas_record_other(pallas::ThreadWriter* thread_writer,
+                         struct pallas::AttributeList* attribute_list,
+                         pallas_timestamp_t time,
+                         pallas::StringRef event_name) {
+  pallas::Event e;
+  init_event(&e, pallas::PALLAS_EVENT_OTHER);
+  push_data(&e, &event_name, sizeof(event_name));
+  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
+  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
+}
 
 void pallas_record_enter(pallas::ThreadWriter* thread_writer,
                          struct pallas::AttributeList* attribute_list __attribute__((unused)),
