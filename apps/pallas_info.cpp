@@ -82,39 +82,40 @@ void info_thread(Thread* t) {
 }
 
 void info_archive(Archive* archive) {
-  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID)
+  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID) {
     printf("Main archive:\n");
-  else
+    printf("\tdir_name:   %s\n", archive->dir_name);
+    printf("\ttrace_name: %s\n", archive->trace_name);
+    printf("\tfullpath:   %s\n", archive->fullpath);
+  } else
     printf("Archive %d:\n", archive->id);
-  printf("\tdir_name:   %s\n", archive->dir_name);
-  printf("\ttrace_name: %s\n", archive->trace_name);
-  printf("\tfullpath:   %s\n", archive->fullpath);
-  printf("\n");
   // printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
-  if (archive->definitions.strings.size())
+  if (!archive->definitions.strings.empty())
     printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
-  for (auto& stringPair : archive->definitions.strings) {
-    printf("\t\t%d: '%s'\n", stringPair.second.string_ref, stringPair.second.str);
+  for (auto& [stringRef, string] : archive->definitions.strings) {
+    printf("\t\t%d: '%s'\n", string.string_ref, string.str);
   }
-  if (archive->definitions.regions.size())
+  if (!archive->definitions.regions.empty())
     printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
-  for (auto& regionPair : archive->definitions.regions) {
-    printf("\t\t%d: %d ('%s')\n", regionPair.second.region_ref, regionPair.second.string_ref,
-           archive->getString(regionPair.second.string_ref)->str);
+  for (auto& [regionRef, region] : archive->definitions.regions) {
+    printf("\t\t%d: %s\n", region.region_ref, archive->getString(region.string_ref)->str);
   }
 
-  if (archive->location_groups.size())
+  if (!archive->location_groups.empty())
     printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
   for (unsigned i = 0; i < archive->location_groups.size(); i++) {
-    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->location_groups[i].id, archive->location_groups[i].name,
-           archive->getString(archive->location_groups[i].name)->str, archive->location_groups[i].parent);
+    printf("\t\t%d: %s", archive->location_groups[i].id,
+           archive->getString(archive->location_groups[i].name)->str);
+    if (archive->location_groups[i].parent != PALLAS_LOCATION_GROUP_ID_INVALID)
+      printf(", parent: %d", archive->location_groups[i].parent);
+    printf("\n");
   }
 
-  if (archive->locations.size())
+  if (!archive->locations.empty())
     printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
   for (unsigned i = 0; i < archive->locations.size(); i++) {
-    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->locations[i].id, archive->locations[i].name,
+    printf("\t\t%d: %s, parent: %d\n", archive->locations[i].id,
            archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
   }
 
@@ -132,6 +133,8 @@ void info_archive(Archive* archive) {
 
   if (archive->nb_archives)
     printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
+
+  printf("\n");
 }
 
 void info_trace(Archive* trace) {
