@@ -964,7 +964,17 @@ static void pallasStoreLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   loopFile.write(&loop.repeated_token, sizeof(loop.repeated_token), 1);
   size_t size = loop.nb_iterations.size();
   loopFile.write(&size, sizeof(size), 1);
-  loopFile.write(loop.nb_iterations.data(), sizeof(uint), loop.nb_iterations.size());
+  if (loop.nb_iterations.size() < 10)
+    loopFile.write(loop.nb_iterations.data(), sizeof(uint), loop.nb_iterations.size());
+  else {
+    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
+    auto zstdSize = ZSTD_compressBound(originalSize);
+    auto compressedLoopIterationsArray = new byte[zstdSize];
+    zstdSize = ZSTD_compress(compressedLoopIterationsArray, zstdSize, loop.nb_iterations.data(), originalSize, pallas::parameterHandler->getZstdCompressionLevel());
+    loopFile.write(&zstdSize, sizeof(zstdSize), 1);
+    loopFile.write(compressedLoopIterationsArray, zstdSize, 1);
+    delete[] compressedLoopIterationsArray;
+  }
 }
 
 static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile) {
@@ -972,7 +982,17 @@ static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   size_t size;
   loopFile.read(&size, sizeof(size), 1);
   loop.nb_iterations.resize(size);
-  loopFile.read(loop.nb_iterations.data(), sizeof(uint), size);
+  if (size < 10)
+    loopFile.read(loop.nb_iterations.data(), sizeof(uint), size);
+  else {
+    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
+    ulong zstdSize;
+    loopFile.read(&zstdSize, sizeof(zstdSize), 1);
+    auto compressedLoopIterationsArray = new byte[zstdSize];
+    loopFile.read(compressedLoopIterationsArray, zstdSize, 1);
+    ZSTD_decompress(loop.nb_iterations.data(), originalSize, compressedLoopIterationsArray, zstdSize);
+    delete[] compressedLoopIterationsArray;
+  }
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     pallas_log(pallas::DebugLevel::Debug,
                "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.self_id.id,
