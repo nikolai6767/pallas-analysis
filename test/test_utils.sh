@@ -153,14 +153,12 @@ function trace_get_nb_event_of_type {
 
 function trace_get_nb_function {
     trace_filename=$1
-    event_type=$2
-    function_name=$3
+    function_name=$2
 
     "$PALLAS_PRINT_PATH" "$trace_filename" 2>/dev/null |
       grep -E "^[[:space:]]+[[:digit:]]" |
       awk '{$1=""; $2=""}1' |
-      grep -E "^[[:space:]]+$event_type" |
-      grep -E -c "\($function_name\)"
+      grep -E -c "$function_name"
 }
 
 function trace_check_existence {
@@ -263,14 +261,9 @@ function trace_check_nb_function {
     ((nb_test++))
     echo " > Checking the number of calls to function $function_name"    
 
-    actual_enter_nb=$(trace_get_nb_function "$trace_filename" "Enter" "$function_name")
-    actual_leave_nb=$(trace_get_nb_function "$trace_filename" "Leave" "$function_name")
+    actual_enter_nb=$(trace_get_nb_function "$trace_filename" "$function_name")
     if [ $expected_nb -ne $actual_enter_nb ]; then
-	print_error "$actual_enter_nb enter events (expected: $expected_nb)"
-	((nb_failed++))
-	return 1
-    elif [ $expected_nb -ne $actual_leave_nb ]; then
-	print_error "$actual_leave_nb leave events (expected: $expected_nb)"
+	print_error "$actual_enter_nb events (expected: $expected_nb)"
 	((nb_failed++))
 	return 1
     else

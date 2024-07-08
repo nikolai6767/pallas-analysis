@@ -14,6 +14,7 @@ link_libraries(pallas Threads::Threads)
 # write_benchmark
 
 add_executable(write_benchmark write_benchmark.c)
+add_executable(write_benchmark_CPP write_benchmark.cpp)
 
 SET(TRACE_NAME ${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_trace)
 SET(N_THREADS 4)
@@ -33,6 +34,22 @@ set_tests_properties(info_benchmark print_benchmark print_benchmark_structure PR
         REQUIRED_FILES ${TRACE_NAME})
 set_tests_properties(benchmark_checks PROPERTIES
         REQUIRED "info_benchmark;print_benchmark;print_benchmark_structure")
+
+
+add_test(NAME write_benchmark_CPP COMMAND write_benchmark -n ${N_ITER} -t ${N_THREADS})
+
+add_test(NAME info_benchmark_CPP COMMAND pallas_info ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark_CPP COMMAND pallas_print ${TRACE_NAME}/main.pallas)
+add_test(NAME print_benchmark_structure_CPP COMMAND pallas_print -S ${TRACE_NAME}/main.pallas)
+
+add_test (benchmark_checks_CPP bash
+        "${CMAKE_CURRENT_SOURCE_DIR}/write_benchmark.sh"
+        "${CMAKE_BINARY_DIR}" ${TRACE_NAME} -n ${N_ITER} -t ${N_THREADS})
+
+set_tests_properties(info_benchmark_CPP print_benchmark_CPP print_benchmark_structure_CPP PROPERTIES
+        REQUIRED_FILES ${TRACE_NAME})
+set_tests_properties(benchmark_checks_CPP PROPERTIES
+        REQUIRED "info_benchmark_CPP;print_benchmark_CPP;print_benchmark_structure_CPP")
 
 
 add_test(NAME write_benchmark_logical COMMAND write_benchmark -n ${N_ITER} -t ${N_THREADS} -l)
