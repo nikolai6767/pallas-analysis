@@ -124,17 +124,17 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   id = thread_id;
 
   nb_allocated_events = NB_EVENT_DEFAULT;
-  events = new EventSummary[nb_allocated_events];
+  events = new EventSummary[nb_allocated_events]();
   nb_events = 0;
 
   nb_allocated_sequences = NB_SEQUENCE_DEFAULT;
-  sequences = new Sequence*[nb_allocated_sequences];
+  sequences = new Sequence*[nb_allocated_sequences]();
   nb_sequences = 0;
   hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();
   hashToEvent = std::unordered_map<uint32_t, std::vector<TokenId>>();
 
   nb_allocated_loops = NB_LOOP_DEFAULT;
-  loops = new Loop[nb_allocated_loops];
+  loops = new Loop[nb_allocated_loops]();
   nb_loops = 0;
 
   pthread_mutex_lock(&archive->lock);
