@@ -174,6 +174,10 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
     /* TODO: hacky ! we should not have to do that ! */
     archive->archive->id = location;
   }
+  if (archive->archive->global_archive == NULL) {
+    /* TODO: even more hacky, we shouldn't have to do that !!!!*/
+    archive->archive->global_archive = archive->globalDefWriter->archive;
+  }
 
   INCREMENT_MEMORY_SPACE(archive->def_writers, archive->nb_locations, OTF2_DefWriter*);
   archive->nb_locations--;
