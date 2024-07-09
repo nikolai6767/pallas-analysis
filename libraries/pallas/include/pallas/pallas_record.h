@@ -173,6 +173,17 @@ extern void pallas_record_omp_task_complete(ThreadWriter* thread_writer,
                                             pallas_timestamp_t time,
                                             uint64_t taskID);
 
+extern void pallas_record_thread_task_create(ThreadWriter* thread_writer,
+                                          AttributeList* attribute_list,
+                                          pallas_timestamp_t time);
+
+extern void pallas_record_thread_task_switch(ThreadWriter* thread_writer,
+                                          AttributeList* attribute_list,
+                                          pallas_timestamp_t time);
+extern void pallas_record_thread_task_complete(ThreadWriter* thread_writer,
+                                            AttributeList* attribute_list,
+                                            pallas_timestamp_t time);
+
 #ifdef __cplusplus
 };
 }

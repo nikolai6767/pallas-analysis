@@ -472,7 +472,8 @@ OTF2_ErrorCode OTF2_EvtWriter_ThreadTaskCreate(OTF2_EvtWriter* writer,
                                                OTF2_CommRef threadTeam,
                                                uint32_t creatingThread,
                                                uint32_t generationNumber) {
-  NOT_IMPLEMENTED;
+  pallas_record_thread_task_complete(writer->thread_writer, attributeList, time);
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_EvtWriter_ThreadTaskSwitch(OTF2_EvtWriter* writer,
@@ -481,7 +482,8 @@ OTF2_ErrorCode OTF2_EvtWriter_ThreadTaskSwitch(OTF2_EvtWriter* writer,
                                                OTF2_CommRef threadTeam,
                                                uint32_t creatingThread,
                                                uint32_t generationNumber) {
-  NOT_IMPLEMENTED;
+  pallas_record_thread_task_complete(writer->thread_writer, attributeList, time);
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_EvtWriter_ThreadTaskComplete(OTF2_EvtWriter* writer,
@@ -490,7 +492,8 @@ OTF2_ErrorCode OTF2_EvtWriter_ThreadTaskComplete(OTF2_EvtWriter* writer,
                                                  OTF2_CommRef threadTeam,
                                                  uint32_t creatingThread,
                                                  uint32_t generationNumber) {
-  NOT_IMPLEMENTED;
+  pallas_record_thread_task_complete(writer->thread_writer, attributeList, time);
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_EvtWriter_ThreadCreate(OTF2_EvtWriter* writer,
