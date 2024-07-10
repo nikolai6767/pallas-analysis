@@ -394,6 +394,7 @@ static Record getMatchingRecord(Record r) {
 }
 
 void ThreadWriter::recordExitFunction() {
+recordExitFunctionBegin:
   auto& curTokenSeq = getCurrentTokenSequence();
 
 #ifdef DEBUG
@@ -401,16 +402,9 @@ void ThreadWriter::recordExitFunction() {
 
   Token first_token = curTokenSeq.front();
   Token last_token = curTokenSeq.back();
-  if (first_token.type != last_token.type) {
-    /* If a sequence starts with an Event (eg Enter function foo), it
-       should end with an Event too (eg. Exit function foo) */
-    pallas_warn(
-      "When closing sequence at callstack[%d]:"
-      "PALLAS_TOKEN_TYPE(%c%d) != PALLAS_TOKEN_TYPE(%c%d)\n",
-      cur_depth, first_token.type, first_token.id, last_token.type, last_token.id);
-  }
 
   if (first_token.type == TypeEvent) {
+    thread_trace.printTokenVector(curTokenSeq);
     Event* first_event = thread_trace.getEvent(first_token);
     Event* last_event = thread_trace.getEvent(last_token);
 
@@ -425,13 +419,45 @@ void ThreadWriter::recordExitFunction() {
     }
 
     if (last_event->record != expected_record) {
+      char start_event_string[1024];
+      char last_event_string[1024];
+      size_t buffer_size = 1024;
+      thread_trace.printEventToString(first_event, start_event_string, buffer_size);
+      thread_trace.printEventToString(last_event, last_event_string, buffer_size);
       pallas_warn("Unexpected close event:\n");
-      pallas_warn("\tStart_sequence event:\n");
-      thread_trace.printEvent(first_event);
-      printf("\n");
-      pallas_warn("\tEnd_sequence event:\n");
-      thread_trace.printEvent(last_event);
-      printf("\n");
+      pallas_warn("\tStart_sequence event: \t%s as E%d\n", start_event_string, first_token.id);
+      pallas_warn("\tEnd_sequence event: \t%s as E%d\n", last_event_string, last_token.id);
+      if (cur_depth > 1) {
+        auto& underSequence = sequence_stack[cur_depth - 1];
+        enum Record expected_start_record = getMatchingRecord(last_event->record);
+        if (expected_start_record == PALLAS_EVENT_MAX_ID) {
+          char output_str[1024];
+          thread_trace.printEventToString(last_event, output_str, buffer_size);
+          pallas_warn("Unexpected last_event record:\n");
+          pallas_warn("\t%s\n", output_str);
+          pallas_abort();
+        }
+        pallas_warn("Currently recorded last event is wrong by one layer, adding the correct Leave Event.\n");
+        curTokenSeq.resize(curTokenSeq.size() - 1);
+        Event e;
+        e.event_size = offsetof(Event, event_data);
+        e.record = expected_record;
+        memcpy(e.event_data, first_event->event_data, first_event->event_size);
+        e.event_size = first_event->event_size;
+        TokenId e_id = thread_trace.getEventId(&e);
+        char output_str[1024];
+        size_t buffer_size = 1024;
+        thread_trace.printEventToString(&e, output_str, buffer_size);
+        thread_trace.printTokenVector(underSequence);
+        pallas_warn("\tInserting %s as E%d at end of curSequence\n", output_str, e_id);
+        storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
+        pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
+        underSequence.push_back(last_token);
+        thread_trace.printTokenVector(underSequence);
+        goto recordExitFunctionBegin;
+        // https://xkcd.com/292/
+        // Relevant XKCD
+      }
     }
   }
 
