@@ -174,7 +174,7 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
     /* TODO: hacky ! we should not have to do that ! */
     archive->archive->id = location;
   }
-  if (archive->archive->global_archive == NULL) {
+  if (archive->archive->global_archive == NULL && archive->globalDefWriter != NULL) {
     /* TODO: even more hacky, we shouldn't have to do that !!!!*/
     archive->archive->global_archive = archive->globalDefWriter->archive;
   }
