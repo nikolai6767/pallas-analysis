@@ -21,19 +21,25 @@ Event* Thread::getEvent(Token token) const {
 }
 
 EventSummary* Thread::getEventSummary(Token token) const {
-  pallas_assert(token.type == TokenType::TypeEvent);
+  if (token.type != TokenType::TypeEvent) {
+    pallas_error("Trying to getEventSummary of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_events);
   return &this->events[token.id];
 }
 
 Sequence* Thread::getSequence(Token token) const {
-  pallas_assert(token.type == TokenType::TypeSequence);
+  if (token.type != TokenType::TypeSequence) {
+    pallas_error("Trying to getSequence of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_sequences);
   return this->sequences[token.id];
 }
 
 Loop* Thread::getLoop(Token token) const {
-  pallas_assert(token.type == TokenType::TypeLoop);
+  if (token.type != TokenType::TypeLoop) {
+    pallas_error("Trying to getLoop of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_loops);
   return &this->loops[token.id];
 }
