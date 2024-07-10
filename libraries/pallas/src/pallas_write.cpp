@@ -358,11 +358,46 @@ void ThreadWriter::recordEnterFunction() {
   }
 }
 
+static Record getMatchingRecord(Record r) {
+  switch (r) {
+  case PALLAS_EVENT_ENTER:
+    return PALLAS_EVENT_LEAVE;
+  case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
+    return PALLAS_EVENT_MPI_COLLECTIVE_END;
+  case PALLAS_EVENT_OMP_FORK:
+    return PALLAS_EVENT_OMP_JOIN;
+  case PALLAS_EVENT_THREAD_FORK:
+    return PALLAS_EVENT_THREAD_JOIN;
+  case PALLAS_EVENT_THREAD_TEAM_BEGIN:
+    return PALLAS_EVENT_THREAD_TEAM_END;
+  case PALLAS_EVENT_THREAD_BEGIN:
+    return PALLAS_EVENT_THREAD_END;
+  case PALLAS_EVENT_PROGRAM_BEGIN:
+    return PALLAS_EVENT_PROGRAM_END;
+  case PALLAS_EVENT_LEAVE:
+    return PALLAS_EVENT_ENTER;
+  case PALLAS_EVENT_MPI_COLLECTIVE_END:
+    return PALLAS_EVENT_MPI_COLLECTIVE_BEGIN;
+  case PALLAS_EVENT_OMP_JOIN:
+    return PALLAS_EVENT_OMP_FORK;
+  case PALLAS_EVENT_THREAD_JOIN:
+    return PALLAS_EVENT_THREAD_FORK;
+  case PALLAS_EVENT_THREAD_TEAM_END:
+    return PALLAS_EVENT_THREAD_TEAM_BEGIN;
+  case PALLAS_EVENT_THREAD_END:
+    return PALLAS_EVENT_THREAD_BEGIN;
+  case PALLAS_EVENT_PROGRAM_END:
+    return PALLAS_EVENT_PROGRAM_BEGIN;
+  default:
+    return PALLAS_EVENT_MAX_ID;
+  }
+}
+
 void ThreadWriter::recordExitFunction() {
   auto& curTokenSeq = getCurrentTokenSequence();
 
 #ifdef DEBUG
-  // check that the sequence is not bugous
+  // check that the sequence is not weird
 
   Token first_token = curTokenSeq.front();
   Token last_token = curTokenSeq.back();
@@ -379,33 +414,13 @@ void ThreadWriter::recordExitFunction() {
     Event* first_event = thread_trace.getEvent(first_token);
     Event* last_event = thread_trace.getEvent(last_token);
 
-    enum Record expected_record;
-    switch (first_event->record) {
-    case PALLAS_EVENT_ENTER:
-      expected_record = PALLAS_EVENT_LEAVE;
-      break;
-    case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
-      expected_record = PALLAS_EVENT_MPI_COLLECTIVE_END;
-      break;
-    case PALLAS_EVENT_OMP_FORK:
-      expected_record = PALLAS_EVENT_OMP_JOIN;
-      break;
-    case PALLAS_EVENT_THREAD_FORK:
-      expected_record = PALLAS_EVENT_THREAD_JOIN;
-      break;
-    case PALLAS_EVENT_THREAD_TEAM_BEGIN:
-      expected_record = PALLAS_EVENT_THREAD_TEAM_END;
-      break;
-    case PALLAS_EVENT_THREAD_BEGIN:
-      expected_record = PALLAS_EVENT_THREAD_END;
-      break;
-    case PALLAS_EVENT_PROGRAM_BEGIN:
-      expected_record = PALLAS_EVENT_PROGRAM_END;
-      break;
-    default:
-      pallas_warn("Unexpected start_sequence event:\n");
-      thread_trace.printEvent(first_event);
-      printf("\n");
+    enum Record expected_record = getMatchingRecord(first_event->record);
+    if (expected_record == PALLAS_EVENT_MAX_ID) {
+      char output_str[1024];
+      size_t buffer_size = 1024;
+      thread_trace.printEventToString(first_event, output_str, buffer_size);
+      pallas_warn("Unexpected start_event record:\n");
+      pallas_warn("\t%s\n", output_str);
       pallas_abort();
     }
 
