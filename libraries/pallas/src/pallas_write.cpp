@@ -404,7 +404,6 @@ recordExitFunctionBegin:
   Token last_token = curTokenSeq.back();
 
   if (first_token.type == TypeEvent) {
-    thread_trace.printTokenVector(curTokenSeq);
     Event* first_event = thread_trace.getEvent(first_token);
     Event* last_event = thread_trace.getEvent(last_token);
 
@@ -448,12 +447,10 @@ recordExitFunctionBegin:
         char output_str[1024];
         size_t buffer_size = 1024;
         thread_trace.printEventToString(&e, output_str, buffer_size);
-        thread_trace.printTokenVector(underSequence);
         pallas_warn("\tInserting %s as E%d at end of curSequence\n", output_str, e_id);
         storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
         pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
         underSequence.push_back(last_token);
-        thread_trace.printTokenVector(underSequence);
         goto recordExitFunctionBegin;
         // https://xkcd.com/292/
         // Relevant XKCD
