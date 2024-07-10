@@ -3,8 +3,8 @@
  * See LICENSE in top-level directory.
  */
 
-#include <cinttypes>
 #include "pallas/pallas.h"
+#include <cinttypes>
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
@@ -109,8 +109,6 @@ void Thread::printSequence(pallas::Token token) const {
   printTokenVector(sequence->tokens);
 }
 
-
-
 void Thread::printEvent(pallas::Event* e) const {
   char output_str[1024];
   size_t buffer_size = 1024;
@@ -166,6 +164,17 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
 
   case PALLAS_EVENT_THREAD_TEAM_END:
     snprintf(output_str, buffer_size, "THREAD_TEAM_END()");
+    break;
+
+  case PALLAS_EVENT_THREAD_FORK: {
+    uint32_t numberOfRequestedThreads;
+    pop_data(e, &numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    snprintf(output_str, buffer_size, "THREAD_FORK(nRequThreads=%d)\n", numberOfRequestedThreads);
+    break;
+  }
+
+  case PALLAS_EVENT_THREAD_JOIN:
+    snprintf(output_str, buffer_size, "THREAD_JOIN\n");
     break;
 
   case PALLAS_EVENT_MPI_SEND: {
@@ -261,6 +270,77 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     snprintf(output_str, buffer_size,
              "MPI_COLLECTIVE_END(op=%x, comm=%x, root=%d, sent=%" PRIu64 ", recved=%" PRIu64 ")", collectiveOp,
              communicator, root, sizeSent, sizeReceived);
+    break;
+  }
+  case PALLAS_EVENT_OMP_FORK: {
+    uint32_t numberOfRequestedThreads;
+    pop_data(e, &numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    snprintf(output_str, buffer_size, "OMP_FORK(nRequThreads=%d)", numberOfRequestedThreads);
+    break;
+  }
+  case PALLAS_EVENT_OMP_JOIN:
+    snprintf(output_str, buffer_size, "OMP_JOIN()");
+    break;
+  case PALLAS_EVENT_OMP_ACQUIRE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "OMP_ACQUIRE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_ACQUIRE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "THREAD_ACQUIRE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_RELEASE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "OMP_RELEASE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_RELEASE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "THREAD_RELEASE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_CREATE: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_CREATE(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_SWITCH: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_SWITCH(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_COMPLETE: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_COMPLETE(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_CREATE: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_CREATE()");
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_SWITCH: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_SWITCH()");
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_COMPLETE: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_COMPLETE()");
     break;
   }
   case PALLAS_EVENT_GENERIC: {
