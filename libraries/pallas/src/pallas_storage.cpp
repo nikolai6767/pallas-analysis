@@ -417,22 +417,22 @@ inline static uint64_t* _pallas_histogram_read(size_t n, byte* compArray, size_t
   memcpy(&max, compArray, sizeof(max));
   compArray = &compArray[sizeof(max)];
   size_t width = max - min;
-  size_t stepSize = width / MAX_BIT;
 
-  //  printf("Min: %lu; Max: %lu\n", min, max);
-
-  if (stepSize > 1) {
-    for (size_t i = 0; i < n; i++) {
-      size_t factor = 0;
-      memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
-      dest[i] = min + factor * stepSize;
-      //    printf("Reading %lu as %lu\n", factor, dest[i]);
-    }
-  } else {
+  // TODO Skip the previous step using the stats from the vector.
+  if (width <= MAX_BIT) {
     for (size_t i = 0; i < n; i++) {
       size_t factor = 0;
       memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
       dest[i] = min + factor;
+      //    printf("Reading %lu as %lu\n", factor, dest[i]);
+    }
+  } else {
+    double stepSize = double(width) / MAX_BIT;
+
+    for (size_t i = 0; i < n; i++) {
+      size_t factor = 0;
+      memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
+      dest[i] = min + std::floor(factor * stepSize);
       //    printf("Reading %lu as %lu\n", factor, dest[i]);
     }
   }
