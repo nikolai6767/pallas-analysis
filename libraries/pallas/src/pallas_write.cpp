@@ -34,7 +34,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     return token_array[0];
   }
 
-  uint32_t hash = hash32(reinterpret_cast<uint8_t*>(token_array), array_len * (sizeof(pallas::Token) / sizeof(uint8_t)), SEED);
+  uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
   pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len,
              hash);
   auto& sequencesWithSameHash = hashToSequence[hash];
