@@ -368,33 +368,36 @@ inline static size_t _pallas_histogram_compress(const uint64_t* src, size_t n, b
 #endif
   size_t width = max - min;
   // TODO Skip the previous step using the stats from the vector.
-  size_t stepSize = (width) / MAX_BIT;
+  if (width <= MAX_BIT) {
+    for (size_t i = 0; i < n; i++) {
+      size_t toWrite = src[i] - min;
+      // This MUST be <= MAX_BIT
+      if (toWrite > MAX_BIT) {
+        pallas_warn("Trying to write %lu values using %d byte at most\n", n, N_BYTES);
+        pallas_warn("%lu <= value <= %lu. Problematic value is @%lu:%lu > %d", min, max, i, toWrite, MAX_BIT);
+        pallas_error();
+      }
+      memcpy(&dest[i * N_BYTES], &toWrite, N_BYTES);
+    }
+  } else {
+    double stepSize = double(width) / MAX_BIT;
 
-  // Write min/max
-  memcpy(dest, &min, sizeof(min));
-  dest = &dest[sizeof(min)];  // Offset the address
-  memcpy(dest, &max, sizeof(max));
-  dest = &dest[sizeof(max)];  // Offset the address
+    // Write min/max
+    memcpy(dest, &min, sizeof(min));
+    dest = &dest[sizeof(min)];  // Offset the address
+    memcpy(dest, &max, sizeof(max));
+    dest = &dest[sizeof(max)];  // Offset the address
 
-  if (stepSize > 1) {
     // Write each bin
     for (size_t i = 0; i < n; i++) {
-      size_t binNumber = (src[i] - min) / stepSize;
+      size_t binNumber = std::floor((src[i] - min)) / stepSize;
       binNumber = (binNumber > MAX_BIT) ? MAX_BIT : binNumber;
       // This last check is here in the rare cases of overflow.
       // printf("Writing %lu as %lu\n", src[i], temp);
       memcpy(&dest[i * N_BYTES], &binNumber, N_BYTES);
       // TODO This will not work on small endians architectures.
     }
-  } else {
-    for (size_t i = 0; i < n; i++) {
-      size_t toWrite = src[i] - min;
-      // This MUST be < MAX_BIT
-      pallas_assert(toWrite < MAX_BIT);
-      memcpy(&dest[i * N_BYTES], &toWrite, N_BYTES);
-    }
   }
-
   return N_BYTES * n + 2 * sizeof(uint64_t);
 }
 
