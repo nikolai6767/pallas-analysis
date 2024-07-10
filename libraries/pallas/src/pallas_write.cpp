@@ -899,13 +899,11 @@ extern void pallas_write_archive_close(PALLAS(Archive) * archive) {
   archive->close();
 };
 
-
-
 extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
-                        enum PALLAS(EventType) event_type,
-                        PALLAS(TokenId) id,
-                        pallas_timestamp_t ts,
-                        PALLAS(AttributeList) * attribute_list) {
+                               enum PALLAS(EventType) event_type,
+                               PALLAS(TokenId) id,
+                               pallas_timestamp_t ts,
+                               PALLAS(AttributeList) * attribute_list) {
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
 
