@@ -119,15 +119,6 @@ extern void pallas_record_mpi_collective_end(ThreadWriter* thread_writer,
                                              uint64_t sizeSent,
                                              uint64_t sizeReceived);
 
-extern void pallas_record_mpi_collective_end(ThreadWriter* thread_writer,
-                                             AttributeList* attribute_list,
-                                             pallas_timestamp_t time,
-                                             uint32_t collectiveOp,
-                                             uint32_t communicator,
-                                             uint32_t root,
-                                             uint64_t sizeSent,
-                                             uint64_t sizeReceived);
-
 extern void pallas_record_generic(ThreadWriter* thread_writer,
                                   AttributeList* attribute_list,
                                   pallas_timestamp_t time,

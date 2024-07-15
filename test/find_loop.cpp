@@ -21,18 +21,6 @@ static pallas_timestamp_t get_timestamp() {
 
 static inline std::string dummyTraceName = "find_loop_trace";
 
-static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
-  pallas_log(DebugLevel::Max, "Searching for event {.id=%d}\n", id);
-
-  while (id > thread_trace->nb_allocated_events) {
-    pallas_log(DebugLevel::Debug, "Doubling mem space of events for thread trace %p\n", (void*)thread_trace);
-    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace->events, thread_trace->nb_allocated_events, struct EventSummary);
-  }
-  if (thread_trace->nb_events < id + 1) {
-    thread_trace->nb_events = id + 1;
-  }
-}
-
 int main(int argc, char** argv __attribute__((unused))) {
   if (argc < 2) {
     pallas_error("Not enough arguments ! 2 argument required.\n");

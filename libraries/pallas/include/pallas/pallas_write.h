@@ -103,7 +103,7 @@ extern "C" {
  * Allocates a new ThreadWriter and returns a pointer to that allocated memory.
  * @return Pointer to ThreadWriter
  */
-extern PALLAS(ThreadWriter) * pallas_thread_writer_new();
+extern PALLAS(ThreadWriter) * pallas_thread_writer_new(void);
 extern void pallas_write_global_archive_open(PALLAS(Archive) * archive, const char* dir_name, const char* trace_name);
 extern void pallas_write_global_archive_close(PALLAS(Archive) * archive);
 

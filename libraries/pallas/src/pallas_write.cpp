@@ -631,8 +631,6 @@ void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
 TokenId Thread::getEventId(pallas::Event* e) {
   pallas_log(DebugLevel::Max, "getEventId: Searching for event {.event_type=%d}\n", e->record);
 
-  pallas_assert(e->event_size < 256);
-
   uint32_t hash = hash32(reinterpret_cast<uint8_t*>(e), sizeof(Event), SEED);
   auto& eventWithSameHash = hashToEvent[hash];
   if (!eventWithSameHash.empty()) {

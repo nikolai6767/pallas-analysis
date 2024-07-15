@@ -46,20 +46,20 @@ static StringRef _register_string(char* str) {
   return ref;
 }
 
-static LocationGroupId _new_location_group() {
+static LocationGroupId _new_location_group(void) {
   static _Atomic LocationGroupId next_id = 0;
   LocationGroupId id = next_id++;
   return id;
 }
 
 
-static ThreadId _new_thread() {
+static ThreadId _new_thread(void) {
   static _Atomic ThreadId next_id = 0;
   ThreadId id = next_id++;
   return id;
 }
 
-static pallas_timestamp_t get_timestamp() {
+static pallas_timestamp_t get_timestamp(void) {
   pallas_timestamp_t res = PALLAS_TIMESTAMP_INVALID;
 
   if(use_logical_clock) {
