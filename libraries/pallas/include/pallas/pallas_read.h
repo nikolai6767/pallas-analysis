@@ -167,7 +167,9 @@ typedef struct ThreadReader {
   [[nodiscard]] bool isEndOfSequence(int current_index, Token sequence_id) const;
   /** Returns whether the given loop still has more Tokens after the given current_index. */
   [[nodiscard]] bool isEndOfLoop(int current_index, Token loop_id) const;
-  /** Returns whether the given loop still has more Tokens after the given current_index. */
+  /** Returns whether the cursor is at the end of the current block. */
+  [[nodiscard]] bool isEndOfCurrentBlock() const;
+  /** Returns whether the cursor is at the end of the trace. */
   [[nodiscard]] bool isEndOfTrace() const;
   /** Returns the duration of the given Loop. */
   [[nodiscard]] pallas_duration_t getLoopDuration(Token loop_id) const;
