@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM intel/oneapi
 
 # Install build tools
 RUN apt update \
