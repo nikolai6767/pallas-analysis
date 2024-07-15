@@ -1286,11 +1286,12 @@ static char* _archive_filename(pallas::Archive* global_archive, pallas::Location
   if (id == PALLAS_MAIN_LOCATION_GROUP_ID)
     return strdup(global_archive->trace_name);
 
-  int tracename_len = strlen(global_archive->trace_name) + 1;
-  int extension_index = tracename_len - 8;
+  size_t tracename_len = strlen(global_archive->trace_name) + 1;
+  pallas_assert(tracename_len >= 8);
+  size_t extension_index = tracename_len - 8;
   pallas_assert(strcmp(&global_archive->trace_name[extension_index], ".pallas") == 0);
 
-  char trace_basename[tracename_len];
+  char* trace_basename = new char[tracename_len];
   strncpy(trace_basename, global_archive->trace_name, extension_index);
   trace_basename[extension_index] = '\0';
 
