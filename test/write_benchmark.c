@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
   pallas_write_archive_open(trace, "write_benchmark_trace", "main", 0);
 
   process_id = _new_location_group();
-  process_name = _register_string("Process"),
+  process_name = _register_string("Process");
 
   pallas_write_define_location_group(global_archive, process_id, process_name, PALLAS_LOCATION_GROUP_ID_INVALID);
 
