@@ -11,11 +11,16 @@
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
 
-#ifdef __cplusplus
 namespace pallas {
-#endif
 /** Maximum Callstack Size. */
 #define MAX_CALLSTACK_DEPTH 100
+
+/** getNextToken flags */
+#define PALLAS_READ_NO_UNROLL 0
+#define PALLAS_READ_UNROLL_SEQUENCE 1
+#define PALLAS_READ_UNROLL_LOOP 2
+#define PALLAS_READ_UNROLL_ALL 3
+
 
 /**
  * Options for the ThreadReader. Values have to be powers of 2.
@@ -39,7 +44,6 @@ typedef struct EventOccurence {
  */
 typedef struct SequenceOccurence {
   struct Sequence* sequence;            /**< Pointer to the Sequence.*/
-  struct Savestate* savestate;          /**< Savestate of the reader before entering the sequence.*/
   pallas_timestamp_t timestamp;         /**< Timestamp for that occurence.*/
   pallas_duration_t duration;           /**< Duration of that occurence.*/
   struct TokenOccurence* full_sequence; /** Array of the occurrences in this sequence. */
@@ -76,10 +80,9 @@ typedef struct TokenOccurence {
   /** Occurence corresponding to the Token. */
   Occurence* occurence;
 
-#ifdef __cplusplus
   ~TokenOccurence();
-#endif
 } TokenOccurence;
+
 
 /**
  * Reads one thread from an Pallas trace.
@@ -109,7 +112,7 @@ typedef struct ThreadReader {
    * Options as defined in pallas::ThreadReaderOptions.
    */
   int options;
-#ifdef __cplusplus
+
   /**
    * Make a new ThreadReader from an Archive and a threadId.
    * @param archive Archive to read.
@@ -125,6 +128,8 @@ typedef struct ThreadReader {
   [[nodiscard]] const Token& getTokenInCallstack(int frame_number) const;
   /** Prints the current Token. */
   void printCurToken() const;
+  /** Gets the current Iterable. */
+  [[nodiscard]] const Token& getCurIterable() const;
   /** Prints the current Sequence. */
   void printCurSequence() const;
   /** Prints the whole current callstack. */
@@ -146,8 +151,7 @@ typedef struct ThreadReader {
   /** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id,
-                                                       size_t occurence_id,
-                                                       bool saveReaderState) const;
+                                                       size_t occurence_id) const;
   /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, size_t occurence_id) const;
@@ -155,125 +159,27 @@ typedef struct ThreadReader {
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
-  /** Skips the given Token and updates the reader. */
-  static void skipToken([[maybe_unused]] Token token) { pallas_error("Not implemented yet\n"); };
 
  public:
-  /** Returns the current Sequence*/
-  [[nodiscard]] const Token& getCurIterable() const;
-  /** Enter a block (push a new frame in the callstack) */
+  /** Gets the current Token. */
+  [[nodiscard]] const Token& pollCurToken() const;
+  /** Peeks at and return the next token without actually updating the state */
+  [[nodiscard]] std::optional<Token> pollNextToken() const;
+  /** Updates the internal state */
+  void moveToNextToken();
+  /** Gets the next token and updates the reader's state if it returns a value.
+   * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
+  [[nodiscard]] std::optional<Token> getNextToken(int flags);
+  /** Enters a block */
   void enterBlock(Token new_block);
   /** Leaves the current block */
   void leaveBlock();
-  /** Checks if there is a Loop in the current callstack. */
-  bool isInLoop();
-  /** Checks if c,urrent Token is the last of the current Sequence/Loop */
-  bool isLastInCurrentArray();
-  /** Moves the reader's position to the next token.
-   *
-   * Moves to the next token in the current block, or exits it recursively as long as it's at the end of a block.*/
-  void moveToNextToken();
-  /** Updates the reader's callstacks et al. by reading the current token.
-   *
-   * If the current Token is an event, its index is updated and the referential timestamp as well.
-   * If it's a Loop or a Sequence, their indexes are updated, and the reader enters the corresponding block. */
-  void updateReadCurToken();
-  /** Fetches the next Token in the trace. Changes the state of the reader to match. */
-  [[nodiscard]] Token getNextToken();
-  /** Returns the current Token. */
-  [[nodiscard]] const Token& getCurToken() const;
-  /** Returns an Occurence for the given Token appearing at the given occurence_id.
-   *
-   * Timestamp is set to Reader's referential timestamp.*/
-  [[nodiscard]] union Occurence* getOccurence(Token id, size_t occurence_id) const;
-  /** Loads the given savestate. */
-  void loadSavestate(struct Savestate* savestate);
-  /** Reads the current level of the thread, and returns it as an array of TokenOccurences. */
-  [[nodiscard]] std::vector<TokenOccurence> readCurrentLevel();
-  /** Skips the given Sequence and updates the reader. */
-  void skipSequence([[maybe_unused]] Token token) { pallas_error("Not implemented yet\n"); };
+
   ~ThreadReader();
-  ThreadReader(ThreadReader&& other);
-#endif
+  ThreadReader(ThreadReader&& other) noexcept ;
 } ThreadReader;
 
-/**
- * A savestate of a pallas_thread_reader.
- */
-typedef struct Savestate {
-  /** The current referential timestamp. */
-  pallas_timestamp_t referential_timestamp;
-
-  /** Stack containing the sequences/loops being read. */
-  Token* callstack_iterable;
-
-  /** Stack containing the index in the sequence or the loop iteration. */
-  int* callstack_index;
-
-  /** Current frame = index of the event/loop being read in the callstacks.
-   * You can view this as the "depth" of the callstack. */
-  int current_frame;
-
-  DEFINE_TokenCountMap(tokenCount);
-#ifdef __cplusplus
-  /** Creates a savestate of the given reader.
-   * @param reader Reader whose state of reading we want to take a screenshot. */
-  Savestate(const ThreadReader* reader);
-  ~Savestate();
-#endif
-} Savestate;
-
-#ifdef __cplusplus
 }; /* namespace pallas */
-
-extern "C" {
-#endif
-
-/** Creates and initializes a ThreadReader. */
-extern PALLAS(ThreadReader) * pallas_new_thread_reader(const PALLAS(Archive) * archive, PALLAS(ThreadId) thread_id, int options);
-/** Enter a block (push a new frame in the callstack) */
-extern void pallas_thread_reader_enter_block(PALLAS(ThreadReader) * reader, PALLAS(Token) new_block);
-/** Leaves the current block */
-extern void pallas_thread_reader_leave_block(PALLAS(ThreadReader) * reader);
-
-/** Moves the reader's position to the next token.
- *
- * Moves to the next token in the current block, or exits it recursively as long as it's at the end of a block.*/
-extern void pallas_thread_reader_move_to_next_token(PALLAS(ThreadReader) * reader);
-
-/** Updates the reader's callstacks et al. by reading the current token.
- *
- * If the current Token is an event, its index is updated and the referential timestamp as well.
- * If it's a Loop or a Sequence, their indexes are updated, and the reader enters the corresponding block. */
-extern void pallas_thread_reader_update_reader_cur_token(PALLAS(ThreadReader) * reader);
-
-/** Fetches the next Token in the trace. Changes the state of the reader to match. */
-extern PALLAS(Token) pallas_thread_reader_get_next_token(PALLAS(ThreadReader) * reader);
-
-/** Returns the current Token. */
-extern PALLAS(Token) pallas_read_thread_cur_token(const PALLAS(ThreadReader) * reader);
-
-/** Returns an Occurence for the given Token appearing at the given occurence_id.
- *
- * Timestamp is set to Reader's referential timestamp.*/
-extern union PALLAS(Occurence) *
-  pallas_thread_reader_get_occurence(const PALLAS(ThreadReader) * reader, PALLAS(Token) id, int occurence_id);
-
-/** Creates a new savestate from the reader. */
-extern PALLAS(Savestate) * create_savestate(const PALLAS(ThreadReader) * reader);
-
-/** Loads the given savestate. */
-extern void load_savestate(PALLAS(ThreadReader) * reader, PALLAS(Savestate) * savestate);
-
-/** Reads the current level of the thread, and returns it as an array of TokenOccurences. */
-extern PALLAS(TokenOccurence) * pallas_thread_reader_read_current_level(PALLAS(ThreadReader) * reader);
-
-/** Skips the given Sequence and updates the reader. */
-extern void skip_sequence(PALLAS(ThreadReader) * reader, PALLAS(Token) token);
-
-#ifdef __cplusplus
-};
-#endif
 
 /* -*-
    mode: c;

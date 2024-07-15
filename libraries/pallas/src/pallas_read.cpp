@@ -32,6 +32,9 @@ ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int option
   memset(callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   callstack_iterable[0].type = TypeSequence;
   callstack_iterable[0].id = 0;
+
+  // Enter sequence 0
+  this->enterBlock(this->pollCurToken());
 }
 
 const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
@@ -49,11 +52,8 @@ const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
   pallas_assert(sequence.isIterable());
   return thread_trace->getToken(sequence, callstack_index[frame_number]);
 }
-const Token& ThreadReader::getCurToken() const {
-  return getTokenInCallstack(current_frame);
-}
 void ThreadReader::printCurToken() const {
-  thread_trace->printToken(getCurToken());
+  thread_trace->printToken(pollCurToken());
 }
 const Token& ThreadReader::getCurIterable() const {
   return getFrameInCallstack(current_frame);
@@ -83,7 +83,7 @@ void ThreadReader::printCallstack() const {
     }
 
     printf("\t-> ");
-    pallas_print_token(thread_trace, current_token);
+    thread_trace->printToken(current_token);
     printf("\n");
   }
 }
@@ -150,8 +150,7 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
 }
 
 SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
-                                                     size_t occurence_id,
-                                                     bool saveReaderState) const {
+                                                     size_t occurence_id) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -160,11 +159,6 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
     sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
   }
   sequenceOccurence.full_sequence = nullptr;
-  if (saveReaderState) {
-    sequenceOccurence.savestate = new Savestate(this);
-  } else {
-    sequenceOccurence.savestate = nullptr;
-  }
 
   //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
@@ -180,25 +174,6 @@ LoopOccurence ThreadReader::getLoopOccurence(Token loop_id, size_t occurence_id)
     loopOccurence.duration = getLoopDuration(loop_id);
   }
   return loopOccurence;
-}
-
-Occurence* ThreadReader::getOccurence(pallas::Token id, size_t occurence_id) const {
-  auto occurence = new Occurence();
-  switch (id.type) {
-  case TypeInvalid: {
-    pallas_error("Wrong token was given");
-  }
-  case TypeEvent:
-    occurence->event_occurence = getEventOccurence(id, occurence_id);
-    break;
-  case TypeSequence:
-    occurence->sequence_occurence = getSequenceOccurence(id, occurence_id, false);
-    break;
-  case TypeLoop:
-    occurence->loop_occurence = getLoopOccurence(id, occurence_id);
-    break;
-  }
-  return occurence;
 }
 
 AttributeList* ThreadReader::getEventAttributeList(Token event_id, size_t occurence_id) const {
@@ -225,7 +200,106 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, size_t occure
 
 //******************* EXPLORATION FUNCTIONS ********************
 
-void ThreadReader::enterBlock(Token new_block) {
+const Token& ThreadReader::pollCurToken() const {
+  return getTokenInCallstack(current_frame);
+}
+
+std::optional<Token> ThreadReader::pollNextToken() const {
+  if (current_frame < 0)
+    return std::nullopt;
+
+  int current_index = callstack_index[current_frame];
+  auto curIterableToken = callstack_iterable[current_frame];
+  pallas_assert(curIterableToken.isIterable());
+
+  /* First update the current loop / sequence. */
+  if (curIterableToken.type == TypeSequence) {
+    if (isEndOfSequence(current_index, curIterableToken)) {
+      /* We've reached the end of a sequence. */
+      return std::nullopt;
+    } else {
+      return thread_trace->getToken(curIterableToken, current_index + 1);
+    }
+  } else {
+    if (isEndOfLoop(current_index, curIterableToken)) {
+      /* We've reached the end of the loop. */
+      return std::nullopt;
+    } else {
+      return thread_trace->getToken(curIterableToken, current_index + 1);
+    }
+  }
+}
+
+void ThreadReader::moveToNextToken() {
+  // Check if we've reached the end of the trace
+  if (current_frame < 0) {
+    pallas_log(DebugLevel::Debug, "End of trace %d!\n", __LINE__);
+    return;
+  }
+
+  int current_index = callstack_index[current_frame];
+  auto curIterableToken = callstack_iterable[current_frame];
+  pallas_assert(curIterableToken.isIterable());
+
+  /* First update the current loop / sequence. */
+  if (curIterableToken.type == TypeSequence) {
+    if (isEndOfSequence(current_index, curIterableToken)) {
+      pallas_error("End of sequence");
+    } else {
+      /* Move to the next event in the Sequence */
+      callstack_index[current_frame]++;
+    }
+  } else {
+    if (isEndOfLoop(current_index, curIterableToken)) {
+      pallas_error("End of loop");
+    } else {
+      /* just move to the next iteration in the loop */
+      callstack_index[current_frame]++;
+    }
+  }
+}
+
+std::optional<Token> ThreadReader::getNextToken(int flags) {
+  if (current_frame < 0)
+    return std::nullopt;
+
+  auto curToken = pollCurToken();
+  /* Perform callstack actions based on flags and current state*/
+  if (curToken.type == TypeSequence && flags & PALLAS_READ_UNROLL_SEQUENCE) {
+    enterBlock(curToken);
+    std::cout << "Entering ";
+    printCurSequence();
+    return pollCurToken();
+  } else if (curToken.type == TypeLoop && flags & PALLAS_READ_UNROLL_LOOP) {
+    enterBlock(curToken);
+    std::cout << "Entering loop" << curToken.id << std::endl;
+    return pollCurToken();
+  } else if (current_frame > 1) {
+    int current_index = callstack_index[current_frame];
+    auto curIterableToken = callstack_iterable[current_frame];
+    if (curIterableToken.type == TypeSequence) {
+      if (isEndOfSequence(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_SEQUENCE) {
+        /* We've reached the end of a sequence. Leave the block. */
+        std::cout << "Leaving sequence " << curIterableToken.id << std::endl;
+        leaveBlock();
+      }
+    } else {
+      if (isEndOfLoop(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_LOOP) {
+        /* We've reached the end of the loop. Leave the block. */
+        std::cout << "Leaving sequence " << curIterableToken.id << std::endl;
+        leaveBlock();
+      }
+    }
+  }
+  auto nextToken = pollNextToken();
+  if (nextToken.has_value()) {
+    moveToNextToken();
+  }
+  return nextToken;
+}
+
+
+void ThreadReader::enterBlock(const Token new_block) {
   pallas_assert(new_block.isIterable());
   if (debugLevel >= DebugLevel::Debug) {
     pallas_log(DebugLevel::Debug, "[%d] Enter Block ", current_frame);
@@ -255,166 +329,6 @@ void ThreadReader::leaveBlock() {
   }
 }
 
-bool ThreadReader::isInLoop() {
-  for (int i = current_frame; i >= 0; i --) {
-    if (callstack_iterable[i].type == TypeLoop) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool ThreadReader::isLastInCurrentArray() {
-  auto currentIterableToken = getCurIterable();
-  if (currentIterableToken.type == TypeSequence) {
-    return isEndOfSequence(callstack_index[current_frame], currentIterableToken);
-  } else {
-    return isEndOfLoop(callstack_index[current_frame], currentIterableToken);
-  }
-}
-
-void ThreadReader::moveToNextToken() {
-  // Check if we've reached the end of the trace
-  if (current_frame < 0) {
-    pallas_log(DebugLevel::Debug, "End of trace %d!\n", __LINE__);
-    return;
-  }
-
-  int current_index = callstack_index[current_frame];
-  auto curIterableToken = callstack_iterable[current_frame];
-  pallas_assert(curIterableToken.isIterable());
-
-  /* First update the current loop / sequence. */
-  if (curIterableToken.type == TypeSequence) {
-    if (isEndOfSequence(current_index, curIterableToken)) {
-      /* We've reached the end of a sequence. Leave the block and give the next event. */
-      leaveBlock();
-      moveToNextToken();
-    } else {
-      /* Move to the next event in the Sequence */
-      callstack_index[current_frame]++;
-    }
-  } else {
-    if (isEndOfLoop(current_index, curIterableToken)) {
-      /* We've reached the end of the loop. Leave the block and give the next event. */
-      leaveBlock();
-      moveToNextToken();
-    } else {
-      /* just move to the next iteration in the loop */
-      callstack_index[current_frame]++;
-    }
-  }
-}
-
-void ThreadReader::updateReadCurToken() {
-  auto current_token = getCurToken();
-  switch (current_token.type) {
-  case TypeSequence: {
-    tokenCount[current_token]++;
-    enterBlock(current_token);
-    break;
-  }
-  case TypeLoop: {
-    tokenCount[current_token]++;
-    enterBlock(current_token);
-    break;
-  }
-  case TypeEvent: {
-    // Update the timestamps
-    auto summary = getEventSummary(current_token);
-    if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
-      referential_timestamp += summary->durations->at(tokenCount[current_token]);
-    }
-    tokenCount[current_token]++;
-    break;
-  }
-  default:
-    break;
-  }
-}
-
-Token ThreadReader::getNextToken() {
-  moveToNextToken();
-  updateReadCurToken();
-  return getCurToken();
-}
-void ThreadReader::loadSavestate(Savestate* savestate) {
-  if ((options & ThreadReaderOptions::NoTimestamps) == 0)
-    referential_timestamp = savestate->referential_timestamp;
-  memcpy(callstack_iterable, savestate->callstack_iterable, sizeof(int) * MAX_CALLSTACK_DEPTH);
-  memcpy(callstack_index, savestate->callstack_index, sizeof(int) * MAX_CALLSTACK_DEPTH);
-  current_frame = savestate->current_frame;
-  tokenCount = savestate->tokenCount;
-}
-
-std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
-  const Token curSeqToken = getCurIterable();
-  const auto* curSeq = thread_trace->getSequence(curSeqToken);
-  pallas_assert(curSeq->size() > 0);
-  auto outputVector = std::vector<TokenOccurence>();
-  outputVector.resize(curSeq->size());
-
-  DOFOR(i, curSeq->size()) {
-    const Token token = curSeq->tokens[i];
-    outputVector[i].occurence = new Occurence();
-    outputVector[i].token = &curSeq->tokens[i];
-    /// Three steps for every token type
-    /// 1 - Grab the information we want, ie call getTypeOccurence
-    /// 2 - Write that information to the occurence in the vector (outputVector[i].occurence->type_occurence)
-    /// 3 - Update the reader
-    switch (token.type) {
-    case TypeEvent: {
-      auto& occurence = outputVector[i].occurence->event_occurence;
-      occurence = getEventOccurence(token, tokenCount[token]);
-      if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
-        referential_timestamp += occurence.duration;
-      }
-      break;
-    }
-    case TypeLoop: {
-      auto& occurence = outputVector[i].occurence->loop_occurence;
-      auto* loop = &thread_trace->loops[token.id];
-
-      // Write it to the occurence
-      occurence.loop = loop;
-      occurence.nb_iterations = loop->nb_iterations.at(tokenCount[token]);
-      if ((options & ThreadReaderOptions::NoTimestamps) == 0)
-        occurence.timestamp = referential_timestamp;
-
-      // Write the loop
-      enterBlock(token);
-
-      occurence.full_loop = new SequenceOccurence[occurence.nb_iterations];
-      auto& sequenceTokenCount = thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace);
-      occurence.duration = 0;
-      DOFOR(j, occurence.nb_iterations) {
-        occurence.full_loop[j] = getSequenceOccurence(loop->repeated_token, tokenCount[loop->repeated_token], true);
-        if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
-          occurence.duration += occurence.full_loop[j].duration;
-          referential_timestamp += occurence.full_loop[j].duration;
-        }
-        tokenCount[loop->repeated_token]++;
-        tokenCount += sequenceTokenCount;
-      }
-      leaveBlock();
-      break;
-    }
-    case TypeSequence: {
-      // Get the info
-      outputVector[i].occurence->sequence_occurence = getSequenceOccurence(token, tokenCount[token], true);
-      if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
-        referential_timestamp += outputVector[i].occurence->sequence_occurence.duration;
-      }
-      tokenCount += thread_trace->getSequence(token)->getTokenCount(thread_trace);;
-      break;
-    }
-    default:
-      pallas_error("Invalid token type\n;");
-    }
-    tokenCount[token]++;
-  }
-  return outputVector;
-}
 ThreadReader::~ThreadReader() {
   bool hasStilThreads = false;
   if (archive) {
@@ -430,7 +344,7 @@ ThreadReader::~ThreadReader() {
     delete archive;
 }
 
-ThreadReader::ThreadReader(ThreadReader&& other) {
+ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
   archive = other.archive;
   thread_trace = other.thread_trace;
   referential_timestamp = other.referential_timestamp;
@@ -442,93 +356,19 @@ ThreadReader::ThreadReader(ThreadReader&& other) {
   std::memset(&other, 0, sizeof( ThreadReader));
 }
 
-Savestate::Savestate(const ThreadReader* reader) {
-  if ((reader->options & ThreadReaderOptions::NoTimestamps) == 0) {
-    referential_timestamp = reader->referential_timestamp;
-  }
-
-  callstack_iterable = new Token[reader->current_frame];
-  memcpy(callstack_iterable, reader->callstack_iterable, sizeof(Token) * reader->current_frame);
-
-  callstack_index = new int[reader->current_frame];
-  memcpy(callstack_index, reader->callstack_index, sizeof(int) * reader->current_frame);
-
-  current_frame = reader->current_frame;
-
-  tokenCount = reader->tokenCount;
-}
-Savestate::~Savestate() {
-  delete[] callstack_index;
-  delete[] callstack_iterable;
-}
 TokenOccurence::~TokenOccurence() {
   if (token == nullptr || occurence == nullptr) {
     return;
   }
-  if (token->type == TypeSequence) {
-//    delete[] occurence->sequence_occurence.full_sequence;
-    delete occurence->sequence_occurence.savestate;
-  }
   if (token->type == TypeLoop) {
     auto& loopOccurence = occurence->loop_occurence;
     if (loopOccurence.full_loop) {
-      for (int i = 0; i < loopOccurence.nb_iterations; i++) {
-        delete loopOccurence.full_loop[i].savestate;
-      }
       delete[] loopOccurence.full_loop;
     }
   }
   delete occurence;
 }
 } /* namespace pallas */
-
-pallas::ThreadReader* pallas_new_thread_reader(const pallas::Archive* archive,
-                                               pallas::ThreadId thread_id,
-                                               int options) {
-  return new pallas::ThreadReader(archive, thread_id, options);
-}
-
-void pallas_thread_reader_enter_block(pallas::ThreadReader* reader, pallas::Token new_block) {
-  reader->enterBlock(new_block);
-}
-
-void pallas_thread_reader_leave_block(pallas::ThreadReader* reader) {
-  reader->leaveBlock();
-}
-
-void pallas_thread_reader_move_to_next_token(pallas::ThreadReader* reader) {
-  return reader->moveToNextToken();
-}
-
-void pallas_thread_reader_update_reader_cur_token(pallas::ThreadReader* reader) {
-  return reader->updateReadCurToken();
-}
-
-pallas::Token pallas_thread_reader_get_next_token(pallas::ThreadReader* reader) {
-  return reader->getNextToken();
-}
-
-pallas::Token pallas_read_thread_cur_token(const pallas::ThreadReader* reader) {
-  return reader->getCurToken();
-}
-
-pallas::Occurence* pallas_thread_reader_get_occurence(const pallas::ThreadReader* reader,
-                                                      pallas::Token id,
-                                                      int occurence_id) {
-  return reader->getOccurence(id, occurence_id);
-}
-
-struct pallas::Savestate* create_savestate(pallas::ThreadReader* reader) {
-  return new pallas::Savestate(reader);
-}
-
-void load_savestate(pallas::ThreadReader* reader, pallas::Savestate* savestate) {
-  reader->loadSavestate(savestate);
-}
-
-void skip_sequence(pallas::ThreadReader* reader, pallas::Token token) {
-  reader->skipSequence(token);
-}
 
 /* -*-
    mode: c;
