@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 enable_testing()
 # add_subdirectory(mpi)
 
-add_compile_options(-Wall -Wextra -Wpedantic -Wno-sign-compare)
+add_compile_options(-Wall -Wextra -Wpedantic -Wno-sign-compare ${WARNINGS})
 include_directories(${CMAKE_SOURCE_DIR}/src/)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

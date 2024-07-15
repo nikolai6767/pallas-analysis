@@ -73,8 +73,9 @@ target_compile_options(pallas
         PUBLIC
         -D_GNU_SOURCE
         PRIVATE
-        -Wall -Wextra -Wno-sign-compare -Wno-unused -Wno-unused-parameter -Wno-class-memaccess
+        -Wall -Wextra ${WARNINGS}
 )
+message("Warning list: ${WARNINGS}")
 
 target_link_libraries(pallas
         PUBLIC

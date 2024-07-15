@@ -64,6 +64,16 @@ add_compile_definitions(TIMEPOINT_SIZE=${SIZEOF_TIMEPOINT})
 ####################################################
 # Some flags for compilation
 
+set(WARNINGS -Wno-unknown-warning-option
+        -Wno-gnu-zero-variadic-macro-arguments
+        -Wno-sign-compare
+        -Wno-unused
+        -Wno-unused-parameter
+        -Wno-class-memaccess
+        -Wno-string-plus-int
+        -Wno-return-type-c-linkage
+)
+
 set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(LIBRARY_PATH "${CMAKE_INSTALL_PREFIX}/lib")
 if ("${APPLE}")
