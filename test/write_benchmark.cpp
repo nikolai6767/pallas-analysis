@@ -2,9 +2,9 @@
  * Copyright (C) Telecom SudParis
  * See LICENSE in top-level directory.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <atomic>
 #include <sstream>
 #if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
@@ -14,8 +14,8 @@
 
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
-#include "pallas/pallas_write.h"
 #include "pallas/pallas_record.h"
+#include "pallas/pallas_write.h"
 
 using namespace pallas;
 
@@ -46,21 +46,20 @@ static pthread_barrier_t bench_stop;
 
 #define TIME_DIFF(t1, t2) (((t2).tv_sec - (t1).tv_sec) + ((t2).tv_nsec - (t1).tv_nsec) / 1e9)
 
-static StringRef _register_string(const char* str) {
+static StringRef registerString(const std::string& str) {
   static std::atomic<StringRef> next_ref = 0;
   StringRef ref = next_ref++;
-  globalArchive.addString(ref, str);
+  globalArchive.addString(ref, str.c_str());
   return ref;
 }
 
-static LocationGroupId _new_location_group() {
+static LocationGroupId newLocationGroup() {
   static std::atomic<LocationGroupId> next_id = 0;
   LocationGroupId id = next_id++;
   return id;
 }
 
-
-static ThreadId _new_thread() {
+static ThreadId newThread() {
   static std::atomic<ThreadId> next_id = 0;
   ThreadId id = next_id++;
   return id;
@@ -69,31 +68,30 @@ static ThreadId _new_thread() {
 static pallas_timestamp_t get_timestamp() {
   pallas_timestamp_t res = PALLAS_TIMESTAMP_INVALID;
 
-  if(use_logical_clock) {
-      static int next_ts = 1;
-      res = next_ts++;
+  if (use_logical_clock) {
+    static int next_ts = 1;
+    res = next_ts++;
   }
   return res;
 }
 
 void* worker(void* arg __attribute__((unused))) {
   pthread_mutex_lock(&globalArchive.lock);
-  ThreadId threadID = _new_thread();
+  ThreadId threadID = newThread();
   auto threadWriter = ThreadWriter();
 
 #ifdef HAS_FORMAT
-  StringRef threadNameRef = _register_string(std::format("thread_{}", threadID).c_str());
+  StringRef threadNameRef = _register_string(std::format("thread_{}", threadID));
 #else
   std::ostringstream os("thread_");
   os << threadID;
-  StringRef threadNameRef = _register_string(os.str().c_str());
+  StringRef threadNameRef = registerString(os.str());
 #endif
   globalArchive.defineLocation(threadID, threadNameRef, processID);
   threadWriter.open(&mainProcess, threadID);
 
-  struct timespec t1, t2;
   pthread_barrier_wait(&bench_start);
-  clock_gettime(CLOCK_MONOTONIC, &t1);
+  auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < nb_iter; i++) {
     switch (pattern) {
     case 0:
@@ -101,7 +99,7 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 L_f1 E_f2 L_f2 E_f3 L_f3 ...
        */
       for (int j = 0; j < nb_functions; j++) {
-        pallas_record_generic(&threadWriter, NULL, get_timestamp(), strings[j]);
+        pallas_record_generic(&threadWriter, nullptr, get_timestamp(), strings[j]);
       }
       break;
 
@@ -110,29 +108,30 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 E_f2 E_f3 ... L_f3 L_f2 L_f1
        */
       for (int j = 0; j < nb_functions; j++) {
-        pallas_record_enter(&threadWriter, NULL, get_timestamp(), regions[j]);
+        pallas_record_enter(&threadWriter, nullptr, get_timestamp(), regions[j]);
       }
       for (int j = nb_functions - 1; j >= 0; j--) {
-        pallas_record_leave(&threadWriter, NULL, get_timestamp(), regions[j]);
+        pallas_record_leave(&threadWriter, nullptr, get_timestamp(), regions[j]);
       }
       break;
     default:
       fprintf(stderr, "invalid pattern: %d\n", pattern);
     }
   }
-  clock_gettime(CLOCK_MONOTONIC, &t2);
+  
+  auto end = std::chrono::high_resolution_clock::now();
 
   pthread_barrier_wait(&bench_stop);
 
-  double duration = TIME_DIFF(t1, t2);
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   int nb_event_per_iter = 2 * nb_functions;
   int nb_events = nb_iter * nb_event_per_iter;
-  double duration_per_event = duration / nb_events;
+  auto duration_per_event = duration / nb_events;
 
-  printf("T#%d: %d events in %lf s -> %lf ns per event\n", threadID, nb_events, duration, duration_per_event * 1e9);
+  std::cout << "T#" << threadID << ": " << nb_events << " events in " << duration << "s -> " << duration_per_event * 1e9 << " ns per event" << std::endl;
 
   threadWriter.threadClose();
-  return NULL;
+  return nullptr;
 }
 
 void usage(const char* prog_name) {
@@ -141,7 +140,8 @@ void usage(const char* prog_name) {
   printf("\t-f X    Set the number of functions (default: %d)\n", nb_functions_default);
   printf("\t-t X    Set the number of threads (default: %d)\n", nb_threads_default);
   printf("\t-p X    Select the event pattern\n");
-  printf("\t-l      Use a per-thread logical clock instead of the default clock (default: %d)\n", use_logical_clock_default);
+  printf("\t-l      Use a per-thread logical clock instead of the default clock (default: %d)\n",
+         use_logical_clock_default);
 
   printf("\t-? -h   Display this help and exit\n");
 }
@@ -156,19 +156,19 @@ int main(int argc, char** argv) {
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-n")) {
-      nb_iter = atoi(argv[i + 1]);
+      nb_iter = std::atoi(argv[i + 1]);
       nb_opts += 2;
       i++;
     } else if (!strcmp(argv[i], "-f")) {
-      nb_functions = atoi(argv[i + 1]);
+      nb_functions = std::atoi(argv[i + 1]);
       nb_opts += 2;
       i++;
     } else if (!strcmp(argv[i], "-t")) {
-      nb_threads = atoi(argv[i + 1]);
+      nb_threads = std::atoi(argv[i + 1]);
       nb_opts += 2;
       i++;
     } else if (!strcmp(argv[i], "-p")) {
-      pattern = atoi(argv[i + 1]);
+      pattern = std::atoi(argv[i + 1]);
       nb_opts += 2;
       i++;
     } else if (!strcmp(argv[i], "-l")) {
@@ -187,19 +187,26 @@ int main(int argc, char** argv) {
   pthread_barrier_init(&bench_start, nullptr, nb_threads + 1);
   pthread_barrier_init(&bench_stop, nullptr, nb_threads + 1);
 
-  printf("nb_iter = %d\n", nb_iter);
-  printf("nb_functions = %d\n", nb_functions);
-  printf("nb_threads = %d\n", nb_threads);
-  printf("pattern = %d\n", pattern);
-  printf("---------------------\n");
+  struct separate_thousands : std::numpunct<char> {
+    char_type do_thousands_sep() const override { return ' '; }  // separate with commas
+    string_type do_grouping() const override { return "\3"; }    // groups of 3 digit
+  };
+  auto thousands = std::make_unique<separate_thousands>();
+  std::cout.imbue(std::locale(std::cout.getloc(), thousands.release()));
+
+  std::cout << "nb_iter = " << nb_iter << std::endl
+            << "nb_functions = " << nb_functions << std::endl
+            << "nb_threads = " << nb_threads << std::endl
+            << "pattern = " << pattern << std::endl
+            << "---------------------" << std::endl;
 
   globalArchive = Archive();
   mainProcess = Archive();
   mainProcess.global_archive = &globalArchive;
   globalArchive.globalOpen("write_benchmark_CPP_trace", "main");
 
-  processID = _new_location_group();
-  processName = _register_string("Main process");
+  processID = newLocationGroup();
+  processName = registerString("Main process");
   globalArchive.defineLocationGroup(processID, processName, 0);
 
   mainProcess.open("write_benchmark_CPP_trace", "main", 0);
@@ -209,7 +216,7 @@ int main(int argc, char** argv) {
     os << "function_" << i;
     region_names.push_back(os.str());
     os.clear();
-    strings.push_back(_register_string(region_names.back().c_str()));
+    strings.push_back(registerString(region_names.back()));
     regions.push_back(strings.back());
     mainProcess.addRegion(regions.back(), strings.back());
   }
@@ -221,22 +228,22 @@ int main(int argc, char** argv) {
     threadID.push_back(tid);
   }
 
-  struct timespec t1, t2;
   pthread_barrier_wait(&bench_start);
 
-  clock_gettime(CLOCK_MONOTONIC, &t1);
+  auto start = std::chrono::high_resolution_clock::now();
   pthread_barrier_wait(&bench_stop);
-  clock_gettime(CLOCK_MONOTONIC, &t2);
+  auto end = std::chrono::high_resolution_clock ::now();
 
   for (int i = 0; i < nb_threads; i++)
-    pthread_join(threadID[i], NULL);
+    pthread_join(threadID[i], nullptr);
 
-  double duration = TIME_DIFF(t1, t2);
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   int nb_event_per_iter = 2 * nb_functions;
   int nb_events = nb_iter * nb_event_per_iter * nb_threads;
-  double events_per_second = nb_events / duration;
+  auto events_per_second = nb_events / duration;
 
-  printf("TOTAL: %d events in %lf s -> %lf Me/s \n", nb_events, duration, events_per_second / 1e6);
+  std::cout << "TOTAL: " << nb_events << " events in " << duration << " s -> " << events_per_second / 1e6 << " Me/s"
+            << std::endl;
 
   mainProcess.close();
   globalArchive.close();
