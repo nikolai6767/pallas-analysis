@@ -741,7 +741,9 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, const char* valueFilePath) 
   last = nullptr;
   _pallas_fread(&size, sizeof(size), 1, vectorFile);
   if (size == 0) {
-    min, max, mean = 0;
+    min = 0;
+    max = 0;
+    mean = 0;
   }
   if (size <= 3) {
     auto temp = new size_t[size];
