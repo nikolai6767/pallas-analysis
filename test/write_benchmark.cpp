@@ -82,7 +82,7 @@ void* worker(void* arg __attribute__((unused))) {
   auto threadWriter = ThreadWriter();
 
 #ifdef HAS_FORMAT
-  StringRef threadNameRef = _register_string(std::format("thread_{}", threadID));
+  StringRef threadNameRef = _register_string(std::format("thread_{}", threadID).c_str());
 #else
   std::ostringstream os("thread_");
   os << threadID;
