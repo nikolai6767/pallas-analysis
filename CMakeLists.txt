@@ -64,12 +64,11 @@ add_compile_definitions(TIMEPOINT_SIZE=${SIZEOF_TIMEPOINT})
 ####################################################
 # Some flags for compilation
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(WARNINGS -Wno-unknown-warning-option
+    set(WARNINGS
             -Wno-gnu-zero-variadic-macro-arguments
             -Wno-sign-compare
             -Wno-unused
             -Wno-unused-parameter
-            -Wno-class-memaccess
             -Wno-string-plus-int
             -Wno-return-type-c-linkage
     )
