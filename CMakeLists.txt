@@ -79,8 +79,19 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             -Wno-unused-parameter
             -Wno-unused-variable
             -Wno-deprecated-declarations)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    set(WARNINGS)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    set(WARNINGS
+            -Rno-debug-disables-optimization
+            -Wno-return-type-c-linkage
+            -Wno-sign-compare
+            -Wno-unused-function
+            -Wno-unused-parameter
+            -Wno-unused-variable
+            -Wno-unused-but-set-variable
+            -Wno-string-plus-int
+            -Wno-gnu-zero-variadic-macro-arguments
+    )
+    ADD_LINK_OPTIONS(-Rno-debug-disables-optimization)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(WARNINGS)
 endif()
