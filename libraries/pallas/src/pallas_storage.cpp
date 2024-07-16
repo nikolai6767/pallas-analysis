@@ -1429,7 +1429,11 @@ void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
   for (auto& location : archive->locations) {
     auto* thread = new pallas::Thread();
     auto parent = global_archive->getLocationGroup(location.parent);
-    thread->archive = pallasGetArchive(global_archive, parent->mainLoc);
+    if (parent->mainLoc == PALLAS_THREAD_ID_INVALID)
+      thread->archive = pallasGetArchive(global_archive, parent->id);
+    else
+      thread->archive = pallasGetArchive(global_archive, parent->mainLoc);
+
     pallasReadThread(global_archive, thread, location.id);
     int index = 0;
     while (thread->archive->threads[index] != nullptr) {
