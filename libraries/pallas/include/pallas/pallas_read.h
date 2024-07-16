@@ -112,7 +112,6 @@ typedef struct ThreadReader {
    * Options as defined in pallas::ThreadReaderOptions.
    */
   int options;
-
   /**
    * Make a new ThreadReader from an Archive and a threadId.
    * @param archive Archive to read.
@@ -121,7 +120,6 @@ typedef struct ThreadReader {
    */
   ThreadReader(const Archive* archive, ThreadId threadId, int options);
 
- private:
   /** Returns the Sequence being run at the given frame. */
   [[nodiscard]] const Token& getFrameInCallstack(int frame_number) const;
   /** Returns the token being run at the given frame. */
@@ -159,16 +157,16 @@ typedef struct ThreadReader {
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
-  bool exitIfEndOfBlock(int flags);
-
-
- public:
   /** Gets the current Token. */
   [[nodiscard]] const Token& pollCurToken() const;
   /** Peeks at and return the next token without actually updating the state */
   [[nodiscard]] std::optional<Token> pollNextToken() const;
+  /** Peeks at and return the previous token without actually updating the state */
+  [[nodiscard]] std::optional<Token> pollPrevToken() const;
   /** Updates the internal state */
   void moveToNextToken();
+  /** Updates the internal state */
+  void moveToPrevToken();
   /** Gets the next token and updates the reader's state if it returns a value.
    * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
   [[nodiscard]] std::optional<Token> getNextToken(int flags);
@@ -176,6 +174,8 @@ typedef struct ThreadReader {
   void enterBlock(Token new_block);
   /** Leaves the current block */
   void leaveBlock();
+  /** Exits a block if at the end of it and flags allow it, returns a boolean representing if the rader actually exited a block */
+  bool exitIfEndOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
 
   ~ThreadReader();
   ThreadReader(ThreadReader&& other) noexcept ;

@@ -230,6 +230,22 @@ std::optional<Token> ThreadReader::pollNextToken() const {
   }
 }
 
+std::optional<Token> ThreadReader::pollPrevToken() const {
+  if (current_frame < 0)
+    return std::nullopt;
+
+  int current_index = callstack_index[current_frame];
+  auto curIterableToken = callstack_iterable[current_frame];
+  pallas_assert(curIterableToken.isIterable());
+
+  if (current_index == 0) {
+    /* We've reached the end of a sequence. */
+    return std::nullopt;
+  } else {
+    return thread_trace->getToken(curIterableToken, current_index - 1);
+  }
+}
+
 void ThreadReader::moveToNextToken() {
   // Check if we've reached the end of the trace
   if (current_frame < 0) {
@@ -259,28 +275,26 @@ void ThreadReader::moveToNextToken() {
   }
 }
 
-bool ThreadReader::exitIfEndOfBlock(int flags) {
-  if (current_frame < 0)
-    return false;
+void ThreadReader::moveToPrevToken() {
+  // Check if we've reached the end of the trace
+  if (current_frame < 0) {
+    pallas_log(DebugLevel::Debug, "End of trace %d!\n", __LINE__);
+    return;
+  }
+
   int current_index = callstack_index[current_frame];
   auto curIterableToken = callstack_iterable[current_frame];
-  if (curIterableToken.type == TypeSequence) {
-    if (isEndOfSequence(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_SEQUENCE) {
-      /* We've reached the end of a sequence. Leave the block. */
-      leaveBlock();
-      return true;
-    }
+  pallas_assert(curIterableToken.isIterable());
+
+  if (isEndOfSequence(current_index, curIterableToken)) {
+    pallas_error("End of sequence");
   } else {
-    if (isEndOfLoop(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_LOOP) {
-      /* We've reached the end of the loop. Leave the block. */
-      leaveBlock();
-      return true;
-    }
+    /* Move to the last event in the Sequence */
+    callstack_index[current_frame]--;
   }
-  return false;
 }
 
-std::optional<Token> ThreadReader::getNextToken(int flags) {
+std::optional<Token> ThreadReader::getNextToken(const int flags) {
   if (current_frame < 0)
     return std::nullopt;
 
@@ -298,13 +312,12 @@ std::optional<Token> ThreadReader::getNextToken(int flags) {
       exitedBlock = exitIfEndOfBlock(flags);
     } while (exitedBlock);
   }
-  auto nextToken = pollNextToken();
+  const auto nextToken = pollNextToken();
   if (nextToken.has_value()) {
     moveToNextToken();
   }
   return nextToken;
 }
-
 
 void ThreadReader::enterBlock(const Token new_block) {
   pallas_assert(new_block.isIterable());
@@ -334,6 +347,27 @@ void ThreadReader::leaveBlock() {
     auto current_sequence = getCurIterable();
     pallas_assert(current_sequence.type == TypeLoop || current_sequence.type == TypeSequence);
   }
+}
+
+bool ThreadReader::exitIfEndOfBlock(int flags) {
+  if (current_frame < 0)
+    return false;
+  int current_index = callstack_index[current_frame];
+  auto curIterableToken = callstack_iterable[current_frame];
+  if (curIterableToken.type == TypeSequence) {
+    if (isEndOfSequence(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_SEQUENCE) {
+      /* We've reached the end of a sequence. Leave the block. */
+      leaveBlock();
+      return true;
+    }
+  } else {
+    if (isEndOfLoop(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_LOOP) {
+      /* We've reached the end of the loop. Leave the block. */
+      leaveBlock();
+      return true;
+    }
+  }
+  return false;
 }
 
 ThreadReader::~ThreadReader() {

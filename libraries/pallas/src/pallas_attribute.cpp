@@ -233,7 +233,7 @@ void Thread::printAttributeList(const AttributeList* attribute_list) const {
       printf(", ");
     printAttribute(&attr);
   }
-  printf("}");
+  printf(" }");
 }
 
 void Thread::printEventAttribute(const struct EventOccurence* e) const {
