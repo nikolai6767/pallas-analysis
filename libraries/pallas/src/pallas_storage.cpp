@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 #ifdef WITH_ZFP
 #include <zfp.h>
@@ -20,7 +21,6 @@
 #ifdef WITH_SZ
 #include <sz.h>
 #endif
-
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_parameter_handler.h"
@@ -368,33 +368,36 @@ inline static size_t _pallas_histogram_compress(const uint64_t* src, size_t n, b
 #endif
   size_t width = max - min;
   // TODO Skip the previous step using the stats from the vector.
-  size_t stepSize = (width) / MAX_BIT;
+  if (width <= MAX_BIT) {
+    for (size_t i = 0; i < n; i++) {
+      size_t toWrite = src[i] - min;
+      // This MUST be <= MAX_BIT
+      if (toWrite > MAX_BIT) {
+        pallas_warn("Trying to write %lu values using %d byte at most\n", n, N_BYTES);
+        pallas_warn("%lu <= value <= %lu. Problematic value is @%lu:%lu > %d", min, max, i, toWrite, MAX_BIT);
+        pallas_error();
+      }
+      memcpy(&dest[i * N_BYTES], &toWrite, N_BYTES);
+    }
+  } else {
+    double stepSize = double(width) / MAX_BIT;
 
-  // Write min/max
-  memcpy(dest, &min, sizeof(min));
-  dest = &dest[sizeof(min)];  // Offset the address
-  memcpy(dest, &max, sizeof(max));
-  dest = &dest[sizeof(max)];  // Offset the address
+    // Write min/max
+    memcpy(dest, &min, sizeof(min));
+    dest = &dest[sizeof(min)];  // Offset the address
+    memcpy(dest, &max, sizeof(max));
+    dest = &dest[sizeof(max)];  // Offset the address
 
-  if (stepSize > 1) {
     // Write each bin
     for (size_t i = 0; i < n; i++) {
-      size_t binNumber = (src[i] - min) / stepSize;
+      size_t binNumber = std::floor((src[i] - min)) / stepSize;
       binNumber = (binNumber > MAX_BIT) ? MAX_BIT : binNumber;
       // This last check is here in the rare cases of overflow.
       // printf("Writing %lu as %lu\n", src[i], temp);
       memcpy(&dest[i * N_BYTES], &binNumber, N_BYTES);
       // TODO This will not work on small endians architectures.
     }
-  } else {
-    for (size_t i = 0; i < n; i++) {
-      size_t toWrite = src[i] - min;
-      // This MUST be < MAX_BIT
-      pallas_assert(toWrite < MAX_BIT);
-      memcpy(&dest[i * N_BYTES], &toWrite, N_BYTES);
-    }
   }
-
   return N_BYTES * n + 2 * sizeof(uint64_t);
 }
 
@@ -414,22 +417,22 @@ inline static uint64_t* _pallas_histogram_read(size_t n, byte* compArray, size_t
   memcpy(&max, compArray, sizeof(max));
   compArray = &compArray[sizeof(max)];
   size_t width = max - min;
-  size_t stepSize = width / MAX_BIT;
 
-  //  printf("Min: %lu; Max: %lu\n", min, max);
-
-  if (stepSize > 1) {
-    for (size_t i = 0; i < n; i++) {
-      size_t factor = 0;
-      memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
-      dest[i] = min + factor * stepSize;
-      //    printf("Reading %lu as %lu\n", factor, dest[i]);
-    }
-  } else {
+  // TODO Skip the previous step using the stats from the vector.
+  if (width <= MAX_BIT) {
     for (size_t i = 0; i < n; i++) {
       size_t factor = 0;
       memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
       dest[i] = min + factor;
+      //    printf("Reading %lu as %lu\n", factor, dest[i]);
+    }
+  } else {
+    double stepSize = double(width) / MAX_BIT;
+
+    for (size_t i = 0; i < n; i++) {
+      size_t factor = 0;
+      memcpy(&factor, &compArray[i * N_BYTES], N_BYTES);
+      dest[i] = min + std::floor(factor * stepSize);
       //    printf("Reading %lu as %lu\n", factor, dest[i]);
     }
   }
@@ -738,7 +741,9 @@ pallas::LinkedVector::LinkedVector(FILE* vectorFile, const char* valueFilePath) 
   last = nullptr;
   _pallas_fread(&size, sizeof(size), 1, vectorFile);
   if (size == 0) {
-    min, max, mean = 0;
+    min = 0;
+    max = 0;
+    mean = 0;
   }
   if (size <= 3) {
     auto temp = new size_t[size];
@@ -964,7 +969,17 @@ static void pallasStoreLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   loopFile.write(&loop.repeated_token, sizeof(loop.repeated_token), 1);
   size_t size = loop.nb_iterations.size();
   loopFile.write(&size, sizeof(size), 1);
-  loopFile.write(loop.nb_iterations.data(), sizeof(uint), loop.nb_iterations.size());
+  if (loop.nb_iterations.size() < 10)
+    loopFile.write(loop.nb_iterations.data(), sizeof(uint), loop.nb_iterations.size());
+  else {
+    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
+    auto zstdSize = ZSTD_compressBound(originalSize);
+    auto compressedLoopIterationsArray = new byte[zstdSize];
+    zstdSize = ZSTD_compress(compressedLoopIterationsArray, zstdSize, loop.nb_iterations.data(), originalSize, pallas::parameterHandler->getZstdCompressionLevel());
+    loopFile.write(&zstdSize, sizeof(zstdSize), 1);
+    loopFile.write(compressedLoopIterationsArray, zstdSize, 1);
+    delete[] compressedLoopIterationsArray;
+  }
 }
 
 static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile) {
@@ -972,7 +987,17 @@ static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   size_t size;
   loopFile.read(&size, sizeof(size), 1);
   loop.nb_iterations.resize(size);
-  loopFile.read(loop.nb_iterations.data(), sizeof(uint), size);
+  if (size < 10)
+    loopFile.read(loop.nb_iterations.data(), sizeof(uint), size);
+  else {
+    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
+    ulong zstdSize;
+    loopFile.read(&zstdSize, sizeof(zstdSize), 1);
+    auto compressedLoopIterationsArray = new byte[zstdSize];
+    loopFile.read(compressedLoopIterationsArray, zstdSize, 1);
+    ZSTD_decompress(loop.nb_iterations.data(), originalSize, compressedLoopIterationsArray, zstdSize);
+    delete[] compressedLoopIterationsArray;
+  }
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     pallas_log(pallas::DebugLevel::Debug,
                "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.self_id.id,
@@ -1261,11 +1286,12 @@ static char* _archive_filename(pallas::Archive* global_archive, pallas::Location
   if (id == PALLAS_MAIN_LOCATION_GROUP_ID)
     return strdup(global_archive->trace_name);
 
-  int tracename_len = strlen(global_archive->trace_name) + 1;
-  int extension_index = tracename_len - 8;
+  size_t tracename_len = strlen(global_archive->trace_name) + 1;
+  pallas_assert(tracename_len >= 8);
+  size_t extension_index = tracename_len - 8;
   pallas_assert(strcmp(&global_archive->trace_name[extension_index], ".pallas") == 0);
 
-  char trace_basename[tracename_len];
+  char* trace_basename = new char[tracename_len];
   strncpy(trace_basename, global_archive->trace_name, extension_index);
   trace_basename[extension_index] = '\0';
 
@@ -1426,6 +1452,10 @@ void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
     global_archive = archive;
   }
 
+  for (auto& locationGroup : archive->location_groups) {
+    pallasGetArchive(global_archive, locationGroup.mainLoc);
+  }
+
   for (auto& location : archive->locations) {
     auto* thread = new pallas::Thread();
     auto parent = global_archive->getLocationGroup(location.parent);
@@ -1435,13 +1465,7 @@ void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
       thread->archive = pallasGetArchive(global_archive, parent->mainLoc);
 
     pallasReadThread(global_archive, thread, location.id);
-    int index = 0;
-    while (thread->archive->threads[index] != nullptr) {
-      index++;
-      if (index >= thread->archive->nb_threads) {
-        pallas_error("Tried to load more archives than there are.\n");
-      }
-    }
+    int index = location.id - parent->mainLoc;
     thread->archive->threads[index] = thread;
   }
 }

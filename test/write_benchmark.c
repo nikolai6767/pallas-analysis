@@ -9,6 +9,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_record.h"
 
 static struct Archive* global_archive;
 static struct Archive* trace;
@@ -45,20 +46,20 @@ static StringRef _register_string(char* str) {
   return ref;
 }
 
-static LocationGroupId _new_location_group() {
+static LocationGroupId _new_location_group(void) {
   static _Atomic LocationGroupId next_id = 0;
   LocationGroupId id = next_id++;
   return id;
 }
 
 
-static ThreadId _new_thread() {
+static ThreadId _new_thread(void) {
   static _Atomic ThreadId next_id = 0;
   ThreadId id = next_id++;
   return id;
 }
 
-static pallas_timestamp_t get_timestamp() {
+static pallas_timestamp_t get_timestamp(void) {
   pallas_timestamp_t res = PALLAS_TIMESTAMP_INVALID;
 
   if(use_logical_clock) {
@@ -93,8 +94,7 @@ void* worker(void* arg __attribute__((unused))) {
        * E_f1 L_f1 E_f2 L_f2 E_f3 L_f3 ...
        */
       for (int j = 0; j < nb_functions; j++) {
-        pallas_record_enter(thread_writer, NULL, get_timestamp(), regions[j]);
-        pallas_record_leave(thread_writer, NULL, get_timestamp(), regions[j]);
+        pallas_record_generic(thread_writer, NULL, get_timestamp(), strings[j]);
       }
       break;
 
@@ -191,10 +191,11 @@ int main(int argc, char** argv) {
   global_archive = pallas_archive_new();
   trace = pallas_archive_new();
   pallas_write_global_archive_open(global_archive, "write_benchmark_trace", "main");
-  pallas_write_archive_open(trace, "write_benchmark_trace", "main", 0);
-
   process_id = _new_location_group();
-  process_name = _register_string("Process"),
+  process_name = _register_string("Process");
+
+  pallas_write_archive_open(trace, "write_benchmark_trace", "main", process_id);
+
 
   pallas_write_define_location_group(global_archive, process_id, process_name, PALLAS_LOCATION_GROUP_ID_INVALID);
 

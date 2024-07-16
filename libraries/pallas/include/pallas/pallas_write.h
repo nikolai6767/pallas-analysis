@@ -103,7 +103,7 @@ extern "C" {
  * Allocates a new ThreadWriter and returns a pointer to that allocated memory.
  * @return Pointer to ThreadWriter
  */
-extern PALLAS(ThreadWriter) * pallas_thread_writer_new();
+extern PALLAS(ThreadWriter) * pallas_thread_writer_new(void);
 extern void pallas_write_global_archive_open(PALLAS(Archive) * archive, const char* dir_name, const char* trace_name);
 extern void pallas_write_global_archive_close(PALLAS(Archive) * archive);
 
@@ -136,96 +136,11 @@ extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
                                pallas_timestamp_t ts,
                                PALLAS(AttributeList) * attribute_list);
 
-/* Event Records */
-
-extern void pallas_record_enter(PALLAS(ThreadWriter) * thread_writer,
-                                PALLAS(AttributeList) * attributeList,
-                                pallas_timestamp_t time,
-                                PALLAS(RegionRef) region_ref);
-
-extern void pallas_record_leave(PALLAS(ThreadWriter) * thread_writer,
-                                PALLAS(AttributeList) * attributeList,
-                                pallas_timestamp_t time,
-                                PALLAS(RegionRef) region_ref);
-
-extern void pallas_record_thread_begin(PALLAS(ThreadWriter) * thread_writer,
-                                       PALLAS(AttributeList) * attributeList,
-                                       pallas_timestamp_t time);
-
-extern void pallas_record_thread_end(PALLAS(ThreadWriter) * thread_writer,
-                                     PALLAS(AttributeList) * attributeList,
-                                     pallas_timestamp_t time);
-
-extern void pallas_record_thread_team_begin(PALLAS(ThreadWriter) * thread_writer,
-                                            PALLAS(AttributeList) * attributeList,
-                                            pallas_timestamp_t time);
-
-extern void pallas_record_thread_team_end(PALLAS(ThreadWriter) * thread_writer,
-                                          PALLAS(AttributeList) * attributeList,
-                                          pallas_timestamp_t time);
-
-extern void pallas_record_mpi_send(PALLAS(ThreadWriter) * thread_writer,
-                                   PALLAS(AttributeList) * attributeList,
-                                   pallas_timestamp_t time,
-                                   uint32_t receiver,
-                                   uint32_t communicator,
-                                   uint32_t msgTag,
-                                   uint64_t msgLength);
-
-extern void pallas_record_mpi_isend(PALLAS(ThreadWriter) * thread_writer,
-                                    PALLAS(AttributeList) * attribute_list,
-                                    pallas_timestamp_t time,
-                                    uint32_t receiver,
-                                    uint32_t communicator,
-                                    uint32_t msgTag,
-                                    uint64_t msgLength,
-                                    uint64_t requestID);
-
-extern void pallas_record_mpi_isend_complete(PALLAS(ThreadWriter) * thread_writer,
-                                             PALLAS(AttributeList) * attribute_list,
-                                             pallas_timestamp_t time,
-                                             uint64_t requestID);
-
-extern void pallas_record_mpi_irecv_request(PALLAS(ThreadWriter) * thread_writer,
-                                            PALLAS(AttributeList) * attribute_list,
-                                            pallas_timestamp_t time,
-                                            uint64_t requestID);
-
-extern void pallas_record_mpi_recv(PALLAS(ThreadWriter) * thread_writer,
-                                   PALLAS(AttributeList) * attributeList,
-                                   pallas_timestamp_t time,
-                                   uint32_t sender,
-                                   uint32_t communicator,
-                                   uint32_t msgTag,
-                                   uint64_t msgLength);
-
-extern void pallas_record_mpi_irecv(PALLAS(ThreadWriter) * thread_writer,
-                                    PALLAS(AttributeList) * attribute_list,
-                                    pallas_timestamp_t time,
-                                    uint32_t sender,
-                                    uint32_t communicator,
-                                    uint32_t msgTag,
-                                    uint64_t msgLength,
-                                    uint64_t requestID);
-
-extern void pallas_record_mpi_collective_begin(PALLAS(ThreadWriter) * thread_writer,
-                                               PALLAS(AttributeList) * attribute_list,
-                                               pallas_timestamp_t time);
-
-extern void pallas_record_mpi_collective_end(PALLAS(ThreadWriter) * thread_writer,
-                                             PALLAS(AttributeList) * attribute_list,
-                                             pallas_timestamp_t time,
-                                             uint32_t collectiveOp,
-                                             uint32_t communicator,
-                                             uint32_t root,
-                                             uint64_t sizeSent,
-                                             uint64_t sizeReceived);
 
 #ifdef __cplusplus
 };
 #endif
 
-extern C_CXX(_Thread_local, thread_local) int pallas_recursion_shield;
 
 /* -*-
    mode: c;

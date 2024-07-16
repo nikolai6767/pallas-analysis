@@ -54,12 +54,12 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
  * TypeLoop = 'L'
  * 'U' otherwise
  */
-#define PALLAS_TOKEN_TYPE_C(t)     \
+#define PALLAS_TOKEN_TYPE_C(t)       \
   ((t).type) == TypeInvalid    ? 'I' \
   : ((t).type) == TypeEvent    ? 'E' \
   : ((t).type) == TypeSequence ? 'S' \
   : ((t).type) == TypeLoop     ? 'L' \
-                             : 'U'
+                               : 'U'
 
 /**
  * Useful macros
@@ -107,7 +107,7 @@ typedef struct Token {
    */
   bool operator<(const Token& other) const { return (type < other.type || (type == other.type && id < other.id)); }
   /** Returns true if the Token is a Sequence or a Loop. */
-  inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
+  [[nodiscard]] inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
 #endif
 } Token;
 /** Creates a Token for an Event. */
@@ -191,6 +191,7 @@ enum Record {
                                                        * event. */
   PALLAS_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
   PALLAS_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
+  PALLAS_EVENT_GENERIC = 58,                            /**< Event record identifier for any other event. */
 
   PALLAS_EVENT_MAX_ID /**< Max Event Record ID */
 };
@@ -410,8 +411,10 @@ typedef struct Thread {
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;
+  std::unordered_map<uint32_t, std::vector<TokenId>> hashToEvent;
 #else
   byte hashToSequence[UNO_MAP_SIZE];
+  byte hashToEvent[UNO_MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
@@ -439,8 +442,8 @@ typedef struct Thread {
   void printToken(Token) const;
   void printTokenArray(const Token* array, size_t start_index, size_t len) const; /**< Prints an array of Tokens. */
   void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
-  void printSequence(Token) const;            /**< Prints the Sequence corresponding to the given Token. */
-  void printEvent(Event*) const;              /**< Prints an Event. */
+  void printSequence(Token) const; /**< Prints the Sequence corresponding to the given Token. */
+  void printEvent(Event*) const;   /**< Prints an Event. */
   void printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const;
   void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
   void printString(StringRef) const;          /**< Prints a String (checks for validity first). */

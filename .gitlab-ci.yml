@@ -33,6 +33,21 @@ build:clang:
     paths:
       - $CI_PROJECT_DIR/pallas
 
+build:intel-oneapi:
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
+  tags: ['ci.inria.fr', 'linux', 'small']
+  stage: build
+  script:
+    # Build Pallas
+    - mkdir build install
+    - cd build/
+    - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=icx
+    - make
+    - make install
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/pallas
+
 test:unit:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
   tags: ['ci.inria.fr', 'linux', 'small']
