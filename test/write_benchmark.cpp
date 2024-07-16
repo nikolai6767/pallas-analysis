@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
 
   processID = newLocationGroup();
   processName = registerString("Main process");
-  globalArchive.defineLocationGroup(processID, processName, 0);
+  globalArchive.defineLocationGroup(processID, processName, processID);
 
   mainProcess.open("write_benchmark_CPP_trace", "main", 0);
 
