@@ -259,6 +259,27 @@ void ThreadReader::moveToNextToken() {
   }
 }
 
+bool ThreadReader::exitIfEndOfBlock(int flags) {
+  if (current_frame < 0)
+    return false;
+  int current_index = callstack_index[current_frame];
+  auto curIterableToken = callstack_iterable[current_frame];
+  if (curIterableToken.type == TypeSequence) {
+    if (isEndOfSequence(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_SEQUENCE) {
+      /* We've reached the end of a sequence. Leave the block. */
+      leaveBlock();
+      return true;
+    }
+  } else {
+    if (isEndOfLoop(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_LOOP) {
+      /* We've reached the end of the loop. Leave the block. */
+      leaveBlock();
+      return true;
+    }
+  }
+  return false;
+}
+
 std::optional<Token> ThreadReader::getNextToken(int flags) {
   if (current_frame < 0)
     return std::nullopt;
@@ -267,29 +288,15 @@ std::optional<Token> ThreadReader::getNextToken(int flags) {
   /* Perform callstack actions based on flags and current state*/
   if (curToken.type == TypeSequence && flags & PALLAS_READ_UNROLL_SEQUENCE) {
     enterBlock(curToken);
-    std::cout << "Entering ";
-    printCurSequence();
     return pollCurToken();
   } else if (curToken.type == TypeLoop && flags & PALLAS_READ_UNROLL_LOOP) {
     enterBlock(curToken);
-    std::cout << "Entering loop" << curToken.id << std::endl;
     return pollCurToken();
   } else if (current_frame > 1) {
-    int current_index = callstack_index[current_frame];
-    auto curIterableToken = callstack_iterable[current_frame];
-    if (curIterableToken.type == TypeSequence) {
-      if (isEndOfSequence(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_SEQUENCE) {
-        /* We've reached the end of a sequence. Leave the block. */
-        std::cout << "Leaving sequence " << curIterableToken.id << std::endl;
-        leaveBlock();
-      }
-    } else {
-      if (isEndOfLoop(current_index, curIterableToken) && flags & PALLAS_READ_UNROLL_LOOP) {
-        /* We've reached the end of the loop. Leave the block. */
-        std::cout << "Leaving sequence " << curIterableToken.id << std::endl;
-        leaveBlock();
-      }
-    }
+    bool exitedBlock;
+    do {
+      exitedBlock = exitIfEndOfBlock(flags);
+    } while (exitedBlock);
   }
   auto nextToken = pollNextToken();
   if (nextToken.has_value()) {

@@ -55,14 +55,15 @@ int main(const int argc, char* argv[]) {
       auto tr = pallas::ThreadReader(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
       tr.thread_trace->printSequence(tr.callstack_iterable[1]);
       auto currentToken = tr.pollCurToken();
-      auto nextToken = tr.getNextToken(PALLAS_READ_UNROLL_ALL);
-      while (nextToken.has_value()) {
+      while (true) {
         for (int k = 0; k < tr.current_frame - 1; k++)
           std::cout << "  ";
         tr.thread_trace->printToken(currentToken);
         std::cout << std::endl;
+        auto nextToken = tr.getNextToken(PALLAS_READ_UNROLL_ALL);
+        if (!nextToken.has_value())
+          break;
         currentToken = nextToken.value();
-        nextToken = tr.getNextToken(PALLAS_READ_UNROLL_ALL);
       }
     }
   }
