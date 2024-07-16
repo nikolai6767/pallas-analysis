@@ -11,7 +11,7 @@
 #include "pallas/pallas_write.h"
 #include "pallas/pallas_record.h"
 
-static struct Archive* global_archive;
+static struct GlobalArchive* global_archive;
 static struct Archive* trace;
 static LocationGroupId process_id;
 static StringRef process_name;
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
   printf("pattern = %d\n", pattern);
   printf("---------------------\n");
 
-  global_archive = pallas_archive_new();
+  global_archive = pallas_global_archive_new();
   trace = pallas_archive_new();
   pallas_write_global_archive_open(global_archive, "write_benchmark_trace", "main");
   process_id = _new_location_group();
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
     snprintf(region_names[i], 50, "function_%d", i);
     strings[i] = _register_string(region_names[i]);
     regions[i] = strings[i];
-    pallas_archive_register_region(trace, regions[i], strings[i]);
+    pallas_archive_register_region(global_archive, regions[i], strings[i]);
   }
 
   for (int i = 0; i < nb_threads; i++)

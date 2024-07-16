@@ -73,26 +73,15 @@ typedef struct Definition {
   void addAttribute(AttributeRef, StringRef, StringRef, pallas_type_t);
 #endif
 } Definition;
-
 /**
- * An Archive represents a program.
+ * A GlobalArchive represents a program as a whole.
  */
-typedef struct Archive {
-  char* dir_name;       /**< Name of the directory in which the archive is recorded. */
-  char* trace_name;     /**< Name of the trace. */
-  char* fullpath;       /**< \todo Complete this. */
-  pthread_mutex_t lock; /**< Archive-wise lock, used for synchronising some threads. */
-
-  LocationGroupId id CXX({PALLAS_LOCATION_GROUP_ID_INVALID}); /**< ID for the pallas::LocationGroup of that Archive. */
-  struct Archive* global_archive; /**< The Global Archive is the archive encompassing the whole execution. NULL if
-                                   * this is the global archive. */
-
+typedef struct GlobalArchive {
+  char* dir_name;         /**< Name of the directory in which the archive is recorded. */
+  char* trace_name;       /**< Name of the trace. */
+  char* fullpath;         /**< \todo Complete this. */
+  pthread_mutex_t lock;   /**< Archive-wise lock, used for synchronising some threads. */
   Definition definitions; /**< Definitions. */
-  struct Thread** threads
-    CXX({nullptr});         /**< Array of Thread.
-                             * The memory of each thread is handled by their reader / writer individually. */
-  int nb_threads;           /**< Number of Thread in #threads. */
-  int nb_allocated_threads; /**< Size of #threads. */
 
   struct Archive** archive_list CXX({nullptr}); /**< Array of Archive *. */
   int nb_archives;                              /**< Number of Archive in #archive_list. */
@@ -101,9 +90,7 @@ typedef struct Archive {
   DEFINE_Vector(Location, locations);            /**< Vector of Location. */
   DEFINE_Vector(LocationGroup, location_groups); /**< Vector of LocationGroup. */
 
-  short store_timestamps; /**< Indicates whether there are timestamps in there.*/
 #ifdef __cplusplus
-  [[nodiscard]] Thread* getThread(ThreadId) const;
   [[nodiscard]] const struct String* getString(StringRef string_ref);
   [[nodiscard]] const struct Region* getRegion(RegionRef region_ref);
   [[nodiscard]] const struct Attribute* getAttribute(AttributeRef attribute_ref);
@@ -111,27 +98,53 @@ typedef struct Archive {
   void addRegion(RegionRef, StringRef);
   void addAttribute(AttributeRef, StringRef, StringRef, pallas_type_t);
   /**
+   * Open the Global Archive.
+   * @param dirname Path to the file.
+   * @param given_trace_name Name of the trace.
+   */
+  void open(const char* dirname, const char* given_trace_name);
+  void defineLocationGroup(LocationGroupId id, StringRef name, LocationGroupId parent);
+  void defineLocation(ThreadId id, StringRef name, LocationGroupId parent);
+  void close();
+
+  [[nodiscard]] const LocationGroup* getLocationGroup(LocationGroupId) const;
+  [[nodiscard]] const Location* getLocation(ThreadId) const;
+#endif
+} GlobalArchive;
+
+/**
+ * An Archive represents a process.
+ */
+typedef struct Archive {
+  /** Name of the directory in which the archive is recorded. */
+  char* dir_name;
+  /** Name of the trace. */
+  char* trace_name;
+  /** \todo Complete this. */
+  char* fullpath;
+  /** Archive-wise lock, used for synchronising some threads. */
+  pthread_mutex_t lock;
+
+  /** ID for the pallas::LocationGroup of that Archive. */
+  LocationGroupId id CXX({PALLAS_LOCATION_GROUP_ID_INVALID});
+  /** The Global Archive is the archive encompassing the whole execution. */
+  GlobalArchive* global_archive;
+
+  /** Array of Thread.
+   * The memory of each thread is handled by their reader / writer individually. */
+  struct Thread** threads CXX({nullptr});
+  int nb_threads;           /**< Number of Thread in #threads. */
+  int nb_allocated_threads; /**< Size of #threads. */
+#ifdef __cplusplus
+  [[nodiscard]] Thread* getThread(ThreadId) const;
+  /**
    * Open a trace file and loads it it that Archive.
    * @param dirname Path to the file.
    * @param given_trace_name Name of the trace.
    * @param archive_id Id of this Archive.
    */
   void open(const char* dirname, const char* given_trace_name, LocationGroupId archive_id);
-  /**
-   * Open the Global Archive.
-   * @param dirname Path to the file.
-   * @param given_trace_name Name of the trace.
-   */
-  void globalOpen(const char* dirname, const char* given_trace_name) {
-    open(dirname, given_trace_name, PALLAS_MAIN_LOCATION_GROUP_ID);
-  };
-  void defineLocationGroup(LocationGroupId id, StringRef name, LocationGroupId parent);
-  void defineLocation(ThreadId id, StringRef name, LocationGroupId parent);
-  void finalize() { pallas_error("Not implemented yet !\n"); };
   void close();
-
-  [[nodiscard]] const LocationGroup* getLocationGroup(LocationGroupId) const;
-  [[nodiscard]] const Location* getLocation(ThreadId) const;
   ~Archive();
 #endif
 } Archive;
@@ -144,6 +157,8 @@ extern "C" {
 /** Constructor for an Archive. In C, always use this to create a new Archive. */
 extern PALLAS(Archive) * pallas_archive_new(void);
 
+/** Constructor for an Archive. In C, always use this to create a new Archive. */
+extern PALLAS(GlobalArchive) * pallas_global_archive_new(void);
 /**
  * Getter for a Thread from its id.
  * @returns First Thread matching the given pallas::ThreadId, or nullptr if it doesn't have a match.
@@ -156,7 +171,7 @@ extern struct PALLAS(Thread) * pallas_archive_get_thread(PALLAS(Archive) * archi
  * it doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
 extern const struct PALLAS(LocationGroup) *
-  pallas_archive_get_location_group(PALLAS(Archive) * archive, PALLAS(LocationGroupId) location_group);
+  pallas_archive_get_location_group(PALLAS(GlobalArchive) * archive, PALLAS(LocationGroupId) location_group);
 
 /**
  * Getter for a Location from its id.
@@ -164,21 +179,21 @@ extern const struct PALLAS(LocationGroup) *
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
 extern const struct PALLAS(Location) *
-  pallas_archive_get_location(PALLAS(Archive) * archive, PALLAS(ThreadId) thread_id);
+  pallas_archive_get_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id);
 
 /**
  * Creates a new String and adds it to that Archive.
  * Error if the given pallas::StringRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-extern void pallas_archive_register_string(PALLAS(Archive) * archive, PALLAS(StringRef) string_ref, const char* string);
+extern void pallas_archive_register_string(PALLAS(GlobalArchive) * archive, PALLAS(StringRef) string_ref, const char* string);
 
 /**
  * Creates a new Region and adds it to that Archive.
  * Error if the given pallas::RegionRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-extern void pallas_archive_register_region(PALLAS(Archive) * archive,
+extern void pallas_archive_register_region(PALLAS(GlobalArchive) * archive,
                                            PALLAS(RegionRef) region_ref,
                                            PALLAS(StringRef) string_ref);
 
@@ -187,7 +202,7 @@ extern void pallas_archive_register_region(PALLAS(Archive) * archive,
  * Error if the given pallas::AttributeRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-extern void pallas_archive_register_attribute(PALLAS(Archive) * archive,
+extern void pallas_archive_register_attribute(PALLAS(GlobalArchive) * archive,
                                               PALLAS(AttributeRef) attribute_ref,
                                               PALLAS(StringRef) name_ref,
                                               PALLAS(StringRef) description_ref,
@@ -198,14 +213,14 @@ extern void pallas_archive_register_attribute(PALLAS(Archive) * archive,
  * @returns First String matching the given pallas::StringRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-extern const struct PALLAS(String) * pallas_archive_get_string(PALLAS(Archive) * archive, PALLAS(StringRef) string_ref);
+extern const struct PALLAS(String) * pallas_archive_get_string(PALLAS(GlobalArchive) * archive, PALLAS(StringRef) string_ref);
 
 /**
  * Getter for a Region from its id.
  * @returns First Region matching the given pallas::RegionRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-extern const struct PALLAS(Region) * pallas_archive_get_region(PALLAS(Archive) * archive, PALLAS(RegionRef) region_ref);
+extern const struct PALLAS(Region) * pallas_archive_get_region(PALLAS(GlobalArchive) * archive, PALLAS(RegionRef) region_ref);
 
 /**
  * Getter for a Attribute from its id.
@@ -213,7 +228,7 @@ extern const struct PALLAS(Region) * pallas_archive_get_region(PALLAS(Archive) *
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
 extern const struct PALLAS(Attribute) *
-  pallas_archive_get_attribute(PALLAS(Archive) * archive, PALLAS(AttributeRef) attribute_ref);
+  pallas_archive_get_attribute(PALLAS(GlobalArchive) * archive, PALLAS(AttributeRef) attribute_ref);
 #ifdef __cplusplus
 };
 #endif /* __cplusplus */

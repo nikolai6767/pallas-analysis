@@ -81,15 +81,11 @@ void info_thread(Thread* t) {
   }
 }
 
-void info_archive(Archive* archive) {
-  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID) {
-    printf("Main archive:\n");
-    printf("\tdir_name:   %s\n", archive->dir_name);
-    printf("\ttrace_name: %s\n", archive->trace_name);
-    printf("\tfullpath:   %s\n", archive->fullpath);
-  } else
-    printf("Archive %d:\n", archive->id);
-  // printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
+void info_global_archive(GlobalArchive* archive) {
+  printf("Main archive:\n");
+  printf("\tdir_name:   %s\n", archive->dir_name);
+  printf("\ttrace_name: %s\n", archive->trace_name);
+  printf("\tfullpath:   %s\n", archive->fullpath);
   if (!archive->definitions.strings.empty())
     printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
@@ -118,6 +114,14 @@ void info_archive(Archive* archive) {
     printf("\t\t%d: %s, parent: %d\n", archive->locations[i].id,
            archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
   }
+  if (archive->nb_archives)
+    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
+
+  printf("\n");
+}
+
+void info_archive(Archive* archive) {
+    printf("Archive %d:\n", archive->id);
 
   if (archive->nb_threads)
     printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
@@ -130,15 +134,11 @@ void info_archive(Archive* archive) {
       }
     }
   }
-
-  if (archive->nb_archives)
-    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
-
   printf("\n");
 }
 
-void info_trace(Archive* trace) {
-  info_archive(trace);
+void info_trace(GlobalArchive* trace) {
+  info_global_archive(trace);
   for (int i = 0; i < trace->nb_archives; i++) {
     info_archive(trace->archive_list[i]);
   }
@@ -182,8 +182,8 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  Archive trace = Archive();
-  pallas_read_main_archive(&trace, trace_name);
+  auto trace = GlobalArchive ();
+  pallasReadGlobalArchive(&trace, trace_name);
   info_trace(&trace);
 
   return EXIT_SUCCESS;

@@ -118,12 +118,15 @@ int main(const int argc, char* argv[]) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = pallas::Archive();
-  pallas_read_main_archive(&trace, trace_name);
+  auto trace = pallas::GlobalArchive();
+  pallasReadGlobalArchive(&trace, trace_name);
 
-  for (int i = 0; i < trace.nb_threads; i++) {
-    printf("\n");
-    testThreadDuration(trace, *trace.threads[i]);
+  for (int i = 0; i < trace.nb_archives; i++) {
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
+
+      printf("\n");
+      testThreadDuration(*trace.archive_list[i], *trace.archive_list[i]->threads[j]);
+    }
   }
 
   return EXIT_SUCCESS;

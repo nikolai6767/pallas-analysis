@@ -99,8 +99,8 @@ static void printSequence(const std::string& current_indent,
     auto frontEvent = thread->getEvent(sequence->tokens.front());
     pallas::RegionRef region_ref;
     memcpy(&region_ref, &frontEvent->event_data[0], sizeof(region_ref));
-    const pallas::Region* region = thread->archive->getRegion(region_ref);
-    const char* region_name = region ? thread->archive->getString(region->string_ref)->str : "INVALID";
+    const pallas::Region* region = thread->archive->global_archive->getRegion(region_ref);
+    const char* region_name = region ? thread->archive->global_archive->getString(region->string_ref)->str : "INVALID";
     std::cout << " (" << region_name << ")";
   }
   std::cout << std::endl;
@@ -185,7 +185,7 @@ static void printThread(pallas::Archive& trace, pallas::Thread* thread) {
   int reader_options = pallas::ThreadReaderOptions::None;
   if (show_structure)
     reader_options |= pallas::ThreadReaderOptions::ShowStructure;
-  if (!store_timestamps || !trace.store_timestamps)
+  if (!store_timestamps)
     reader_options |= pallas::ThreadReaderOptions::NoTimestamps;
 
   auto reader = pallas::ThreadReader(&trace, thread->id, reader_options);
@@ -253,7 +253,7 @@ static pallas::ThreadId getNextToken(std::vector<pallas::ThreadReader>& threadRe
 }
 
 /** Print all the events of all the threads sorted by timestamp*/
-void printTrace(pallas::Archive& trace) {
+void printTrace(pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
   int reader_options = pallas::ThreadReaderOptions::None;
   //  if (show_structure)
@@ -345,10 +345,8 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = pallas::Archive();
-  pallas_read_main_archive(&trace, trace_name);
-  if (trace.store_timestamps == 0)
-    store_timestamps = 0;
+  auto trace = pallas::GlobalArchive();
+  pallasReadGlobalArchive(&trace, trace_name);
 
   if (per_thread) {
     for (int i = 0; i < trace.nb_archives; i++) {

@@ -32,10 +32,12 @@ int main(int argc, char** argv __attribute__((unused))) {
   int NUM_LOOPS = std::stoi(argv[2]);
 
   /* Make a dummy archive and a dummy thread writer. */
-  Archive archive;
-  archive.open(dummyTraceName.c_str(), dummyTraceName.c_str(), 0);
+  GlobalArchive archive = GlobalArchive();
+  archive.open(dummyTraceName.c_str(), dummyTraceName.c_str());
+  Archive a = Archive();
+  a.open(dummyTraceName.c_str(), dummyTraceName.c_str(), 0);
   ThreadWriter thread_writer;
-  thread_writer.open(&archive, 0);
+  thread_writer.open(&a, 0);
 
   /* Start recording some events.*/
   for (int eid = 0; eid < MAX_EVENT; eid++) {

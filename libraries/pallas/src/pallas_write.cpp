@@ -547,7 +547,7 @@ void Archive::open(const char* dirname, const char* given_trace_name, LocationGr
   nb_threads = 0;
   threads = new Thread*[nb_allocated_threads];
 
-  pallas_storage_init(this);
+  pallas_storage_init(dir_name);
 
   pallas_recursion_shield--;
 }
@@ -579,10 +579,30 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
   pallas_recursion_shield--;
 }
 
+
+void GlobalArchive::open(const char* dirname, const char* given_trace_name) {
+  if (pallas_recursion_shield)
+    return;
+  pallas_recursion_shield++;
+  pallas_debug_level_init();
+  if (!parameterHandler) {
+    parameterHandler = new ParameterHandler();
+  }
+  dir_name = strdup(dirname);
+  trace_name = strdup(given_trace_name);
+  fullpath = pallas_archive_fullpath(dir_name, trace_name);
+
+  pthread_mutex_init(&lock, nullptr);
+
+  pallas_storage_init(dir_name);
+
+  pallas_recursion_shield--;
+}
+
 /**
  * Creates a new LocationGroup and adds it to that Archive.
  */
-void Archive::defineLocationGroup(LocationGroupId lg_id, StringRef name, LocationGroupId parent) {
+void GlobalArchive::defineLocationGroup(LocationGroupId lg_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   LocationGroup l = LocationGroup();
   l.id = lg_id;
@@ -596,7 +616,7 @@ void Archive::defineLocationGroup(LocationGroupId lg_id, StringRef name, Locatio
 /**
  * Creates a new Location and adds it to that Archive.
  */
-void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
+void GlobalArchive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   Location l = Location();
   l.id = l_id;
@@ -614,8 +634,13 @@ void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId pare
 }
 
 void Archive::close() {
-  pallas_storage_finalize(this);
+  pallasStoreArchive(this);
 }
+
+void GlobalArchive ::close() {
+  pallasStoreGlobalArchive(this);
+}
+
 
 
 void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
@@ -689,10 +714,10 @@ pallas::ThreadWriter* pallas_thread_writer_new() {
   return new pallas::ThreadWriter();
 }
 
-extern void pallas_write_global_archive_open(pallas::Archive* archive, const char* dir_name, const char* trace_name) {
-  archive->globalOpen(dir_name, trace_name);
+extern void pallas_write_global_archive_open(pallas::GlobalArchive * archive, const char* dir_name, const char* trace_name) {
+  archive->open(dir_name, trace_name);
 };
-extern void pallas_write_global_archive_close(pallas::Archive* archive) {
+extern void pallas_write_global_archive_close(pallas::GlobalArchive * archive) {
   archive->close();
 };
 
@@ -706,14 +731,14 @@ extern void pallas_write_thread_close(pallas::ThreadWriter* thread_writer) {
   thread_writer->threadClose();
 };
 
-extern void pallas_write_define_location_group(pallas::Archive* archive,
+extern void pallas_write_define_location_group(pallas::GlobalArchive * archive,
                                                pallas::LocationGroupId id,
                                                pallas::StringRef name,
                                                pallas::LocationGroupId parent) {
   archive->defineLocationGroup(id, name, parent);
 };
 
-extern void pallas_write_define_location(pallas::Archive* archive,
+extern void pallas_write_define_location(pallas::GlobalArchive * archive,
                                          pallas::ThreadId id,
                                          pallas::StringRef name,
                                          pallas::LocationGroupId parent) {

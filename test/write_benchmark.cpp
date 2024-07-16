@@ -19,7 +19,7 @@
 
 using namespace pallas;
 
-static Archive globalArchive;
+static GlobalArchive globalArchive;
 static Archive mainProcess;
 static LocationGroupId processID;
 static StringRef processName;
@@ -200,10 +200,10 @@ int main(int argc, char** argv) {
             << "pattern = " << pattern << std::endl
             << "---------------------" << std::endl;
 
-  globalArchive = Archive();
+  globalArchive = GlobalArchive();
   mainProcess = Archive();
   mainProcess.global_archive = &globalArchive;
-  globalArchive.globalOpen("write_benchmark_CPP_trace", "main");
+  globalArchive.open("write_benchmark_CPP_trace", "main");
 
   processID = newLocationGroup();
   processName = registerString("Main process");
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
     os.clear();
     strings.push_back(registerString(region_names.back()));
     regions.push_back(strings.back());
-    mainProcess.addRegion(regions.back(), strings.back());
+    globalArchive.addRegion(regions.back(), strings.back());
   }
 
   std::vector<pthread_t> threadID;

@@ -240,7 +240,7 @@ OTF2_DefWriter* OTF2_Archive_GetDefWriter(OTF2_Archive* archive, OTF2_LocationRe
 OTF2_GlobalDefWriter* OTF2_Archive_GetGlobalDefWriter(OTF2_Archive* archive) {
   if (archive->globalDefWriter == NULL) {
     archive->globalDefWriter = malloc(sizeof(OTF2_GlobalDefWriter));
-    archive->globalDefWriter->archive = pallas_archive_new();
+    archive->globalDefWriter->archive = pallas_global_archive_new();
 
     pallas_write_global_archive_open(archive->globalDefWriter->archive, archive->archive->dir_name,
                                   archive->archive->trace_name);

@@ -136,16 +136,16 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
   case PALLAS_EVENT_ENTER: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->getRegion(region_ref);
-    const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
+    const Region* region = archive->global_archive->getRegion(region_ref);
+    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
     snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
     break;
   }
   case PALLAS_EVENT_LEAVE: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->getRegion(region_ref);
-    const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
+    const Region* region = archive->global_archive->getRegion(region_ref);
+    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
     snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
     break;
   }
@@ -346,7 +346,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
   case PALLAS_EVENT_GENERIC: {
     StringRef eventNameRef;
     pop_data(e, &eventNameRef, sizeof(eventNameRef), cursor);
-    auto eventName = archive->getString(eventNameRef);
+    auto eventName = archive->global_archive->getString(eventNameRef);
     snprintf(output_str, buffer_size, "%s", eventName->str);
     break;
   }
@@ -401,14 +401,6 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   pthread_mutex_unlock(&archive->lock);
 }
 
-Archive::~Archive() {
-  delete[] dir_name;
-  delete[] trace_name;
-  delete[] fullpath;
-  delete[] threads;
-  delete[] archive_list;
-}
-
 Thread::~Thread() {
   DOFOR(i, nb_events) {
     delete events[i].durations;
@@ -423,7 +415,7 @@ Thread::~Thread() {
 }
 
 const char* Thread::getName() const {
-  return archive->getString(archive->getLocation(id)->name)->str;
+  return archive->global_archive->getString(archive->global_archive->getLocation(id)->name)->str;
 }
 
 bool Sequence::isFunctionSequence(const struct Thread* thread) const {
