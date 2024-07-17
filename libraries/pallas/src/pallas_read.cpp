@@ -263,6 +263,7 @@ void ThreadReader::moveToNextToken() {
       pallas_error("End of sequence");
     } else {
       /* Move to the next event in the Sequence */
+      tokenCount[this->pollCurToken()]++;
       callstack_index[current_frame]++;
     }
   } else {
@@ -270,6 +271,7 @@ void ThreadReader::moveToNextToken() {
       pallas_error("End of loop");
     } else {
       /* just move to the next iteration in the loop */
+      tokenCount[this->pollCurToken()]++;
       callstack_index[current_frame]++;
     }
   }
@@ -290,6 +292,7 @@ void ThreadReader::moveToPrevToken() {
     pallas_error("End of sequence");
   } else {
     /* Move to the last event in the Sequence */
+    tokenCount[this->pollCurToken()]--;
     callstack_index[current_frame]--;
   }
 }
