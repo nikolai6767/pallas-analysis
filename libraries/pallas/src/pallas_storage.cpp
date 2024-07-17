@@ -1450,7 +1450,11 @@ void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_fi
   for (auto& location : globalArchive->locations) {
     auto* thread = new pallas::Thread();
     auto parent = globalArchive->getLocationGroup(location.parent);
-    thread->archive = pallasGetArchive(globalArchive, parent->mainLoc);
+    if (parent->mainLoc == PALLAS_THREAD_ID_INVALID)
+      thread->archive = pallasGetArchive(global_archive, parent->id);
+    else
+      thread->archive = pallasGetArchive(globalArchive, parent->mainLoc);
+
     pallasReadThread(globalArchive, thread, location.id);
     int index = location.id - parent->mainLoc;
     thread->archive->threads[index] = thread;
