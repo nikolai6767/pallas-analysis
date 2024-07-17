@@ -263,7 +263,10 @@ void ThreadReader::moveToNextToken() {
       pallas_error("End of sequence");
     } else {
       /* Move to the next event in the Sequence */
-      tokenCount[this->pollCurToken()]++;
+      auto current_token = this->pollCurToken();
+      if (current_token.type == TypeEvent)
+        referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
   } else {
@@ -271,7 +274,10 @@ void ThreadReader::moveToNextToken() {
       pallas_error("End of loop");
     } else {
       /* just move to the next iteration in the loop */
-      tokenCount[this->pollCurToken()]++;
+      auto current_token = this->pollCurToken();
+      if (current_token.type == TypeEvent)
+        referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
   }
