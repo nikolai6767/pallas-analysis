@@ -1138,12 +1138,6 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
 }
 
 static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
-  if (th->nb_events == 0) {
-    pallas_log(pallas::DebugLevel::Verbose, "\tSkipping Thread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n",
-               th->id, th->nb_events, th->nb_sequences, th->nb_loops);
-    abort();
-  }
-
   pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
