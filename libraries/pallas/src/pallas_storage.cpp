@@ -1438,7 +1438,10 @@ void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_fi
   pallasReadGlobalArchive(globalArchive, dir_name, trace_name);
 
   for (auto& locationGroup : globalArchive->location_groups) {
-    pallasGetArchive(globalArchive, locationGroup.mainLoc);
+    if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
+      pallasGetArchive(globalArchive, locationGroup.id);
+    else
+      pallasGetArchive(globalArchive, locationGroup.mainLoc);
   }
 
   for (auto& location : globalArchive->locations) {
