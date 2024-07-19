@@ -47,6 +47,7 @@ typedef struct SequenceOccurence {
   pallas_timestamp_t timestamp;         /**< Timestamp for that occurence.*/
   pallas_duration_t duration;           /**< Duration of that occurence.*/
   struct TokenOccurence* full_sequence; /** Array of the occurrences in this sequence. */
+  struct Checkpoint *checkpoint;
 } SequenceOccurence;
 
 /**
@@ -173,7 +174,8 @@ typedef struct ThreadReader {
   /** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id,
-                                                       size_t occurence_id) const;
+                                                       size_t occurence_id,
+                                                       bool create_checkpoint = false) const;
   /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, size_t occurence_id) const;

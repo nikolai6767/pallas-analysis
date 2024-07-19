@@ -167,7 +167,8 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
 }
 
 SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
-                                                     size_t occurence_id) const {
+                                                     size_t occurence_id,
+                                                     bool save_checkpoint) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -176,6 +177,9 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
     sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
   }
   sequenceOccurence.full_sequence = nullptr;
+
+  if (save_checkpoint)
+    sequenceOccurence.checkpoint = new Checkpoint(this);
 
   //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
   return sequenceOccurence;
