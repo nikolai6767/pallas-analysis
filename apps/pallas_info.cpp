@@ -113,7 +113,7 @@ void info_global_archive(GlobalArchive* archive) {
   if (!archive->locations.empty())
     printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
   for (auto location: archive->locations) {
-    printf("\t\t%d: %s, parent: %d", location.id,
+    printf("\t\t%d: %s, parent: %d\n", location.id,
            archive->getString(location.name)->str, location.parent);
   }
   if (archive->nb_archives)
