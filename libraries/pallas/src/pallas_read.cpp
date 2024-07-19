@@ -29,7 +29,7 @@ ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int option
   referential_timestamp = 0;
   current_frame = 0;
   std::memset(callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
-//  std::memset(callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
+  //  std::memset(callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   callstack_iterable[0].type = TypeSequence;
   callstack_iterable[0].id = 0;
 }
@@ -73,8 +73,7 @@ void ThreadReader::printCallstack() const {
 
     if (current_sequence_id.type == TypeLoop) {
       auto* loop = thread_trace->getLoop(current_sequence_id);
-      printf(" iter %d/%d", callstack_index[i],
-             loop->nb_iterations[tokenCount.get_value(current_sequence_id)]);
+      printf(" iter %d/%d", callstack_index[i], loop->nb_iterations[tokenCount.get_value(current_sequence_id)]);
       pallas_assert(callstack_index[i] < MAX_CALLSTACK_DEPTH);
     } else if (current_sequence_id.type == TypeSequence) {
       auto* sequence = thread_trace->getSequence(current_sequence_id);
@@ -256,7 +255,7 @@ void ThreadReader::leaveBlock() {
 }
 
 bool ThreadReader::isInLoop() {
-  for (int i = current_frame; i >= 0; i --) {
+  for (int i = current_frame; i >= 0; i--) {
     if (callstack_iterable[i].type == TypeLoop) {
       return true;
     }
@@ -405,7 +404,8 @@ std::vector<TokenOccurence> ThreadReader::readCurrentLevel() {
       if ((options & ThreadReaderOptions::NoTimestamps) == 0) {
         referential_timestamp += outputVector[i].occurence->sequence_occurence.duration;
       }
-      tokenCount += thread_trace->getSequence(token)->getTokenCount(thread_trace);;
+      tokenCount += thread_trace->getSequence(token)->getTokenCount(thread_trace);
+      ;
       break;
     }
     default:
@@ -434,8 +434,8 @@ ThreadReader::ThreadReader(ThreadReader&& other) {
   archive = other.archive;
   thread_trace = other.thread_trace;
   referential_timestamp = other.referential_timestamp;
-  std::memcpy(callstack_iterable, other.callstack_iterable, sizeof(Token) *MAX_CALLSTACK_DEPTH);
-  std::memcpy(callstack_index, other.callstack_index, sizeof(int) *MAX_CALLSTACK_DEPTH);
+  std::memcpy(callstack_iterable, other.callstack_iterable, sizeof(Token) * MAX_CALLSTACK_DEPTH);
+  std::memcpy(callstack_index, other.callstack_index, sizeof(int) * MAX_CALLSTACK_DEPTH);
   current_frame = other.current_frame;
   tokenCount = TokenCountMap(other.tokenCount);
   options = other.options;
@@ -444,10 +444,13 @@ ThreadReader::ThreadReader(ThreadReader&& other) {
   other.thread_trace = nullptr;
   other.referential_timestamp = 0;
   std::memset(other.callstack_index, 0, sizeof(Token) * MAX_CALLSTACK_DEPTH);
-//  std::memset(other.callstack_iterable, 0, sizeof(int) * MAX_CALLSTACK_DEPTH);
+  //  std::memset(other.callstack_iterable, 0, sizeof(int) * MAX_CALLSTACK_DEPTH);
   other.current_frame = 0;
   other.tokenCount.clear();
   other.options = 0;
+  if (thread_trace->nb_events == 0) {
+    current_frame--;
+  }
 }
 
 Savestate::Savestate(const ThreadReader* reader) {
@@ -474,7 +477,7 @@ TokenOccurence::~TokenOccurence() {
     return;
   }
   if (token->type == TypeSequence) {
-//    delete[] occurence->sequence_occurence.full_sequence;
+    //    delete[] occurence->sequence_occurence.full_sequence;
     delete occurence->sequence_occurence.savestate;
   }
   if (token->type == TypeLoop) {

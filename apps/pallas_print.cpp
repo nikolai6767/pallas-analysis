@@ -263,11 +263,6 @@ void printTrace(pallas::GlobalArchive& trace) {
       if (trace.archive_list[i]->threads[j])
       readers.emplace_back(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
   }
-  for (auto& reader: readers) {
-    if (reader.thread_trace->nb_events == 0) {
-      reader.current_frame--;
-    }
-  }
 
   _print_timestamp_header();
   _print_duration_header();
