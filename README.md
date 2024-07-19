@@ -27,16 +27,21 @@ These few lines are all you need
 
 int main() {
     // Setup everything
-    Archive global_archive = pallas_archive_new(); // Create the main trace
+    GlobalArchive* global_archive = pallas_global_archive_new(); // Create the main trace
     pallas_write_global_archive_open(global_archive, "<your trace name>", "main");
-    // You can also create subprocesses by creating new archives under the global archive.
+    // The Global Archive is where all the Strings, 
+    // information about Threads and Processes, and Regions are stored.
     
     pallas_archive_register_string(...)     // Register a String
-    pallas_write_define_location_group(...) // Register a LocationGroup
-    pallas_write_define_location(...)       // Register a Location
-    
+    pallas_write_define_location_group(<processID>) // Register a LocationGroup
+    Archive* archive = pallas_new_archive();
+    pallas_write_archive_open(global_archive, archive, <processID>);
+    // That creates an Archive, which is where you'll store local events.
+            
+    pallas_write_define_location(<threadID>)       // Register a Location
     ThreadWriter thread_writer;
-    pallas_write_thread_open(global_archive, &thread_writer, <customThreadID>);
+    pallas_write_thread_open(global_archive, &thread_writer, <threadID>);
+    // A ThreadWriter is the interface made to log some events
     
     // Start logging
     pallas_record_generic(&thread_writer, <custom Attribute>, <timestamp>, <name>);
@@ -53,17 +58,22 @@ int main() {
 namespace pallas;
 int main() {
     // Setup everything
-    Archive globalArchive = Archive(); // Create the main trace
+    GlobalArchive globalArchive = Archive(); // Create the main trace
     globalArchive.openGlobal("<your trace name>", "main");
-    // You can also create subprocesses by creating new archives under the global archive.
+    // The Global Archive is where all the Strings, 
+    // information about Threads and Processes, and Regions are stored.
+    
+    globalArchive.addString(...)                   // Register a String
+    globalArchive.addLocationGroup(<processID>)    // Register a LocationGroup
+    Archive archive = Archive();
+    archive.open(globalArchive, <processID>);
+    // That creates an Archive, which is where you'll store local events.
 
-    globalArchive.addString(...)           // Register a String
-    globalArchive.addLocationGroup(...)    // Register a LocationGroup
-    globalArchive.addLocation(...)         // Register a Location
-    
+    globalArchive.addLocation(<threadID>)         // Register a Location
     ThreadWriter threadWriter;
-    threadWriter.openThread(globalArchive, <customThreadID>);
-    
+    threadWriter.openThread(globalArchive, <threadID>);
+    // A ThreadWriter is the interface made to log some events
+
     // Start logging
     pallas_record_generic(&threadWriter, <custom Attribute>, <timestamp>, <name>);
     
