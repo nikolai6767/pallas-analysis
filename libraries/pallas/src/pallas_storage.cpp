@@ -74,7 +74,7 @@ static FILE* pallasFileOpen(const char* filename, const char* mode) {
 
   FILE* file = fopen(filename, mode);
   if (file == nullptr) {
-    pallas_error("Cannot open %s: %s\n", filename, strerror(errno));
+    pallas_warn("Cannot open %s: %s\n", filename, strerror(errno));
   }
   return file;
 }
@@ -117,8 +117,10 @@ class File {
       openedFilePath->close();
     }
     file = pallasFileOpen(path, mode);
-    numberOpenFiles++;
-    isOpen = true;
+    if (file) {
+      numberOpenFiles++;
+      isOpen = true;
+    }
   };
   void close() {
     // TODO grab the lock
@@ -1178,6 +1180,9 @@ void pallas::Thread::finalizeThread() {
 static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thread* th, pallas::ThreadId thread_id) {
   th->id = thread_id;
   pallas::File threadFile = pallasGetThreadFile(global_archive->dir_name, th, "r");
+  if (threadFile.file == nullptr) {
+    return;
+  }
   threadFile.read(&th->id, sizeof(th->id), 1);
   pallas::LocationGroupId archive_id;
   threadFile.read(&archive_id, sizeof(archive_id), 1);
