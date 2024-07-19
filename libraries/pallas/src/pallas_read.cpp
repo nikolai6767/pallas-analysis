@@ -45,8 +45,8 @@ ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int option
   // ie set the cursor on the first event
   referential_timestamp = 0;
   current_frame = 0;
-  memset(callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
-  memset(callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
+  std::memset(callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
+  std::memset((void*)callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   callstack_iterable[0].type = TypeSequence;
   callstack_iterable[0].id = 0;
 
@@ -483,11 +483,19 @@ ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
   referential_timestamp = other.referential_timestamp;
   std::memcpy(callstack_iterable, other.callstack_iterable, sizeof(Token) *MAX_CALLSTACK_DEPTH);
   std::memcpy(callstack_index, other.callstack_index, sizeof(int) *MAX_CALLSTACK_DEPTH);
-  std::memcpy(callstack_checkpoints, other.callstack_checkpoints, sizeof(Checkpoint) *MAX_CALLSTACK_DEPTH);
+  std::memcpy((void*)callstack_checkpoints, other.callstack_checkpoints, sizeof(Checkpoint) *MAX_CALLSTACK_DEPTH);
   current_frame = other.current_frame;
   tokenCount = TokenCountMap(other.tokenCount);
   options = other.options;
-  std::memset(&other, 0, sizeof( ThreadReader));
+  // Set other to 0 for everything
+  other.archive = nullptr;
+  other.thread_trace = nullptr;
+  other.referential_timestamp = 0;
+  std::memset(other.callstack_index, 0, sizeof(Token) * MAX_CALLSTACK_DEPTH);
+  std::memset((void*)other.callstack_iterable, 0, sizeof(int) * MAX_CALLSTACK_DEPTH);
+  other.current_frame = 0;
+  other.tokenCount.clear();
+  other.options = 0;
 }
 
 TokenOccurence::~TokenOccurence() {
