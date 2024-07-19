@@ -1359,10 +1359,14 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
 
   if (!archive->location_groups.empty()) {
     pallasReadLocationGroups(archive, file);
+  } else {
+      pallas_warn("Global archive has no LocationGroups, ie no Archive ! Trace will look empty.\n");
   }
 
   if (!archive->locations.empty()) {
     pallasReadLocations(archive, file);
+  } else {
+    pallas_warn("Global archive has no Location, ie no Threads ! Trace will look empty.\n");
   }
 
   file.close();
