@@ -58,7 +58,7 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocationGroup(OTF2_DefWriter* writer,
   LocationGroupId lg_id = _otf_register_location_group(self);
   LocationGroupId parent_id = _otf_get_location_group_id(creatingLocationGroup);
 
-  pallas_write_define_location_group(writer->archive, lg_id, name, parent_id);
+  pallas_write_define_location_group(writer->archive->global_archive, lg_id, name, parent_id);
 
   return OTF2_SUCCESS;
 }
@@ -77,7 +77,7 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocation(OTF2_DefWriter* writer,
     if (writer->archive->id == 0)
       writer->archive->id = parent_id;
   }
-  pallas_write_define_location(writer->archive, thread_id, name, parent_id);
+  pallas_write_define_location(writer->archive->global_archive, thread_id, name, parent_id);
 
   return OTF2_SUCCESS;
 }

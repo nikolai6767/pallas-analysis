@@ -33,7 +33,8 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
                "getSequenceIdFromArray: Searching for sequence {.size=1} containing sequence token\n");
     return token_array[0];
   }
-  uint32_t hash = hash32(token_array, array_len, SEED);
+
+  uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
   pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len,
              hash);
   auto& sequencesWithSameHash = hashToSequence[hash];
@@ -357,65 +358,103 @@ void ThreadWriter::recordEnterFunction() {
   }
 }
 
+static Record getMatchingRecord(Record r) {
+  switch (r) {
+  case PALLAS_EVENT_ENTER:
+    return PALLAS_EVENT_LEAVE;
+  case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
+    return PALLAS_EVENT_MPI_COLLECTIVE_END;
+  case PALLAS_EVENT_OMP_FORK:
+    return PALLAS_EVENT_OMP_JOIN;
+  case PALLAS_EVENT_THREAD_FORK:
+    return PALLAS_EVENT_THREAD_JOIN;
+  case PALLAS_EVENT_THREAD_TEAM_BEGIN:
+    return PALLAS_EVENT_THREAD_TEAM_END;
+  case PALLAS_EVENT_THREAD_BEGIN:
+    return PALLAS_EVENT_THREAD_END;
+  case PALLAS_EVENT_PROGRAM_BEGIN:
+    return PALLAS_EVENT_PROGRAM_END;
+  case PALLAS_EVENT_LEAVE:
+    return PALLAS_EVENT_ENTER;
+  case PALLAS_EVENT_MPI_COLLECTIVE_END:
+    return PALLAS_EVENT_MPI_COLLECTIVE_BEGIN;
+  case PALLAS_EVENT_OMP_JOIN:
+    return PALLAS_EVENT_OMP_FORK;
+  case PALLAS_EVENT_THREAD_JOIN:
+    return PALLAS_EVENT_THREAD_FORK;
+  case PALLAS_EVENT_THREAD_TEAM_END:
+    return PALLAS_EVENT_THREAD_TEAM_BEGIN;
+  case PALLAS_EVENT_THREAD_END:
+    return PALLAS_EVENT_THREAD_BEGIN;
+  case PALLAS_EVENT_PROGRAM_END:
+    return PALLAS_EVENT_PROGRAM_BEGIN;
+  default:
+    return PALLAS_EVENT_MAX_ID;
+  }
+}
+
 void ThreadWriter::recordExitFunction() {
+recordExitFunctionBegin:
   auto& curTokenSeq = getCurrentTokenSequence();
 
 #ifdef DEBUG
-  // check that the sequence is not bugous
+  // check that the sequence is not weird
 
   Token first_token = curTokenSeq.front();
   Token last_token = curTokenSeq.back();
-  if (first_token.type != last_token.type) {
-    /* If a sequence starts with an Event (eg Enter function foo), it
-       should end with an Event too (eg. Exit function foo) */
-    pallas_warn(
-      "When closing sequence at callstack[%d]:"
-      "PALLAS_TOKEN_TYPE(%c%d) != PALLAS_TOKEN_TYPE(%c%d)\n",
-      cur_depth, first_token.type, first_token.id, last_token.type, last_token.id);
-  }
 
   if (first_token.type == TypeEvent) {
     Event* first_event = thread_trace.getEvent(first_token);
     Event* last_event = thread_trace.getEvent(last_token);
 
-    enum Record expected_record;
-    switch (first_event->record) {
-    case PALLAS_EVENT_ENTER:
-      expected_record = PALLAS_EVENT_LEAVE;
-      break;
-    case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
-      expected_record = PALLAS_EVENT_MPI_COLLECTIVE_END;
-      break;
-    case PALLAS_EVENT_OMP_FORK:
-      expected_record = PALLAS_EVENT_OMP_JOIN;
-      break;
-    case PALLAS_EVENT_THREAD_FORK:
-      expected_record = PALLAS_EVENT_THREAD_JOIN;
-      break;
-    case PALLAS_EVENT_THREAD_TEAM_BEGIN:
-      expected_record = PALLAS_EVENT_THREAD_TEAM_END;
-      break;
-    case PALLAS_EVENT_THREAD_BEGIN:
-      expected_record = PALLAS_EVENT_THREAD_END;
-      break;
-    case PALLAS_EVENT_PROGRAM_BEGIN:
-      expected_record = PALLAS_EVENT_PROGRAM_END;
-      break;
-    default:
-      pallas_warn("Unexpected start_sequence event:\n");
-      thread_trace.printEvent(first_event);
-      printf("\n");
+    enum Record expected_record = getMatchingRecord(first_event->record);
+    if (expected_record == PALLAS_EVENT_MAX_ID) {
+      char output_str[1024];
+      size_t buffer_size = 1024;
+      thread_trace.printEventToString(first_event, output_str, buffer_size);
+      pallas_warn("Unexpected start_event record:\n");
+      pallas_warn("\t%s\n", output_str);
       pallas_abort();
     }
 
     if (last_event->record != expected_record) {
+      char start_event_string[1024];
+      char last_event_string[1024];
+      size_t buffer_size = 1024;
+      thread_trace.printEventToString(first_event, start_event_string, buffer_size);
+      thread_trace.printEventToString(last_event, last_event_string, buffer_size);
       pallas_warn("Unexpected close event:\n");
-      pallas_warn("\tStart_sequence event:\n");
-      thread_trace.printEvent(first_event);
-      printf("\n");
-      pallas_warn("\tEnd_sequence event:\n");
-      thread_trace.printEvent(last_event);
-      printf("\n");
+      pallas_warn("\tStart_sequence event: \t%s as E%d\n", start_event_string, first_token.id);
+      pallas_warn("\tEnd_sequence event: \t%s as E%d\n", last_event_string, last_token.id);
+      if (cur_depth > 1) {
+        auto& underSequence = sequence_stack[cur_depth - 1];
+        enum Record expected_start_record = getMatchingRecord(last_event->record);
+        if (expected_start_record == PALLAS_EVENT_MAX_ID) {
+          char output_str[1024];
+          thread_trace.printEventToString(last_event, output_str, buffer_size);
+          pallas_warn("Unexpected last_event record:\n");
+          pallas_warn("\t%s\n", output_str);
+          pallas_abort();
+        }
+        pallas_warn("Currently recorded last event is wrong by one layer, adding the correct Leave Event.\n");
+        curTokenSeq.resize(curTokenSeq.size() - 1);
+        Event e;
+        e.event_size = offsetof(Event, event_data);
+        e.record = expected_record;
+        memcpy(e.event_data, first_event->event_data, first_event->event_size);
+        e.event_size = first_event->event_size;
+        TokenId e_id = thread_trace.getEventId(&e);
+        char output_str[1024];
+        size_t buffer_size = 1024;
+        thread_trace.printEventToString(&e, output_str, buffer_size);
+        pallas_warn("\tInserting %s as E%d at end of curSequence\n", output_str, e_id);
+        storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
+        pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
+        underSequence.push_back(last_token);
+        goto recordExitFunctionBegin;
+        // https://xkcd.com/292/
+        // Relevant XKCD
+      }
     }
   }
 
@@ -481,7 +520,8 @@ void ThreadWriter::threadClose() {
   mainSequence->tokens = sequence_stack[0];
   pallas_log(DebugLevel::Debug, "Last sequence token: (%d.%d)", mainSequence->tokens.back().type,
              mainSequence->tokens.back().id);
-  *last_duration = 0;
+  if (last_duration)
+    *last_duration = 0;
   completeDurations(0);
   pallas_timestamp_t duration = last_timestamp;
   mainSequence->durations->add(duration);
@@ -508,7 +548,7 @@ void Archive::open(const char* dirname, const char* given_trace_name, LocationGr
   nb_threads = 0;
   threads = new Thread*[nb_allocated_threads];
 
-  pallas_storage_init(this);
+  pallas_storage_init(dir_name);
 
   pallas_recursion_shield--;
 }
@@ -540,10 +580,30 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
   pallas_recursion_shield--;
 }
 
+
+void GlobalArchive::open(const char* dirname, const char* given_trace_name) {
+  if (pallas_recursion_shield)
+    return;
+  pallas_recursion_shield++;
+  pallas_debug_level_init();
+  if (!parameterHandler) {
+    parameterHandler = new ParameterHandler();
+  }
+  dir_name = strdup(dirname);
+  trace_name = strdup(given_trace_name);
+  fullpath = pallas_archive_fullpath(dir_name, trace_name);
+
+  pthread_mutex_init(&lock, nullptr);
+
+  pallas_storage_init(dir_name);
+
+  pallas_recursion_shield--;
+}
+
 /**
  * Creates a new LocationGroup and adds it to that Archive.
  */
-void Archive::defineLocationGroup(LocationGroupId lg_id, StringRef name, LocationGroupId parent) {
+void GlobalArchive::defineLocationGroup(LocationGroupId lg_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   LocationGroup l = LocationGroup();
   l.id = lg_id;
@@ -557,14 +617,14 @@ void Archive::defineLocationGroup(LocationGroupId lg_id, StringRef name, Locatio
 /**
  * Creates a new Location and adds it to that Archive.
  */
-void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
+void GlobalArchive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
   pthread_mutex_lock(&lock);
   Location l = Location();
   l.id = l_id;
   pallas_assert(l.id != PALLAS_THREAD_ID_INVALID);
   l.name = name;
   l.parent = parent;
-  for (auto& locationGroup: location_groups) {
+  for (auto& locationGroup : location_groups) {
     if (locationGroup.id == parent && locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID) {
       locationGroup.mainLoc = l_id;
       break;
@@ -575,176 +635,14 @@ void Archive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId pare
 }
 
 void Archive::close() {
-  pallas_storage_finalize(this);
+  pallasStoreArchive(this);
 }
 
-static inline void init_event(Event* e, enum Record record) {
-  e->event_size = offsetof(Event, event_data);
-  e->record = record;
-  memset(&e->event_data[0], 0, sizeof(e->event_data));
+void GlobalArchive ::close() {
+  pallasStoreGlobalArchive(this);
 }
 
-static inline void push_data(Event* e, void* data, size_t data_size) {
-  size_t o = e->event_size - offsetof(Event, event_data);
-  pallas_assert(o < 256);
-  pallas_assert(o + data_size < 256);
-  memcpy(&e->event_data[o], data, data_size);
-  e->event_size += data_size;
-}
 
-static inline void pop_data(Event* e, void* data, size_t data_size, byte*& cursor) {
-  if (cursor == nullptr) {
-    /* initialize the cursor to the begining of event data */
-    cursor = &e->event_data[0];
-  }
-
-  uintptr_t last_event_byte = ((uintptr_t)e) + e->event_size;
-  uintptr_t last_read_byte = ((uintptr_t)cursor) + data_size;
-  pallas_assert(last_read_byte <= last_event_byte);
-
-  memcpy(data, cursor, data_size);
-  cursor += data_size;
-}
-
-void Thread::printEvent(pallas::Event* e) const {
-  char output_str[1024];
-  size_t buffer_size=1024;
-  printEventToString(e, output_str, buffer_size);
-  printf(output_str);
-}
-
-void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const {
-  byte* cursor = nullptr;
-  switch (e->record) {
-  case PALLAS_EVENT_ENTER: {
-    RegionRef region_ref;
-    pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->getRegion(region_ref);
-    const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
-    break;
-  }
-  case PALLAS_EVENT_LEAVE: {
-    RegionRef region_ref;
-    pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->getRegion(region_ref);
-    const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
-    break;
-  }
-
-  case PALLAS_EVENT_THREAD_BEGIN:
-    snprintf(output_str, buffer_size, "THREAD_BEGIN()");
-    break;
-
-  case PALLAS_EVENT_THREAD_END:
-    snprintf(output_str, buffer_size, "THREAD_END()");
-    break;
-
-  case PALLAS_EVENT_THREAD_TEAM_BEGIN:
-    snprintf(output_str, buffer_size, "THREAD_TEAM_BEGIN()");
-    break;
-
-  case PALLAS_EVENT_THREAD_TEAM_END:
-    snprintf(output_str, buffer_size, "THREAD_TEAM_END()");
-    break;
-
-  case PALLAS_EVENT_MPI_SEND: {
-    uint32_t receiver;
-    uint32_t communicator;
-    uint32_t msgTag;
-    uint64_t msgLength;
-
-    pop_data(e, &receiver, sizeof(receiver), cursor);
-    pop_data(e, &communicator, sizeof(communicator), cursor);
-    pop_data(e, &msgTag, sizeof(msgTag), cursor);
-    pop_data(e, &msgLength, sizeof(msgLength), cursor);
-    snprintf(output_str, buffer_size, "MPI_SEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ")", receiver, communicator, msgTag, msgLength);
-    break;
-  }
-  case PALLAS_EVENT_MPI_ISEND: {
-    uint32_t receiver;
-    uint32_t communicator;
-    uint32_t msgTag;
-    uint64_t msgLength;
-    uint64_t requestID;
-
-    pop_data(e, &receiver, sizeof(receiver), cursor);
-    pop_data(e, &communicator, sizeof(communicator), cursor);
-    pop_data(e, &msgTag, sizeof(msgTag), cursor);
-    pop_data(e, &msgLength, sizeof(msgLength), cursor);
-    pop_data(e, &requestID, sizeof(requestID), cursor);
-    snprintf(output_str, buffer_size, "MPI_ISEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIx64 ")", receiver, communicator, msgTag,
-             msgLength, requestID);
-    break;
-  }
-  case PALLAS_EVENT_MPI_ISEND_COMPLETE: {
-    uint64_t requestID;
-    pop_data(e, &requestID, sizeof(requestID), cursor);
-    snprintf(output_str, buffer_size, "MPI_ISEND_COMPLETE(req=%" PRIx64 ")", requestID);
-    break;
-  }
-  case PALLAS_EVENT_MPI_IRECV_REQUEST: {
-    uint64_t requestID;
-    pop_data(e, &requestID, sizeof(requestID), cursor);
-    snprintf(output_str, buffer_size, "MPI_IRECV_REQUEST(req=%" PRIx64 ")", requestID);
-    break;
-  }
-  case PALLAS_EVENT_MPI_RECV: {
-    uint32_t sender;
-    uint32_t communicator;
-    uint32_t msgTag;
-    uint64_t msgLength;
-
-    pop_data(e, &sender, sizeof(sender), cursor);
-    pop_data(e, &communicator, sizeof(communicator), cursor);
-    pop_data(e, &msgTag, sizeof(msgTag), cursor);
-    pop_data(e, &msgLength, sizeof(msgLength), cursor);
-
-    snprintf(output_str, buffer_size, "MPI_RECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ")", sender, communicator, msgTag, msgLength);
-    break;
-  }
-  case PALLAS_EVENT_MPI_IRECV: {
-    uint32_t sender;
-    uint32_t communicator;
-    uint32_t msgTag;
-    uint64_t msgLength;
-    uint64_t requestID;
-    pop_data(e, &sender, sizeof(sender), cursor);
-    pop_data(e, &communicator, sizeof(communicator), cursor);
-    pop_data(e, &msgTag, sizeof(msgTag), cursor);
-    pop_data(e, &msgLength, sizeof(msgLength), cursor);
-    pop_data(e, &requestID, sizeof(requestID), cursor);
-
-    snprintf(output_str, buffer_size, "MPI_IRECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIu64 ")", sender, communicator, msgTag,
-             msgLength, requestID);
-    break;
-  }
-  case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN: {
-    snprintf(output_str, buffer_size, "MPI_COLLECTIVE_BEGIN()");
-    break;
-  }
-  case PALLAS_EVENT_MPI_COLLECTIVE_END: {
-    uint32_t collectiveOp;
-    uint32_t communicator;
-    uint32_t root;
-    uint64_t sizeSent;
-    uint64_t sizeReceived;
-
-    pop_data(e, &collectiveOp, sizeof(collectiveOp), cursor);
-    pop_data(e, &communicator, sizeof(communicator), cursor);
-    pop_data(e, &root, sizeof(root), cursor);
-    pop_data(e, &sizeSent, sizeof(sizeSent), cursor);
-    pop_data(e, &sizeReceived, sizeof(sizeReceived), cursor);
-
-    snprintf(output_str, buffer_size, "MPI_COLLECTIVE_END(op=%x, comm=%x, root=%d, sent=%" PRIu64 ", recved=%" PRIu64 ")", collectiveOp,
-             communicator, root, sizeSent, sizeReceived);
-    break;
-  }
-  default:
-    snprintf(output_str, buffer_size, "{.record: %x, .size:%x}", e->record, e->event_size);
-  }
-}
 
 void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
   id = token_id;
@@ -759,12 +657,17 @@ void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
 TokenId Thread::getEventId(pallas::Event* e) {
   pallas_log(DebugLevel::Max, "getEventId: Searching for event {.event_type=%d}\n", e->record);
 
-  pallas_assert(e->event_size < 256);
-
-  for (TokenId i = 0; i < nb_events; i++) {
-    if (memcmp(e, &events[i].event, e->event_size) == 0) {
-      pallas_log(DebugLevel::Max, "getEventId: \t found with id=%u\n", i);
-      return i;
+  uint32_t hash = hash32(reinterpret_cast<uint8_t*>(e), sizeof(Event), SEED);
+  auto& eventWithSameHash = hashToEvent[hash];
+  if (!eventWithSameHash.empty()) {
+    if (eventWithSameHash.size() > 1) {
+      pallas_warn("Found more than one event with the same hash: %lu\n", eventWithSameHash.size());
+    }
+    for (const auto eid : eventWithSameHash) {
+      if (memcmp(e, &events[eid].event, e->event_size) == 0) {
+        pallas_log(DebugLevel::Debug, "getEventId: \t found with id=%u\n", eid);
+        return eid;
+      }
     }
   }
 
@@ -777,6 +680,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   pallas_log(DebugLevel::Max, "getEventId: \tNot found. Adding it with id=%d\n", index);
   auto* new_event = &events[index];
   new_event->initEventSummary(id, *e);
+  hashToEvent[hash].push_back(index);
 
   return index;
 }
@@ -811,10 +715,10 @@ pallas::ThreadWriter* pallas_thread_writer_new() {
   return new pallas::ThreadWriter();
 }
 
-extern void pallas_write_global_archive_open(pallas::Archive* archive, const char* dir_name, const char* trace_name) {
-  archive->globalOpen(dir_name, trace_name);
+extern void pallas_write_global_archive_open(pallas::GlobalArchive * archive, const char* dir_name, const char* trace_name) {
+  archive->open(dir_name, trace_name);
 };
-extern void pallas_write_global_archive_close(pallas::Archive* archive) {
+extern void pallas_write_global_archive_close(pallas::GlobalArchive * archive) {
   archive->close();
 };
 
@@ -828,14 +732,14 @@ extern void pallas_write_thread_close(pallas::ThreadWriter* thread_writer) {
   thread_writer->threadClose();
 };
 
-extern void pallas_write_define_location_group(pallas::Archive* archive,
+extern void pallas_write_define_location_group(pallas::GlobalArchive * archive,
                                                pallas::LocationGroupId id,
                                                pallas::StringRef name,
                                                pallas::LocationGroupId parent) {
   archive->defineLocationGroup(id, name, parent);
 };
 
-extern void pallas_write_define_location(pallas::Archive* archive,
+extern void pallas_write_define_location(pallas::GlobalArchive * archive,
                                          pallas::ThreadId id,
                                          pallas::StringRef name,
                                          pallas::LocationGroupId parent) {
@@ -853,305 +757,13 @@ extern void pallas_write_archive_close(PALLAS(Archive) * archive) {
   archive->close();
 };
 
-void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
-                        enum PALLAS(EventType) event_type,
-                        PALLAS(TokenId) id,
-                        pallas_timestamp_t ts,
-                        PALLAS(AttributeList) * attribute_list) {
+extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
+                               enum PALLAS(EventType) event_type,
+                               PALLAS(TokenId) id,
+                               pallas_timestamp_t ts,
+                               PALLAS(AttributeList) * attribute_list) {
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
-
-void pallas_record_enter(pallas::ThreadWriter* thread_writer,
-                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                         pallas_timestamp_t time,
-                         pallas::RegionRef region_ref) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_ENTER);
-
-  push_data(&e, &region_ref, sizeof(region_ref));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_START, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_leave(pallas::ThreadWriter* thread_writer,
-                         struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                         pallas_timestamp_t time,
-                         pallas::RegionRef region_ref) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_LEAVE);
-
-  push_data(&e, &region_ref, sizeof(region_ref));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_END, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_thread_begin(pallas::ThreadWriter* thread_writer,
-                                struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                pallas_timestamp_t time) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_THREAD_BEGIN);
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_START, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_thread_end(pallas::ThreadWriter* thread_writer,
-                              struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                              pallas_timestamp_t time) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_THREAD_END);
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_END, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_thread_team_begin(pallas::ThreadWriter* thread_writer,
-                                     struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                     pallas_timestamp_t time) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_THREAD_TEAM_BEGIN);
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_START, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_thread_team_end(pallas::ThreadWriter* thread_writer,
-                                   struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                   pallas_timestamp_t time) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_THREAD_TEAM_END);
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_BLOCK_END, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
-
-void pallas_record_mpi_send(pallas::ThreadWriter* thread_writer,
-                            struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                            pallas_timestamp_t time,
-                            uint32_t receiver,
-                            uint32_t communicator,
-                            uint32_t msgTag,
-                            uint64_t msgLength) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_SEND);
-
-  push_data(&e, &receiver, sizeof(receiver));
-  push_data(&e, &communicator, sizeof(communicator));
-  push_data(&e, &msgTag, sizeof(msgTag));
-  push_data(&e, &msgLength, sizeof(msgLength));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_isend(pallas::ThreadWriter* thread_writer,
-                             struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                             pallas_timestamp_t time,
-                             uint32_t receiver,
-                             uint32_t communicator,
-                             uint32_t msgTag,
-                             uint64_t msgLength,
-                             uint64_t requestID) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_ISEND);
-
-  push_data(&e, &receiver, sizeof(receiver));
-  push_data(&e, &communicator, sizeof(communicator));
-  push_data(&e, &msgTag, sizeof(msgTag));
-  push_data(&e, &msgLength, sizeof(msgLength));
-  push_data(&e, &requestID, sizeof(requestID));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_isend_complete(pallas::ThreadWriter* thread_writer,
-                                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                      pallas_timestamp_t time,
-                                      uint64_t requestID) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_ISEND_COMPLETE);
-
-  push_data(&e, &requestID, sizeof(requestID));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_irecv_request(pallas::ThreadWriter* thread_writer,
-                                     struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                     pallas_timestamp_t time,
-                                     uint64_t requestID) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_IRECV_REQUEST);
-
-  push_data(&e, &requestID, sizeof(requestID));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_recv(pallas::ThreadWriter* thread_writer,
-                            struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                            pallas_timestamp_t time,
-                            uint32_t sender,
-                            uint32_t communicator,
-                            uint32_t msgTag,
-                            uint64_t msgLength) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_RECV);
-
-  push_data(&e, &sender, sizeof(sender));
-  push_data(&e, &communicator, sizeof(communicator));
-  push_data(&e, &msgTag, sizeof(msgTag));
-  push_data(&e, &msgLength, sizeof(msgLength));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_irecv(pallas::ThreadWriter* thread_writer,
-                             struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                             pallas_timestamp_t time,
-                             uint32_t sender,
-                             uint32_t communicator,
-                             uint32_t msgTag,
-                             uint64_t msgLength,
-                             uint64_t requestID) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_IRECV);
-
-  push_data(&e, &sender, sizeof(sender));
-  push_data(&e, &communicator, sizeof(communicator));
-  push_data(&e, &msgTag, sizeof(msgTag));
-  push_data(&e, &msgLength, sizeof(msgLength));
-  push_data(&e, &requestID, sizeof(requestID));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_collective_begin(pallas::ThreadWriter* thread_writer,
-                                        struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                        pallas_timestamp_t time) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_COLLECTIVE_BEGIN);
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-  return;
-}
-
-void pallas_record_mpi_collective_end(pallas::ThreadWriter* thread_writer,
-                                      struct pallas::AttributeList* attribute_list __attribute__((unused)),
-                                      pallas_timestamp_t time,
-                                      uint32_t collectiveOp,
-                                      uint32_t communicator,
-                                      uint32_t root,
-                                      uint64_t sizeSent,
-                                      uint64_t sizeReceived) {
-  if (pallas_recursion_shield)
-    return;
-  pallas_recursion_shield++;
-
-  pallas::Event e;
-  init_event(&e, pallas::PALLAS_EVENT_MPI_COLLECTIVE_END);
-
-  push_data(&e, &collectiveOp, sizeof(collectiveOp));
-  push_data(&e, &communicator, sizeof(communicator));
-  push_data(&e, &root, sizeof(root));
-  push_data(&e, &sizeSent, sizeof(sizeSent));
-  push_data(&e, &sizeReceived, sizeof(sizeReceived));
-
-  pallas::TokenId e_id = thread_writer->thread_trace.getEventId(&e);
-  thread_writer->storeEvent(pallas::PALLAS_SINGLETON, e_id, time, attribute_list);
-
-  pallas_recursion_shield--;
-}
 
 /* -*-
    mode: c;

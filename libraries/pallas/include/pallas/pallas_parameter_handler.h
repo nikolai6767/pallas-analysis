@@ -50,7 +50,7 @@ std::string toString(CompressionAlgorithm alg);
  * @param str the string.
  * @return Compression Algorithm that corresponds to the string.
  */
-CompressionAlgorithm compressionAlgorithmFromString(std::string str);
+CompressionAlgorithm compressionAlgorithmFromString(const std::string& str);
 
 /** Returns whether a compression algorithm is lossy or not. */
 inline bool isLossy(CompressionAlgorithm alg) {
@@ -84,7 +84,7 @@ std::string toString(EncodingAlgorithm alg);
  * @param str the string.
  * @return EncodingAlgorithm that corresponds to the string.
  */
-EncodingAlgorithm encodingAlgorithmFromString(std::string str);
+EncodingAlgorithm encodingAlgorithmFromString(const std::string& str);
 
 /** A set of various loop-finding algorithms used by Pallas */
 enum class LoopFindingAlgorithm {
@@ -116,7 +116,7 @@ std::string toString(LoopFindingAlgorithm alg);
  * @param str the string.
  * @return LoopFindingAlgorithm that corresponds to the string.
  */
-LoopFindingAlgorithm loopFindingAlgorithmFromString(std::string str);
+LoopFindingAlgorithm loopFindingAlgorithmFromString(const std::string& str);
 
 /** A set of various encoding algorithms supported by Pallas */
 enum class TimestampStorage {
@@ -143,7 +143,7 @@ std::string toString(TimestampStorage alg);
  * @param str the string.
  * @return TimestampStorage that corresponds to the string.
  */
-TimestampStorage timestampStorageFromString(std::string str);
+TimestampStorage timestampStorageFromString(const std::string& str);
 
 /**
  * A simple data class that contains information on different parameters.
@@ -182,7 +182,7 @@ class ParameterHandler {
    * @returns Value of #loopFindingAlgorithm.
    */
   [[nodiscard]] LoopFindingAlgorithm getLoopFindingAlgorithm() const;
-  /** Creates a ParameterHandler from a config file loaded from PALLAS_CONFIG_PATH or config.json.
+  /** Creates a ParameterHandler from a config file loaded from PALLAS_CONFIG_PATH or pallas.config.
    */
 
   /**
@@ -196,8 +196,8 @@ class ParameterHandler {
   ParameterHandler();
   ParameterHandler(const std::string& stringConfig);
   /**
-   * Prints a JSON of the ParameterHandler.
-   * @return String containing a JSON of itself.
+   * Prints the config of the ParameterHandler. That string is a valid Pallas configuration file.
+   * @return String containing itself.
    */
   [[nodiscard]] std::string to_string() const;
 };

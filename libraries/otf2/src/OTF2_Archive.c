@@ -174,6 +174,10 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
     /* TODO: hacky ! we should not have to do that ! */
     archive->archive->id = location;
   }
+  if (archive->archive->global_archive == NULL && archive->globalDefWriter != NULL) {
+    /* TODO: even more hacky, we shouldn't have to do that !!!!*/
+    archive->archive->global_archive = archive->globalDefWriter->archive;
+  }
 
   INCREMENT_MEMORY_SPACE(archive->def_writers, archive->nb_locations, OTF2_DefWriter*);
   archive->nb_locations--;
@@ -236,7 +240,7 @@ OTF2_DefWriter* OTF2_Archive_GetDefWriter(OTF2_Archive* archive, OTF2_LocationRe
 OTF2_GlobalDefWriter* OTF2_Archive_GetGlobalDefWriter(OTF2_Archive* archive) {
   if (archive->globalDefWriter == NULL) {
     archive->globalDefWriter = malloc(sizeof(OTF2_GlobalDefWriter));
-    archive->globalDefWriter->archive = pallas_archive_new();
+    archive->globalDefWriter->archive = pallas_global_archive_new();
 
     pallas_write_global_archive_open(archive->globalDefWriter->archive, archive->archive->dir_name,
                                   archive->archive->trace_name);

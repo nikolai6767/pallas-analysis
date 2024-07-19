@@ -54,12 +54,12 @@ enum TokenType { TypeInvalid = 0, TypeEvent = 1, TypeSequence = 2, TypeLoop = 3 
  * TypeLoop = 'L'
  * 'U' otherwise
  */
-#define PALLAS_TOKEN_TYPE_C(t)     \
+#define PALLAS_TOKEN_TYPE_C(t)       \
   ((t).type) == TypeInvalid    ? 'I' \
   : ((t).type) == TypeEvent    ? 'E' \
   : ((t).type) == TypeSequence ? 'S' \
   : ((t).type) == TypeLoop     ? 'L' \
-                             : 'U'
+                               : 'U'
 
 /**
  * Useful macros
@@ -107,7 +107,7 @@ typedef struct Token {
    */
   bool operator<(const Token& other) const { return (type < other.type || (type == other.type && id < other.id)); }
   /** Returns true if the Token is a Sequence or a Loop. */
-  inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
+  [[nodiscard]] inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
 #endif
 } Token;
 /** Creates a Token for an Event. */
@@ -131,66 +131,65 @@ enum EventType {
  * Enumeration of the different events that are recorded by Pallas
  */
 enum Record {
-  PALLAS_EVENT_BUFFER_FLUSH = 0,                     /**< Event record identifier for the BufferFlush event. */
-  PALLAS_EVENT_MEASUREMENT_ON_OFF = 1,               /**< Event record identifier for the MeasurementOnOff event. */
-  PALLAS_EVENT_ENTER = 2,                            /**< Event record identifier for the Enter event. */
-  PALLAS_EVENT_LEAVE = 3,                            /**< Event record identifier for the Leave event. */
-  PALLAS_EVENT_MPI_SEND = 4,                         /**< Event record identifier for the MpiSend event. */
-  PALLAS_EVENT_MPI_ISEND = 5,                        /**< Event record identifier for the MpiIsend event. */
-  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,               /**< Event record identifier for the MpiIsendComplete event. */
-  PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                /**< Event record identifier for the MpiIrecvRequest event. */
-  PALLAS_EVENT_MPI_RECV = 8,                         /**< Event record identifier for the MpiRecv event. */
-  PALLAS_EVENT_MPI_IRECV = 9,                        /**< Event record identifier for the MpiIrecv event. */
-  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                /**< Event record identifier for the MpiRequestTest event. */
-  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,           /**< Event record identifier for the MpiRequestCancelled event. */
-  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,            /**< Event record identifier for the MpiCollectiveBegin event. */
-  PALLAS_EVENT_MPI_COLLECTIVE_END = 13,              /**< Event record identifier for the MpiCollectiveEnd event. */
-  PALLAS_EVENT_OMP_FORK = 14,                        /**< Event record identifier for the OmpFork event. */
-  PALLAS_EVENT_OMP_JOIN = 15,                        /**< Event record identifier for the OmpJoin event. */
-  PALLAS_EVENT_OMP_ACQUIRE_LOCK = 16,                /**< Event record identifier for the OmpAcquireLock event. */
-  PALLAS_EVENT_OMP_RELEASE_LOCK = 17,                /**< Event record identifier for the OmpReleaseLock event. */
-  PALLAS_EVENT_OMP_TASK_CREATE = 18,                 /**< Event record identifier for the OmpTaskCreate event. */
-  PALLAS_EVENT_OMP_TASK_SWITCH = 19,                 /**< Event record identifier for the OmpTaskSwitch event. */
-  PALLAS_EVENT_OMP_TASK_COMPLETE = 20,               /**< Event record identifier for the OmpTaskComplete event. */
-  PALLAS_EVENT_METRIC = 21,                          /**< Event record identifier for the Metric event. */
-  PALLAS_EVENT_PARAMETER_STRING = 22,                /**< Event record identifier for the ParameterString event. */
-  PALLAS_EVENT_PARAMETER_INT = 23,                   /**< Event record identifier for the ParameterInt event. */
-  PALLAS_EVENT_PARAMETER_UNSIGNED_INT = 24,          /**< Event record identifier for the ParameterUnsignedInt event. */
-  PALLAS_EVENT_THREAD_FORK = 25,                     /**< Event record identifier for the ThreadFork event. */
-  PALLAS_EVENT_THREAD_JOIN = 26,                     /**< Event record identifier for the ThreadJoin event. */
-  PALLAS_EVENT_THREAD_TEAM_BEGIN = 27,               /**< Event record identifier for the ThreadTeamBegin event. */
-  PALLAS_EVENT_THREAD_TEAM_END = 28,                 /**< Event record identifier for the ThreadTeamEnd event. */
-  PALLAS_EVENT_THREAD_ACQUIRE_LOCK = 29,             /**< Event record identifier for the ThreadAcquireLock event. */
-  PALLAS_EVENT_THREAD_RELEASE_LOCK = 30,             /**< Event record identifier for the ThreadReleaseLock event. */
-  PALLAS_EVENT_THREAD_TASK_CREATE = 31,              /**< Event record identifier for the ThreadTaskCreate event. */
-  PALLAS_EVENT_THREAD_TASK_SWITCH = 32,              /**< Event record identifier for the ThreadTaskSwitch event. */
-  PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,            /**< Event record identifier for the ThreadTaskComplete event. */
-  PALLAS_EVENT_THREAD_CREATE = 34,                   /**< Event record identifier for the ThreadCreate event. */
-  PALLAS_EVENT_THREAD_BEGIN = 35,                    /**< Event record identifier for the ThreadBegin event. */
-  PALLAS_EVENT_THREAD_WAIT = 36,                     /**< Event record identifier for the ThreadWait event. */
-  PALLAS_EVENT_THREAD_END = 37,                      /**< Event record identifier for the ThreadEnd event. */
-  PALLAS_EVENT_IO_CREATE_HANDLE = 38,                /**< Event record identifier for the IoCreateHandle event. */
-  PALLAS_EVENT_IO_DESTROY_HANDLE = 39,               /**< Event record identifier for the IoDestroyHandle event. */
-  PALLAS_EVENT_IO_SEEK = 41,                         /**< Event record identifier for the IoSeek event. */
-  PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,          /**< Event record identifier for the IoChangeStatusFlags event. */
-  PALLAS_EVENT_IO_DELETE_FILE = 43,                  /**< Event record identifier for the IoDeleteFile event. */
-  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,              /**< Event record identifier for the IoOperationBegin event. */
-  PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,             /**< Event record identifier for the IoDuplicateHandle event. */
-  PALLAS_EVENT_IO_OPERATION_TEST = 45,               /**< Event record identifier for the IoOperationTest event. */
-  PALLAS_EVENT_IO_OPERATION_ISSUED = 46,             /**< Event record identifier for the IoOperationIssued event. */
-  PALLAS_EVENT_IO_OPERATION_COMPLETE = 47,           /**< Event record identifier for the IoOperationComplete event. */
-  PALLAS_EVENT_IO_OPERATION_CANCELLED = 48,          /**< Event record identifier for the IoOperationCancelled event. */
-  PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                 /**< Event record identifier for the IoAcquireLock event. */
-  PALLAS_EVENT_IO_RELEASE_LOCK = 50,                 /**< Event record identifier for the IoReleaseLock event. */
-  PALLAS_EVENT_IO_TRY_LOCK = 51,                     /**< Event record identifier for the IoTryLock event. */
-  PALLAS_EVENT_PROGRAM_BEGIN = 52,                   /**< Event record identifier for the ProgramBegin event. */
-  PALLAS_EVENT_PROGRAM_END = 53,                     /**< Event record identifier for the ProgramEnd event. */
-  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54, /**< Event record identifier for the NonBlockingCollectiveRequest
-                                                      * event. */
-  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55, /**< Event record identifier for the NonBlockingCollectiveComplete
-                                                       * event. */
-  PALLAS_EVENT_COMM_CREATE = 56,                      /**< Event record identifier for the CommCreate event. */
-  PALLAS_EVENT_COMM_DESTROY = 57,                     /**< Event record identifier for the CommDestroy event. */
+  PALLAS_EVENT_BUFFER_FLUSH = 0,                        /**< Signals that the internal buffer was flushed at the given time. */
+  PALLAS_EVENT_MEASUREMENT_ON_OFF = 1,                  /**< Signals where the measurement system turned measurement on or off. */
+  PALLAS_EVENT_ENTER = 2,                               /**< Indicates that the program enters a code region. */
+  PALLAS_EVENT_LEAVE = 3,                               /**< Indicates that the program leaves a code region. */
+  PALLAS_EVENT_MPI_SEND = 4,                            /**< Indicates that an MPI send operation was initiated (MPI_SEND).  */
+  PALLAS_EVENT_MPI_ISEND = 5,                           /**< Indicates that a non-blocking MPI send operation was initiated (MPI_ISEND). */
+  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,                  /**< Indicates the completion of a non- blocking MPI send operation.  */
+  PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                   /**< Indicates that a non-blocking MPI receive operation was initiated (MPI_IRECV). */
+  PALLAS_EVENT_MPI_RECV = 8,                            /**< Indicates that an MPI message was received (MPI_RECV).   */
+  PALLAS_EVENT_MPI_IRECV = 9,                           /**< Indicates the completion of a non-blocking MPI receive operation completed (MPI_IRECV).  */
+  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                   /**< This events appears if the program tests if a request has already completed but the test failed. */
+  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,              /**< This events appears if the program canceled a request. */
+  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,               /**< An MpiCollectiveBegin record marks the begin of an MPI collective operation (MPI_GATHER, MPI_SCATTER etc.). */
+  PALLAS_EVENT_MPI_COLLECTIVE_END = 13,                 /**< Marks the end of an MPI collective */
+  PALLAS_EVENT_OMP_FORK = 14,                           /**< Marks that an OpenMP Thread forks a thread team. */
+  PALLAS_EVENT_OMP_JOIN = 15,                           /**< Marks that a team of threads is joint and only the master thread continues execution. */
+  PALLAS_EVENT_OMP_ACQUIRE_LOCK = 16,                   /**< Marks that a thread acquires an OpenMP lock. */
+  PALLAS_EVENT_OMP_RELEASE_LOCK = 17,                   /**< Marks that a thread releases an OpenMP lock. */
+  PALLAS_EVENT_OMP_TASK_CREATE = 18,                    /**< Marks that an OpenMP Task was/will be created in the current region. */
+  PALLAS_EVENT_OMP_TASK_SWITCH = 19,                    /**< Indicates that the execution of the current task will be suspended and another task starts/restarts its execution.*/
+  PALLAS_EVENT_OMP_TASK_COMPLETE = 20,                  /**< Indicates that the execution of an OpenMP task has finished. */
+  PALLAS_EVENT_METRIC = 21,                             /**< A metric, stored at the location that recorded it. */
+  PALLAS_EVENT_PARAMETER_STRING = 22,                   /**< Marks that in the current region, the specified string parameter has the specified value. */
+  PALLAS_EVENT_PARAMETER_INT = 23,                      /**< Marks that in the current region, the specified integer parameter has the specified value. */
+  PALLAS_EVENT_PARAMETER_UNSIGNED_INT = 24,             /**< Marks that in the current region, the specified unsigned integer parameter has the specified value. */
+  PALLAS_EVENT_THREAD_FORK = 25,                        /**< Marks that a thread forks a thread team. */
+  PALLAS_EVENT_THREAD_JOIN = 26,                        /**< Marks that a team of threads is joint and only the master thread continues execution. */
+  PALLAS_EVENT_THREAD_TEAM_BEGIN = 27,                  /**< The current location enters the specified thread team. */
+  PALLAS_EVENT_THREAD_TEAM_END = 28,                    /**< The current location leaves the specified thread team. */
+  PALLAS_EVENT_THREAD_ACQUIRE_LOCK = 29,                /**< Marks that a thread acquires a lock. */
+  PALLAS_EVENT_THREAD_RELEASE_LOCK = 30,                /**< Marks that a thread releases a lock. */
+  PALLAS_EVENT_THREAD_TASK_CREATE = 31,                 /**< Marks that a task in was/will be created and will be processed by the specified thread team. */
+  PALLAS_EVENT_THREAD_TASK_SWITCH = 32,                 /**< Indicates that the execution of the current task will be suspended and another task starts/restarts its execution. Please note that this may change the current call stack of the executing location. */
+  PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,               /**< Indicates that the execution of an OpenMP task has finished. */
+  PALLAS_EVENT_THREAD_CREATE = 34,                      /**< The location created successfully a new thread. */
+  PALLAS_EVENT_THREAD_BEGIN = 35,                       /**< Marks the begin of a thread created by another thread. */
+  PALLAS_EVENT_THREAD_WAIT = 36,                        /**< The location waits for the completion of another thread. */
+  PALLAS_EVENT_THREAD_END = 37,                         /**< Marks the end of a thread. */
+  PALLAS_EVENT_IO_CREATE_HANDLE = 38,                   /**< Marks the creation of a new active I/O handle that can be used by subsequent I/O operation events.*/
+  PALLAS_EVENT_IO_DESTROY_HANDLE = 39,                  /**< Marks the end of an active I/O handle's lifetime.*/
+  PALLAS_EVENT_IO_SEEK = 41,                            /**< Marks a change of the position, e.g., within a file.*/
+  PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,             /**< Marks a change to the status flags associated with an active I/O handle.*/
+  PALLAS_EVENT_IO_DELETE_FILE = 43,                     /**< Marks the deletion of an I/O file.*/
+  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,                 /**< Marks the begin of a file operation (read, write, etc.).*/
+  PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,                /**< Marks the duplication of an already existing active I/O handle.*/
+  PALLAS_EVENT_IO_OPERATION_TEST = 45,                  /**< Marks an unsuccessful test whether an I/O operation has already finished.*/
+  PALLAS_EVENT_IO_OPERATION_ISSUED = 46,                /**< Marks the successful initiation of a non-blocking operation (read, write, etc.) on an active I/O handle.*/
+  PALLAS_EVENT_IO_OPERATION_COMPLETE = 47,              /**< Marks the end of a file operation (read, write, etc.) on an active I/O handle.*/
+  PALLAS_EVENT_IO_OPERATION_CANCELLED = 48,             /**< Marks the successful cancellation of a non-blocking operation (read, write, etc.) on an active I/O handle.*/
+  PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                    /**< Marks the acquisition of an I/O lock.*/
+  PALLAS_EVENT_IO_RELEASE_LOCK = 50,                    /**< Marks the release of an I/O lock.*/
+  PALLAS_EVENT_IO_TRY_LOCK = 51,                        /**< Marks when an I/O lock was requested but not granted.*/
+  PALLAS_EVENT_PROGRAM_BEGIN = 52,                      /**< Marks the begin of the program.*/
+  PALLAS_EVENT_PROGRAM_END = 53,                        /**< Marks the end of the program.*/
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54,    /**< Indicates that a non-blocking collective operation was initiated.*/
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55,   /**< Indicates that a non- blocking collective operation completed.*/
+  PALLAS_EVENT_COMM_CREATE = 56,                        /**< Denotes the creation of a communicator.*/
+  PALLAS_EVENT_COMM_DESTROY = 57,                       /**< Marks the communicator for destruction at the end of the enclosing MpiCollectiveBegin and MpiCollectiveEnd event pair. */
+  PALLAS_EVENT_GENERIC = 58,                            /**< Event record identifier for any other event. */
 
   PALLAS_EVENT_MAX_ID /**< Max Event Record ID */
 };
@@ -418,8 +417,10 @@ typedef struct Thread {
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;
+  std::unordered_map<uint32_t, std::vector<TokenId>> hashToEvent;
 #else
   byte hashToSequence[UNO_MAP_SIZE];
+  byte hashToEvent[UNO_MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
   unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
@@ -447,8 +448,8 @@ typedef struct Thread {
   void printToken(Token) const;
   void printTokenArray(const Token* array, size_t start_index, size_t len) const; /**< Prints an array of Tokens. */
   void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
-  void printSequence(Token) const;            /**< Prints the Sequence corresponding to the given Token. */
-  void printEvent(Event*) const;              /**< Prints an Event. */
+  void printSequence(Token) const; /**< Prints the Sequence corresponding to the given Token. */
+  void printEvent(Event*) const;   /**< Prints an Event. */
   void printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const;
   void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
   void printString(StringRef) const;          /**< Prints a String (checks for validity first). */

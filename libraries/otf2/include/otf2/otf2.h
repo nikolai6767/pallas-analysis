@@ -24,7 +24,7 @@
 #include "pallas/pallas_write.h"
 
 struct OTF2_GlobalDefWriter_struct {
-  struct Archive* archive;
+  struct GlobalArchive * archive;
 };
 
 struct OTF2_DefWriter_struct {

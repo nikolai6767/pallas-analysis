@@ -37,7 +37,6 @@ option(ENABLE_ZFP "Enables compression using the ZFP lib" ON)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZSTD libzstd REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 find_package(Doxygen)
 
 
@@ -64,6 +63,38 @@ add_compile_definitions(TIMEPOINT_SIZE=${SIZEOF_TIMEPOINT})
 
 ####################################################
 # Some flags for compilation
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(WARNINGS
+            -Wno-gnu-zero-variadic-macro-arguments
+            -Wno-sign-compare
+            -Wno-unused
+            -Wno-unused-parameter
+            -Wno-string-plus-int
+            -Wno-return-type-c-linkage
+    )
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(WARNINGS
+            -Wno-sign-compare
+            -Wno-unused-function
+            -Wno-unused-parameter
+            -Wno-unused-variable
+            -Wno-deprecated-declarations)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    set(WARNINGS
+            -Rno-debug-disables-optimization
+            -Wno-return-type-c-linkage
+            -Wno-sign-compare
+            -Wno-unused-function
+            -Wno-unused-parameter
+            -Wno-unused-variable
+            -Wno-unused-but-set-variable
+            -Wno-string-plus-int
+            -Wno-gnu-zero-variadic-macro-arguments
+    )
+    ADD_LINK_OPTIONS(-Rno-debug-disables-optimization)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(WARNINGS)
+endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(LIBRARY_PATH "${CMAKE_INSTALL_PREFIX}/lib")

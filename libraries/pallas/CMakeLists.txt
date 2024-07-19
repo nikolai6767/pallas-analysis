@@ -26,6 +26,7 @@ set(PALLAS_HEADERS
         include/pallas/pallas_storage.h
         include/pallas/pallas_timestamp.h
         include/pallas/pallas_write.h
+        include/pallas/pallas_record.h
 )
 
 target_sources(pallas
@@ -41,6 +42,7 @@ target_sources(pallas
         src/pallas_write.cpp
         src/pallas_linked_vector.cpp
         src/pallas_parameter_handler.cpp
+        src/pallas_record.cpp
         PUBLIC
         ${PALLAS_HEADERS}
 )
@@ -50,7 +52,6 @@ target_include_directories(pallas
         ${CMAKE_CURRENT_SOURCE_DIR}
         include
         ${ZSTD_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
         ${CMAKE_CURRENT_BINARY_DIR}/include/pallas/
 )
 if (ZFP_FOUND)
@@ -72,8 +73,9 @@ target_compile_options(pallas
         PUBLIC
         -D_GNU_SOURCE
         PRIVATE
-        -Wall -Wextra -Wno-sign-compare -Wno-unused -Wno-unused-parameter -Wno-class-memaccess
+        -Wall -Wextra ${WARNINGS}
 )
+message("Warning list: ${WARNINGS}")
 
 target_link_libraries(pallas
         PUBLIC
@@ -83,9 +85,8 @@ target_link_libraries(pallas
         rt
         m
         ${ZSTD_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
 )
-target_link_directories(pallas PRIVATE ${JSONCPP_LIBRARY_DIRS} ${ZSTD_LIBRARY_DIRS})
+target_link_directories(pallas PRIVATE ${ZSTD_LIBRARY_DIRS})
 if (DOXYGEN_FOUND AND BUILD_DOC)
     # set input and output files
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)

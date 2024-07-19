@@ -59,11 +59,11 @@ extern enum DebugLevel debugLevel;
 extern "C" {
 #endif
 /** Initializes the DebugLevel using Env Variables. */
-extern void pallas_debug_level_init();
+extern void pallas_debug_level_init(void);
 /** Sets the DebugLevel to the given level. */
 extern void pallas_debug_level_set(enum PALLAS(DebugLevel) lvl);
 /** Returns the DebugLevel. */
-extern enum PALLAS(DebugLevel) pallas_debug_level_get();
+extern enum PALLAS(DebugLevel) pallas_debug_level_get(void);
 CXX(
 };)
 /** Stops the execution. */
