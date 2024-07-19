@@ -28,7 +28,7 @@ static void printEvent(const pallas::Thread* thread,
   thread->printEvent(e->event);
   thread->printEventAttribute(e);
   if (show_timestamps)
-    std::cout << " (" << e->timestamp << ")";
+    printf(" (%.9lf)", e->timestamp / 1e9);
   std::cout << std::endl;
 }
 
@@ -94,7 +94,7 @@ int main(const int argc, char* argv[]) {
             printEvent(tr.thread_trace, &occ);
           }
         }
-        auto next_token = tr.getNextToken(PALLAS_READ_UNROLL_ALL);
+        auto next_token = tr.getNextToken(flags);
         if (!next_token.has_value())
           break;
         current_token = next_token.value();

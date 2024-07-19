@@ -83,6 +83,27 @@ typedef struct TokenOccurence {
   ~TokenOccurence();
 } TokenOccurence;
 
+typedef struct Checkpoint {
+  /** The current referential timestamp. */
+  pallas_timestamp_t referential_timestamp;
+
+  /** Stack containing the sequences/loops being read. */
+  Token callstack_iterable[MAX_CALLSTACK_DEPTH];
+
+  /** Stack containing the index in the sequence or the loop iteration. */
+  int callstack_index[MAX_CALLSTACK_DEPTH];
+
+  /** Current frame = index of the event/loop being read in the callstacks.
+   * You can view this as the "depth" of the callstack. */
+  int current_frame;
+
+  DEFINE_TokenCountMap(tokenCount);
+  /** Creates a savestate of the given reader.
+   * @param reader Reader whose state of reading we want to take a screenshot. */
+  Checkpoint(const struct ThreadReader* reader);
+  Checkpoint() = default;
+  ~Checkpoint();
+} Checkpoint;
 
 /**
  * Reads one thread from an Pallas trace.
@@ -100,6 +121,9 @@ typedef struct ThreadReader {
 
   /** Stack containing the index in the sequence or the loop iteration. */
   int callstack_index[MAX_CALLSTACK_DEPTH];
+
+  /** Stack containing the checkpoint in the sequence or the loop iteration. */
+  Checkpoint callstack_checkpoints[MAX_CALLSTACK_DEPTH];
 
   /** Current frame = index of the event/loop being read in the callstacks.
    * You can view this as the "depth" of the callstack. */
@@ -157,6 +181,10 @@ typedef struct ThreadReader {
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
+  void loadCheckpoint(Checkpoint *checkpoint);
+
+  //******************* EXPLORATION FUNCTIONS ********************
+
   /** Gets the current Token. */
   [[nodiscard]] const Token& pollCurToken() const;
   /** Peeks at and return the next token without actually updating the state */
@@ -180,6 +208,7 @@ typedef struct ThreadReader {
   ~ThreadReader();
   ThreadReader(ThreadReader&& other) noexcept ;
 } ThreadReader;
+
 
 }; /* namespace pallas */
 

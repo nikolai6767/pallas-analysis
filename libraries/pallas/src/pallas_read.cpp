@@ -10,6 +10,23 @@
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
+
+Checkpoint::Checkpoint(const ThreadReader* reader) {
+  if ((reader->options & ThreadReaderOptions::NoTimestamps) == 0) {
+    referential_timestamp = reader->referential_timestamp;
+  }
+
+  memcpy(callstack_iterable, reader->callstack_iterable, sizeof(Token) * MAX_CALLSTACK_DEPTH);
+
+  memcpy(callstack_index, reader->callstack_index, sizeof(int) * MAX_CALLSTACK_DEPTH);
+
+  current_frame = reader->current_frame;
+
+  tokenCount = reader->tokenCount;
+}
+Checkpoint::~Checkpoint() {
+}
+
 ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int options) {
   // Setup the basic
   this->archive = archive;
@@ -113,7 +130,7 @@ bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
 bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   if (loop_id.type == TypeLoop) {
     auto* loop = thread_trace->getLoop(loop_id);
-    return current_index + 1 >= loop->nb_iterations[tokenCount.get_value(loop_id) - 1];
+    return current_index + 1 >= loop->nb_iterations[tokenCount.get_value(loop_id)];
     // We are in a loop and index is beyond the number of iterations
   }
   pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
@@ -196,6 +213,14 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, size_t occure
     }
   }
   return nullptr;
+}
+void ThreadReader::loadCheckpoint(Checkpoint* checkpoint) {
+  if ((options & ThreadReaderOptions::NoTimestamps) == 0)
+    referential_timestamp = checkpoint->referential_timestamp;
+  memcpy(callstack_iterable, checkpoint->callstack_iterable, sizeof(int) * MAX_CALLSTACK_DEPTH);
+  memcpy(callstack_index, checkpoint->callstack_index, sizeof(int) * MAX_CALLSTACK_DEPTH);
+  current_frame = checkpoint->current_frame;
+  tokenCount = checkpoint->tokenCount;
 };
 
 //******************* EXPLORATION FUNCTIONS ********************
@@ -264,8 +289,25 @@ void ThreadReader::moveToNextToken() {
     } else {
       /* Move to the next event in the Sequence */
       auto current_token = this->pollCurToken();
-      if (current_token.type == TypeEvent)
+      switch (current_token.type) {
+      case TypeEvent:
         referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+        break;
+
+      case TypeLoop:
+        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
+          tokenCount += thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
+        referential_timestamp+=getLoopDuration(current_token);
+        break;
+
+      case TypeSequence:
+        tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
+        referential_timestamp+=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+        break;
+
+      case TypeInvalid:
+        pallas_error("Token is Invalid");
+      }
       tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
@@ -275,8 +317,25 @@ void ThreadReader::moveToNextToken() {
     } else {
       /* just move to the next iteration in the loop */
       auto current_token = this->pollCurToken();
-      if (current_token.type == TypeEvent)
+      switch (current_token.type) {
+      case TypeEvent:
         referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+        break;
+
+      case TypeLoop:
+        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
+          tokenCount += thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
+        referential_timestamp+=getLoopDuration(current_token);
+        break;
+
+      case TypeSequence:
+        tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
+        referential_timestamp+=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+        break;
+
+      case TypeInvalid:
+        pallas_error("Token is Invalid");
+      }
       tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
@@ -294,10 +353,30 @@ void ThreadReader::moveToPrevToken() {
   auto current_iterable_token = callstack_iterable[current_frame];
   pallas_assert(current_iterable_token.isIterable());
 
-  if (isEndOfSequence(current_index, current_iterable_token)) {
-    pallas_error("End of sequence");
+  if (current_index <= 0) {
+    pallas_error("Beginning of block");
   } else {
-    /* Move to the last event in the Sequence */
+    /* Move to the previous event in the Sequence */
+    auto current_token = pollCurToken();
+    switch (current_token.type) {
+    case TypeEvent:
+      referential_timestamp-=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      break;
+
+    case TypeLoop:
+      for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
+        tokenCount -= thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
+      referential_timestamp-=getLoopDuration(current_token);
+      break;
+
+    case TypeSequence:
+      tokenCount -= thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
+      referential_timestamp-=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+      break;
+
+    case TypeInvalid:
+      pallas_error("Token is Invalid");
+    }
     tokenCount[this->pollCurToken()]--;
     callstack_index[current_frame]--;
   }
@@ -336,6 +415,7 @@ void ThreadReader::enterBlock(const Token new_block) {
     printf("\n");
   }
 
+  callstack_checkpoints[current_frame] = Checkpoint(this);
   current_frame++;
   callstack_index[current_frame] = 0;
   callstack_iterable[current_frame] = new_block;
@@ -348,9 +428,8 @@ void ThreadReader::leaveBlock() {
     printf("\n");
   }
 
-  callstack_index[current_frame] = INT16_MAX;
-  callstack_iterable[current_frame] = Token();
-  current_frame--;  // pop frame
+  pallas_assert(current_frame > 0);
+  loadCheckpoint(&callstack_checkpoints[current_frame-1]);
 
   if (debugLevel >= DebugLevel::Debug && current_frame >= 0) {
     auto current_sequence = getCurIterable();
@@ -400,6 +479,7 @@ ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
   referential_timestamp = other.referential_timestamp;
   std::memcpy(callstack_iterable, other.callstack_iterable, sizeof(Token) *MAX_CALLSTACK_DEPTH);
   std::memcpy(callstack_index, other.callstack_index, sizeof(int) *MAX_CALLSTACK_DEPTH);
+  std::memcpy(callstack_checkpoints, other.callstack_checkpoints, sizeof(Checkpoint) *MAX_CALLSTACK_DEPTH);
   current_frame = other.current_frame;
   tokenCount = TokenCountMap(other.tokenCount);
   options = other.options;

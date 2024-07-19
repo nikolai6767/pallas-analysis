@@ -225,6 +225,14 @@ struct TokenCountMap : public std::map<Token, size_t> {
       }
     }
   }
+  /** Substracts each (key, value) pair of the other map to this one. */
+  void operator-=(const TokenCountMap& other) {
+    for (auto keyValue : other) {
+      if (this->count(keyValue.first) != 0) {
+        this->at(keyValue.first) -= keyValue.second;
+      }
+    }
+  }
   /** Returns a new map with the same keys, but each value has been multiplied by the given value.
    * @param multiplier Constant multiplier for each value.
    * @returns New map with a copy of the keys and the values. Each value has been multiplied by `multiplier`.
