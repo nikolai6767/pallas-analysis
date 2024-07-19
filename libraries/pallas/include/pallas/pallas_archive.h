@@ -83,12 +83,18 @@ typedef struct GlobalArchive {
   pthread_mutex_t lock;   /**< Archive-wise lock, used for synchronising some threads. */
   Definition definitions; /**< Definitions. */
 
-  struct Archive** archive_list CXX({nullptr}); /**< Array of Archive *. */
-  int nb_archives;                              /**< Number of Archive in #archive_list. */
-  int nb_allocated_archives;                    /**< Size of #archive_list. */
+  /**< Array of pointers to the Archives. Each Archive is uniquely identifier by a LocationGroup.
+   * This is only used when reading a trace (no synchronization between MPI Processes). */
+  struct Archive** archive_list CXX({nullptr});
+  /** Number of Archives in #archive_list. This should be equal to LocationGroup.size */
+  int nb_archives;
+  /**< Size of #archive_list. */
+  int nb_allocated_archives;
 
-  DEFINE_Vector(Location, locations);            /**< Vector of Location. */
-  DEFINE_Vector(LocationGroup, location_groups); /**< Vector of LocationGroup. */
+  /** Vector of Locations. Each location uniquely identifies a Thread. */
+  DEFINE_Vector(Location, locations);
+  /** Vector of LocationGroups. Each LocationGroup uniquely identifies an Archive. */
+  DEFINE_Vector(LocationGroup, location_groups);
 
 #ifdef __cplusplus
   [[nodiscard]] const struct String* getString(StringRef string_ref);
