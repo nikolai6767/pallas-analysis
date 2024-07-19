@@ -32,6 +32,10 @@ ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int option
   //  std::memset(callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   callstack_iterable[0].type = TypeSequence;
   callstack_iterable[0].id = 0;
+
+  if (thread_trace->nb_events == 0) {
+    current_frame--;
+  }
 }
 
 const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
