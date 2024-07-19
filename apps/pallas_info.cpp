@@ -154,7 +154,7 @@ void info_trace(GlobalArchive* trace) {
 void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
   printf("\t-v          Verbose mode\n");
-  printf("\t-?  -h      Display this help and exit\n");
+  printf("\t-?  -h --help     Display this help and exit\n");
 }
 
 int main(int argc, char** argv) {
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[i], "-v")) {
       pallas_debug_level_set(DebugLevel::Debug);
       nb_opts++;
-    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?")) {
+    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
       usage(argv[0]);
       return EXIT_SUCCESS;
     } else {

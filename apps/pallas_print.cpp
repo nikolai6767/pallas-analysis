@@ -328,7 +328,7 @@ int main(int argc, char** argv) {
       print_timestamp = true;
       store_timestamps = 0;
       nb_opts++;
-    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?")) {
+    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
       usage(argv[0]);
       return EXIT_SUCCESS;
     } else {
