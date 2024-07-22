@@ -135,6 +135,18 @@ bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   }
   pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
 }
+bool ThreadReader::isEndOfTrace() const {
+  pallas_assert(current_frame >= 0);
+
+  int current_index = callstack_index[current_frame];
+  auto current_iterable_token = callstack_iterable[current_frame];
+  pallas_assert(current_iterable_token.isIterable());
+
+  if (current_frame > 0 || current_iterable_token.type != TypeSequence) {
+    return false;
+  }
+  return isEndOfSequence(current_index, current_iterable_token);
+}
 
 pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
   pallas_assert(loop_id.type == TypeLoop);
@@ -398,7 +410,7 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
   } else if (current_token.type == TypeLoop && flags & PALLAS_READ_UNROLL_LOOP) {
     enterBlock(current_token);
     return pollCurToken();
-  } else if (current_frame > 1) {
+  } else if (current_frame > 0) {
     bool exited_block;
     do {
       exited_block = exitIfEndOfBlock(flags);
@@ -442,7 +454,7 @@ void ThreadReader::leaveBlock() {
 }
 
 bool ThreadReader::exitIfEndOfBlock(int flags) {
-  if (current_frame < 0)
+  if (current_frame <= 0)
     return false;
   int current_index = callstack_index[current_frame];
   auto current_iterable_token = callstack_iterable[current_frame];

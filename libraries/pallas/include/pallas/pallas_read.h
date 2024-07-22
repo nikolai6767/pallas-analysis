@@ -165,6 +165,8 @@ typedef struct ThreadReader {
   [[nodiscard]] bool isEndOfSequence(int current_index, Token sequence_id) const;
   /** Returns whether the given loop still has more Tokens after the given current_index. */
   [[nodiscard]] bool isEndOfLoop(int current_index, Token loop_id) const;
+  /** Returns whether the given loop still has more Tokens after the given current_index. */
+  [[nodiscard]] bool isEndOfTrace() const;
   /** Returns the duration of the given Loop. */
   [[nodiscard]] pallas_duration_t getLoopDuration(Token loop_id) const;
 
@@ -199,7 +201,7 @@ typedef struct ThreadReader {
   void moveToPrevToken();
   /** Gets the next token and updates the reader's state if it returns a value.
    * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
-  [[nodiscard]] std::optional<Token> getNextToken(int flags);
+  std::optional<Token> getNextToken(int flags);
   /** Enters a block */
   void enterBlock(Token new_block);
   /** Leaves the current block */
