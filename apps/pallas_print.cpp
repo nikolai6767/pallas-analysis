@@ -40,10 +40,6 @@ static void _print_duration_header() {
   }
 }
 
-static void _print_indent(const std::string& current_indent) {
-  std::cout << current_indent;
-}
-
 /* Print one event */
 static void printEvent(const pallas::Thread* thread,
                        const pallas::Token token,
@@ -71,7 +67,7 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
   return true;
 }
 
-void printTrace(pallas::GlobalArchive trace) {
+void printTrace(const pallas::GlobalArchive &trace) {
   auto readers = std::vector<pallas::ThreadReader>();
   int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
@@ -82,12 +78,15 @@ void printTrace(pallas::GlobalArchive trace) {
 
   _print_timestamp_header();
   _print_duration_header();
+  std::cout << std::endl;
 
   while (!isReadingOver(readers)) {
     pallas::ThreadReader *min_reader = &readers[0];
+    pallas_timestamp_t min_timestamp = ULONG_MAX;
     for (int i = 1; i < readers.size(); i++) {
-      if (!readers[i].isEndOfTrace() && readers[i].referential_timestamp < min_reader->referential_timestamp) {
+      if (!readers[i].isEndOfTrace() && readers[i].referential_timestamp < min_timestamp) {
         min_reader = &readers[i];
+        min_timestamp = readers[i].referential_timestamp;
       }
     }
 
@@ -102,7 +101,7 @@ void printTrace(pallas::GlobalArchive trace) {
   }
 }
 
-void printStructure(const int flags, pallas::GlobalArchive trace) {
+void printStructure(const int flags, const pallas::GlobalArchive& trace) {
   constexpr int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
@@ -116,7 +115,7 @@ void printStructure(const int flags, pallas::GlobalArchive trace) {
             std::cout << "  ";
           tr.thread_trace->printToken(current_token);
           if (current_token.type != pallas::TypeEvent) {
-            std::cout << std::endl;
+            std::cout << "\t" << tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]) << std::endl;
           } else {
             auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
             std::cout << " : ";
