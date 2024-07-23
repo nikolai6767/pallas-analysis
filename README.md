@@ -32,13 +32,13 @@ int main() {
     // The Global Archive is where all the Strings, 
     // information about Threads and Processes, and Regions are stored.
     
-    pallas_archive_register_string(...)     // Register a String
-    pallas_write_define_location_group(<processID>) // Register a LocationGroup
+    pallas_archive_register_string(...);     // Register a String
+    pallas_write_define_location_group(<processID>); // Register a LocationGroup
     Archive* archive = pallas_new_archive();
     pallas_write_archive_open(global_archive, archive, <processID>);
     // That creates an Archive, which is where you'll store local events.
             
-    pallas_write_define_location(<threadID>)       // Register a Location
+    pallas_write_define_location(<threadID>);     // Register a Location
     ThreadWriter thread_writer;
     pallas_write_thread_open(global_archive, &thread_writer, <threadID>);
     // A ThreadWriter is the interface made to log some events
@@ -63,13 +63,13 @@ int main() {
     // The Global Archive is where all the Strings, 
     // information about Threads and Processes, and Regions are stored.
     
-    globalArchive.addString(...)                   // Register a String
-    globalArchive.addLocationGroup(<processID>)    // Register a LocationGroup
+    globalArchive.addString(...);                   // Register a String
+    globalArchive.addLocationGroup(<processID>);    // Register a LocationGroup
     Archive archive = Archive();
     archive.open(globalArchive, <processID>);
     // That creates an Archive, which is where you'll store local events.
 
-    globalArchive.addLocation(<threadID>)         // Register a Location
+    globalArchive.addLocation(<threadID>);         // Register a Location
     ThreadWriter threadWriter;
     threadWriter.openThread(globalArchive, <threadID>);
     // A ThreadWriter is the interface made to log some events
