@@ -12,6 +12,7 @@
 #include <map>
 #include <sstream>
 #include "pallas/pallas_dbg.h"
+#include "pallas/pallas_log.h"
 
 namespace pallas {
 

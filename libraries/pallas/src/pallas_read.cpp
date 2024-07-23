@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "pallas/pallas_archive.h"
+#include "pallas/pallas_log.h"
 
 namespace pallas {
 

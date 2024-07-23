@@ -10,6 +10,8 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_write.h"
 #include "pallas/pallas_record.h"
+#include "pallas/pallas_log.h"
+
 using namespace pallas;
 
 static pallas_timestamp_t ts = 0;

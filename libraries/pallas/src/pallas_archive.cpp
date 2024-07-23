@@ -7,6 +7,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_log.h"
 
 namespace pallas {
 /**

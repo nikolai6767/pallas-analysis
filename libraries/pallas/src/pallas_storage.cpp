@@ -26,6 +26,7 @@
 #include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_log.h"
 
 short STORE_TIMESTAMPS = 1;
 static short STORE_HASHING = 0;

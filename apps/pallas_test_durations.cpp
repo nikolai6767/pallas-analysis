@@ -10,6 +10,7 @@
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_log.h"
 
 static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) {
   auto token = reader->pollCurToken();

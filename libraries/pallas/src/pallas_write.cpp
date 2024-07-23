@@ -16,6 +16,8 @@
 #include "pallas/pallas_storage.h"
 #include "pallas/pallas_timestamp.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_log.h"
+
 thread_local int pallas_recursion_shield = 0;
 namespace pallas {
 /**

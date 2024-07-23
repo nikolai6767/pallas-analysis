@@ -6,6 +6,8 @@
 #include <inttypes.h>
 #include <malloc.h>
 #include "pallas/pallas_hash.h"
+#include "pallas/pallas_log.h"
+
 #include "stdlib.h"
 
 #define MAX_EVENT (1000000)

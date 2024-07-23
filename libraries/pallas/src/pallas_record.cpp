@@ -3,6 +3,7 @@
 //
 
 #include "pallas/pallas_record.h"
+#include "pallas/pallas_log.h"
 #include <stdarg.h>
 
 namespace pallas {

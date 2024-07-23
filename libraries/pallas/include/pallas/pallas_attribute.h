@@ -18,7 +18,6 @@
 #ifdef __cplusplus
 namespace pallas {
 #endif
-
 /** Value container for an attributes.
  */
 typedef union AttributeValue {
@@ -353,60 +352,28 @@ static inline size_t get_value_size(pallas_type_t t) {
 }; /* namespace pallas */
 #endif
 
-static inline void pallas_attribute_list_push_data(PALLAS(AttributeList) * l, PALLAS(AttributeData) * data) {
-  uintptr_t offset = l->struct_size;
-  pallas_assert(offset + data->struct_size <= ATTRIBUTE_MAX_BUFFER_SIZE);
-  uintptr_t addr = ((uintptr_t)l) + offset;
-  memcpy((void*)addr, data, data->struct_size);
-  l->struct_size += data->struct_size;
-  l->nb_values++;
-}
-
-static inline void pallas_attribute_list_pop_data(const PALLAS(AttributeList) * l,
-                                               PALLAS(AttributeData) * data,
-                                               uint16_t* current_offset) {
-  uintptr_t addr = ((uintptr_t)&l->attributes[0]) + (*current_offset);
-  PALLAS(AttributeData)* attr_data = (PALLAS(AttributeData)*)addr;
-  uint16_t struct_size = attr_data->struct_size;
-
-  pallas_assert(struct_size + (*current_offset) <= ATTRIBUTE_MAX_BUFFER_SIZE);
-  pallas_assert(struct_size + (*current_offset) <= l->struct_size);
-
-  memcpy(data, attr_data, struct_size);
-  data->struct_size = struct_size;
-  *current_offset += struct_size;
-}
-
-static inline void pallas_attribute_list_init(PALLAS(AttributeList) * l) {
-  l->index = -1;
-  l->nb_values = 0;
-  l->struct_size = ATTRIBUTE_LIST_HEADER_SIZE;
-}
-
-static inline void pallas_attribute_list_finalize(PALLAS(AttributeList) * l __attribute__((unused))) {}
-
-static inline int pallas_attribute_list_add_attribute(PALLAS(AttributeList) * list,
-                                                   PALLAS(AttributeRef) attribute,
-                                                   size_t data_size,
-                                                   PALLAS(AttributeValue) value) {
-  if (list->nb_values + 1 >= NB_ATTRIBUTE_MAX) {
-    pallas_warn("[PALLAS] too many attributes\n");
-    return -1;
-  }
-  PALLAS(AttributeData) d;
-  d.ref = attribute;
-  d.value = value;
-  d.struct_size = ATTRIBUTE_HEADER_SIZE + data_size;
-
-  pallas_attribute_list_push_data(list, &d);
-  return 0;
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void pallas_print_attribute_value(PALLAS(Thread) * thread, PALLAS(AttributeData) * attr, PALLAS(pallas_type_t) type);
+extern void pallas_attribute_list_push_data(PALLAS(AttributeList) * l, PALLAS(AttributeData) * data);
+
+extern void pallas_attribute_list_pop_data(const PALLAS(AttributeList) * l,
+                                           PALLAS(AttributeData) * data,
+                                           uint16_t* current_offset);
+
+extern void pallas_attribute_list_init(PALLAS(AttributeList) * l);
+
+extern void pallas_attribute_list_finalize(PALLAS(AttributeList) * l __attribute__((unused)));
+
+extern int pallas_attribute_list_add_attribute(PALLAS(AttributeList) * list,
+                                               PALLAS(AttributeRef) attribute,
+                                               size_t data_size,
+                                               PALLAS(AttributeValue) value);
+
+extern void pallas_print_attribute_value(PALLAS(Thread) * thread,
+                                         PALLAS(AttributeData) * attr,
+                                         PALLAS(pallas_type_t) type);
 
 // extern void pallas_print_event_attributes(PALLAS(Thread) * thread, struct PALLAS(EventOccurence) * e);
 

@@ -9,6 +9,8 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_log.h"
+
 #include "otf2/OTF2_Archive.h"
 #include "otf2/otf2.h"
 
