@@ -325,7 +325,11 @@ void ThreadReader::moveToNextToken() {
       case TypeInvalid:
         pallas_error("Token is Invalid");
       }
-      pallas_assert(referential_timestamp + token_duration > referential_timestamp);
+#ifdef DEBUG
+      if (referential_timestamp + token_duration < referential_timestamp) {
+        pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id, token_duration);
+      }
+#endif
       referential_timestamp+=token_duration;
       tokenCount[current_token]++;
       callstack_index[current_frame]++;
