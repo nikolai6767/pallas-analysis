@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#include <optional>
+
 #include "pallas.h"
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
