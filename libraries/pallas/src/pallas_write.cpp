@@ -394,7 +394,6 @@ static Record getMatchingRecord(Record r) {
 }
 
 void ThreadWriter::recordExitFunction() {
-recordExitFunctionBegin:
   auto& curTokenSeq = getCurrentTokenSequence();
 
 #ifdef DEBUG
@@ -451,9 +450,8 @@ recordExitFunctionBegin:
         storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
         pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
         underSequence.push_back(last_token);
-        goto recordExitFunctionBegin;
-        // https://xkcd.com/292/
-        // Relevant XKCD
+        recordExitFunction();
+        return;
       }
     }
   }
