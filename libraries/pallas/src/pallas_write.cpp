@@ -177,7 +177,7 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     const pallas_duration_t duration_second_iteration = thread_trace.getLastSequenceDuration(loop_seq, 0);
     // We don't take into account the last token because it's not a duration yet
 
-    loop_seq->durations->add(duration_first_iteration - duration_second_iteration);
+    loop_seq->durations->add(duration_first_iteration);
     addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
   }
 
@@ -228,7 +228,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         pallas_log(DebugLevel::Debug, "findLoopBasic: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
-        const pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(loopSeq, true);
+        const pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(loopSeq, 0);
         addDurationToComplete(loopSeq->durations->add(ts));
         curTokenSeq.resize(startS1);
         // Roundabount way to remove the tokens representing the loop
@@ -691,7 +691,7 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
     if (token.type == TokenType::TypeEvent) {
       auto* event = getEventSummary(token);
       DOFOR(i, count) {
-        sum += event->durations->operator[](event->durations->size - i - offset * count);
+        sum += event->durations->operator[](event->durations->size - i - offset * count - 1);
       }
     }
   }

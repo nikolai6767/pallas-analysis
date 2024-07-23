@@ -135,6 +135,18 @@ bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   }
   pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
 }
+bool ThreadReader::isEndOfTrace() const {
+  pallas_assert(current_frame >= 0);
+
+  int current_index = callstack_index[current_frame];
+  auto current_iterable_token = callstack_iterable[current_frame];
+  pallas_assert(current_iterable_token.isIterable());
+
+  if (current_frame > 0 || current_iterable_token.type != TypeSequence) {
+    return false;
+  }
+  return isEndOfSequence(current_index, current_iterable_token);
+}
 
 pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
   pallas_assert(loop_id.type == TypeLoop);
@@ -293,25 +305,32 @@ void ThreadReader::moveToNextToken() {
     } else {
       /* Move to the next event in the Sequence */
       auto current_token = this->pollCurToken();
+      pallas_duration_t token_duration = 0;
       switch (current_token.type) {
       case TypeEvent:
-        referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+        token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
         break;
 
       case TypeLoop:
         for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
           tokenCount += thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
-        referential_timestamp+=getLoopDuration(current_token);
+        token_duration = getLoopDuration(current_token);
         break;
 
       case TypeSequence:
         tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
-        referential_timestamp+=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+        token_duration = thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
         break;
 
       case TypeInvalid:
         pallas_error("Token is Invalid");
       }
+#ifdef DEBUG
+      if (referential_timestamp + token_duration < referential_timestamp) {
+        pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id, token_duration);
+      }
+#endif
+      referential_timestamp+=token_duration;
       tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
@@ -321,25 +340,28 @@ void ThreadReader::moveToNextToken() {
     } else {
       /* just move to the next iteration in the loop */
       auto current_token = this->pollCurToken();
+      pallas_duration_t token_duration = 0;
       switch (current_token.type) {
       case TypeEvent:
-        referential_timestamp+=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+        token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
         break;
 
       case TypeLoop:
         for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
           tokenCount += thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
-        referential_timestamp+=getLoopDuration(current_token);
+        token_duration = getLoopDuration(current_token);
         break;
 
       case TypeSequence:
         tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
-        referential_timestamp+=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+        token_duration = thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
         break;
 
       case TypeInvalid:
         pallas_error("Token is Invalid");
       }
+      pallas_assert(referential_timestamp + token_duration > referential_timestamp);
+      referential_timestamp+=token_duration;
       tokenCount[current_token]++;
       callstack_index[current_frame]++;
     }
@@ -398,7 +420,7 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
   } else if (current_token.type == TypeLoop && flags & PALLAS_READ_UNROLL_LOOP) {
     enterBlock(current_token);
     return pollCurToken();
-  } else if (current_frame > 1) {
+  } else if (current_frame > 0) {
     bool exited_block;
     do {
       exited_block = exitIfEndOfBlock(flags);
@@ -442,7 +464,7 @@ void ThreadReader::leaveBlock() {
 }
 
 bool ThreadReader::exitIfEndOfBlock(int flags) {
-  if (current_frame < 0)
+  if (current_frame <= 0)
     return false;
   int current_index = callstack_index[current_frame];
   auto current_iterable_token = callstack_iterable[current_frame];
