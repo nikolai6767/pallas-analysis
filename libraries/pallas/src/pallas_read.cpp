@@ -448,8 +448,6 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
   const auto next_token = pollNextToken();
   if (next_token.has_value()) {
     moveToNextToken();
-    moveToPrevToken();
-    moveToNextToken();
   }
   return next_token;
 }
