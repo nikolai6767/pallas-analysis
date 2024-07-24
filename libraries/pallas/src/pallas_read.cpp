@@ -402,28 +402,28 @@ void ThreadReader::moveToPrevToken() {
     pallas_error("Beginning of block");
   } else {
     /* Move to the previous event in the Sequence */
-    auto current_token = pollCurToken();
-    switch (current_token.type) {
+    auto previous_token = pollPrevToken().value();
+    tokenCount[previous_token]--;
+    callstack_index[current_frame]--;
+    switch (previous_token.type) {
     case TypeEvent:
-      referential_timestamp-=getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      referential_timestamp-=getEventSummary(previous_token)->durations->at(tokenCount[previous_token]);
       break;
 
     case TypeLoop:
-      for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
-        tokenCount -= thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
-      referential_timestamp-=getLoopDuration(current_token);
+      for (int i = 0; i < thread_trace->getLoop(previous_token)->nb_iterations[tokenCount[previous_token]]; i++)
+        tokenCount -= thread_trace->getSequence(thread_trace->getLoop(previous_token)->repeated_token)->getTokenCount(thread_trace);
+      referential_timestamp-=getLoopDuration(previous_token);
       break;
 
     case TypeSequence:
-      tokenCount -= thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
-      referential_timestamp-=thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+      tokenCount -= thread_trace->getSequence(previous_token)->getTokenCount(thread_trace);
+      referential_timestamp-=thread_trace->getSequence(previous_token)->durations->at(tokenCount[previous_token]);
       break;
 
     case TypeInvalid:
       pallas_error("Token is Invalid");
     }
-    tokenCount[this->pollCurToken()]--;
-    callstack_index[current_frame]--;
   }
 }
 
@@ -447,6 +447,8 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
   }
   const auto next_token = pollNextToken();
   if (next_token.has_value()) {
+    moveToNextToken();
+    moveToPrevToken();
     moveToNextToken();
   }
   return next_token;
