@@ -214,6 +214,8 @@ typedef struct ThreadReader {
   bool exitIfEndOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
 
   ~ThreadReader();
+
+  ThreadReader(const ThreadReader &) = default;
   ThreadReader(ThreadReader&& other) noexcept ;
 } ThreadReader;
 
