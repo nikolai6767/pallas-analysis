@@ -3,9 +3,12 @@
  * See LICENSE in top-level directory.
  */
 
+
+#include <cinttypes>
+#include <sstream>
+
 #include "pallas/pallas.h"
 #include "pallas/pallas_log.h"
-#include <cinttypes>
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
@@ -67,7 +70,7 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
 }
 
 std::string Thread::getTokenString(Token token) const {
-  std::stringstream tempString;
+  std::ostringstream tempString;
   switch (token.type) {
   case TypeInvalid:
     tempString << "U";
