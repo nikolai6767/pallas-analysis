@@ -407,6 +407,7 @@ void ThreadReader::moveToPrevToken() {
   } else {
     /* Move to the previous event in the Sequence */
     auto previous_token = pollPrevToken().value();
+    auto current_token = pollCurToken();
     tokenCount[previous_token]--;
     callstack_index[current_frame]--;
     switch (previous_token.type) {
@@ -415,7 +416,6 @@ void ThreadReader::moveToPrevToken() {
       break;
 
     case TypeLoop:
-
       for (int i = 0; i < thread_trace->getLoop(previous_token)->nb_iterations[tokenCount[previous_token]]; i++) {
         tokenCount -=  thread_trace->getSequence(thread_trace->getLoop(previous_token)->repeated_token)->getTokenCount(thread_trace);
         tokenCount[thread_trace->getLoop(current_token)->repeated_token]--;
