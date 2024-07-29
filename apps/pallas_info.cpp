@@ -14,46 +14,42 @@
 #include "pallas/pallas_storage.h"
 #include "pallas/pallas_log.h"
 
+#define DURATION_WIDTH 15
+
 using namespace pallas;
-void print_sequence(const Sequence* s) {
-  printf("{");
+void print_sequence(const Sequence* s, const Thread* t) {
+  std::cout << "{";
   for (unsigned i = 0; i < s->size(); i++) {
     const Token token = s->tokens[i];
-    printf("%c%d", PALLAS_TOKEN_TYPE_C(token), token.id);
+    std::cout << t->getTokenString(token);
     if (i < s->size() - 1)
       printf(", ");
   }
-  printf("}\n");
+  std::cout << "}" << std::endl;
 }
 
 void info_event(Thread* t, EventSummary* e) {
   pallas_print_event(t, &e->event);
-  printf("\t{.nb_events: %zu}\n", e->durations->size);
+  std::cout << "\t{.nb_events: " << e->durations->size << "}" << std::endl;
 }
 
 void info_sequence(Sequence* s) {
-  printf("{.size: %zu}\n", pallas_sequence_get_size(s));
+  std::cout << "\t{.size: " << s->size() << "}" << std::endl;
 }
 
-void info_loop(Loop* l) {
-  printf("{.nb_loops: %zu, .repeated_token: %c%d, .nb_iterations: ", l->nb_iterations.size(),
-         PALLAS_TOKEN_TYPE_C(l->repeated_token), l->repeated_token.id);
-  printf("[");
-  for (auto& i : l->nb_iterations) {
-    printf("%u", i);
+void info_loop(Loop* l, Thread* t) {
+  std::cout << "{.nb_loops: " << l->nb_iterations.size() <<
+                  ", .repeated_token: " << t->getTokenString(l->repeated_token) <<
+                  ", .nb_iterations: [";
+  for (const auto& i : l->nb_iterations) {
+    std::cout << i;
     if (&i != &l->nb_iterations.back()) {
-      printf(", ");
+      std::cout << ", ";
     }
   }
-  printf("]}\n");
+  std::cout <<"]}" << std::endl;
 }
 
-#ifdef HAS_FORMAT
-#define UINT64_FILTER(d) \
-  ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::format("{:>21.9}", d / 1e9))
-#else
-#define UINT64_FILTER(d) ((d == UINT64_MAX) ? "INVALID_MAX" : (d == 0) ? "INVALID_MIN" : std::to_string(d / 1e9))
-#endif
 void info_thread(Thread* t) {
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
   printf("\tEvents {.nb_events: %d}\n", t->nb_events);
@@ -65,20 +61,22 @@ void info_thread(Thread* t) {
   printf("\tSequences {.nb_sequences: %d}\n", t->nb_sequences);
   for (unsigned i = 0; i < t->nb_sequences; i++) {
     std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
-    print_sequence(t->sequences[i]);
+    print_sequence(t->sequences[i], t);
     if (t->sequences[i]->durations->size > 1) {
-      std::cout << "\t\t\tMin:  " << UINT64_FILTER(t->sequences[i]->durations->min)
-                << "\n\t\t\tMax:  " << UINT64_FILTER(t->sequences[i]->durations->max)
-                << "\n\t\t\tMean: " << UINT64_FILTER(t->sequences[i]->durations->mean) << std::endl;
+      std::cout.precision(9);
+      std::cout << "\t\t\tMin:  " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->min / 1e9
+                << "\n\t\t\tMax:  " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->max / 1e9
+                << "\n\t\t\tMean: " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->mean / 1e9
+                << std::endl;
     } else {
-      std::cout << "\t\t\tDuration: " << t->sequences[i]->durations->front() << std::endl;
+      std::cout << "\t\t\tDuration: " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->front() / 1e9 << std::endl;
     }
   }
 
   printf("\tLoops {.nb_loops: %d}\n", t->nb_loops);
   for (unsigned i = 0; i < t->nb_loops; i++) {
     printf("\t\tL%d\t", i);
-    info_loop(&t->loops[i]);
+    info_loop(&t->loops[i], t);
   }
 }
 
