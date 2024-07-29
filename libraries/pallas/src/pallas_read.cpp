@@ -344,7 +344,9 @@ void ThreadReader::moveToNextToken() {
 
       case TypeLoop:
         for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
-          tokenCount += thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
+          tokenCount += thread_trace->getSequence(
+            thread_trace->getLoop(current_token)->repeated_token
+            )->getTokenCount(thread_trace);
         token_duration = getLoopDuration(current_token);
         break;
 
@@ -408,7 +410,25 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
   if (current_frame < 0)
     return std::nullopt;
 
+  pallas_timestamp_t current_timestamp = referential_timestamp;
+
   auto current_token = pollCurToken();
+
+  /*pallas_timestamp_t expected_timestamp = current_timestamp;
+  switch (current_token.type) {
+  case TypeEvent:
+    expected_timestamp += this->getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+    break;
+  case TypeSequence:
+    expected_timestamp += this->thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+    break;
+  case TypeLoop:
+    expected_timestamp += this->getLoopDuration(current_token);
+    break;
+  case TypeInvalid:
+    pallas_error("Invalid Token");
+    break;
+  }*/
   /* Perform callstack actions based on flags and current state*/
   if (current_token.type == TypeSequence && flags & PALLAS_READ_UNROLL_SEQUENCE) {
     enterBlock(current_token);
@@ -422,10 +442,15 @@ std::optional<Token> ThreadReader::getNextToken(const int flags) {
       exited_block = exitIfEndOfBlock(flags);
     } while (exited_block);
   }
+
   const auto next_token = pollNextToken();
   if (next_token.has_value()) {
     moveToNextToken();
   }
+  /*if (referential_timestamp != expected_timestamp) {
+    std::cerr << "Expected " << expected_timestamp / 1e9 << ", got " << referential_timestamp / 1e9 << " in " << std::endl;
+    pallas_error("");
+  }*/
   return next_token;
 }
 

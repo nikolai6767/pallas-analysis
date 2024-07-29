@@ -111,16 +111,22 @@ void printStructure(const int flags, const pallas::GlobalArchive& trace) {
       std::cout << "--- Thread " << j << " ---" << std::endl;
       auto current_token = tr.pollCurToken();
       while (true) {
-          for (int k = 0; k < tr.current_frame - 1; k++)
-            std::cout << "  ";
-          tr.thread_trace->printToken(current_token);
-          if (current_token.type != pallas::TypeEvent) {
-            std::cout << "\t" << tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]) << std::endl;
-          } else {
-            auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
-            std::cout << " : ";
-            printEvent(tr.thread_trace, current_token, occ);
-          }
+        for (int k = 0; k < tr.current_frame - 1; k++)
+          std::cout << "  ";
+        tr.thread_trace->printToken(current_token);
+        for (int k = 10; k > tr.current_frame - 1; k--)
+          std::cout << "  ";
+        if (current_token.type == pallas::TypeEvent) {
+          auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
+          std::cout << " : ";
+          printEvent(tr.thread_trace, current_token, occ);
+        } else if (current_token.type == pallas::TypeSequence) {
+          printf("%lu ", tr.tokenCount[current_token]);
+          printf("%21.9lf\n", tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]) / 1e9);
+        } else if (current_token.type == pallas::TypeLoop) {
+          printf("%lu ", tr.tokenCount[current_token]);
+          printf("%21.9lf\n", tr.getLoopDuration(current_token) / 1e9);
+        }
         auto next_token = tr.getNextToken(flags);
         if (!next_token.has_value())
           break;
