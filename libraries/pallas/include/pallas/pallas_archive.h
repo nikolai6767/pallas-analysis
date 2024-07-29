@@ -115,7 +115,8 @@ typedef struct GlobalArchive {
 
   [[nodiscard]] const LocationGroup* getLocationGroup(LocationGroupId) const;
   [[nodiscard]] const Location* getLocation(ThreadId) const;
-  Archive* getArchive(LocationGroupId ArchiveId, bool print_warning = true);
+  Archive* getArchive(LocationGroupId archiveId, bool print_warning = true);
+  void freeArchive(LocationGroupId archiveId);
 #endif
 } GlobalArchive;
 

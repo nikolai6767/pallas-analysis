@@ -1434,6 +1434,16 @@ pallas::Archive* pallas::GlobalArchive::getArchive(pallas::LocationGroupId archi
   return arch;
 }
 
+void pallas::GlobalArchive::freeArchive(pallas::LocationGroupId archiveId) {
+  for (int i = 0; i < nb_archives; i++) {
+    if (archive_list[i] != nullptr && archive_list[i]->id == archiveId) {
+      delete archive_list[i];
+      archive_list[i] = nullptr;
+      return;
+    }
+  }
+};
+
 void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_filename) {
   auto* temp_main_filename = strdup(main_filename);
   char* trace_name = strdup(basename(temp_main_filename));
