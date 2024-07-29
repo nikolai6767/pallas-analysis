@@ -195,10 +195,6 @@ static void pallasReadLocations(pallas::GlobalArchive* a);
 
 void pallasLoadThread(pallas::Archive* globalArchive, pallas::ThreadId thread_id);
 
-static pallas::Archive* pallasGetArchive(pallas::GlobalArchive* global_archive,
-                                         pallas::LocationGroupId archive_id,
-                                         bool print_warning = true);
-
 /******************* Read/Write/Compression function for vectors and arrays *******************/
 
 /** Compresses the content in src using ZSTD and writes it to dest. Returns the amount of data written.
@@ -1401,40 +1397,39 @@ static void pallasReadArchive(pallas::GlobalArchive* global_archive,
   file.close();
 }
 
-static pallas::Archive* pallasGetArchive(pallas::GlobalArchive* global_archive,
-                                         pallas::LocationGroupId archive_id,
+pallas::Archive* pallas::GlobalArchive::getArchive(pallas::LocationGroupId archive_id,
                                          bool print_warning) {
   /* check if archive_id is already known */
-  for (int i = 0; i < global_archive->nb_archives; i++) {
-    if (global_archive->archive_list[i] != nullptr && global_archive->archive_list[i]->id == archive_id) {
-      return global_archive->archive_list[i];
+  for (int i = 0; i < nb_archives; i++) {
+    if (archive_list[i] != nullptr && archive_list[i]->id == archive_id) {
+      return archive_list[i];
     }
   }
 
   /* not found. we need to read the archive */
   auto* arch = new pallas::Archive();
-  char* filename = pallas_archive_filename(global_archive, archive_id);
-  char* fullpath = pallas_archive_fullpath(global_archive->dir_name, filename);
-  if (access(fullpath, R_OK) < 0) {
+  char* archiveFilename = pallas_archive_filename(this, archive_id);
+  char* archiveFullpath = pallas_archive_fullpath(dir_name, archiveFilename);
+  if (access(archiveFullpath, R_OK) < 0) {
     if (print_warning)
-      pallas_warn("I can't read %s: %s\n", fullpath, strerror(errno));
-    free(fullpath);
+      pallas_warn("I can't read %s: %s\n", archiveFullpath, strerror(errno));
+    free(archiveFullpath);
     return nullptr;
   }
 
-  pallas_log(pallas::DebugLevel::Verbose, "Reading archive %s\n", fullpath);
-  delete[] fullpath;
+  pallas_log(pallas::DebugLevel::Verbose, "Reading archive %s\n", archiveFullpath);
+  delete[] archiveFullpath;
 
-  pallasReadArchive(global_archive, arch, strdup(global_archive->dir_name), filename);
+  pallasReadArchive(this, arch, strdup(dir_name), archiveFilename);
 
   int index = 0;
-  while (global_archive->archive_list[index] != nullptr) {
+  while (archive_list[index] != nullptr) {
     index++;
-    if (index >= global_archive->nb_archives) {
+    if (index >= nb_archives) {
       pallas_error("Tried to load more archives than there are.\n");
     }
   }
-  global_archive->archive_list[index] = arch;
+  archive_list[index] = arch;
 
   return arch;
 }
@@ -1449,18 +1444,18 @@ void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_fi
 
   for (auto& locationGroup : globalArchive->location_groups) {
     if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
-      pallasGetArchive(globalArchive, locationGroup.id);
+      globalArchive->getArchive(locationGroup.id);
     else
-      pallasGetArchive(globalArchive, locationGroup.mainLoc);
+      globalArchive->getArchive(locationGroup.mainLoc);
   }
 
   for (auto& location : globalArchive->locations) {
     auto* thread = new pallas::Thread();
     auto parent = globalArchive->getLocationGroup(location.parent);
     if (parent->mainLoc == PALLAS_THREAD_ID_INVALID)
-      thread->archive = pallasGetArchive(globalArchive, parent->id);
+      thread->archive = globalArchive->getArchive(parent->id);
     else
-      thread->archive = pallasGetArchive(globalArchive, parent->mainLoc);
+      thread->archive = globalArchive->getArchive(parent->mainLoc);
 
     pallasReadThread(globalArchive, thread, location.id);
     int index = location.id - parent->mainLoc;
