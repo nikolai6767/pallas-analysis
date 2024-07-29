@@ -1,1 +1,0 @@
-allowed_pull_policies = ["if-not-present"]
