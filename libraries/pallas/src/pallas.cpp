@@ -66,24 +66,32 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
   pallas_error("Invalid parameter to getToken\n");
 }
 
-void Thread::printToken(Token token) const {
+std::string Thread::getTokenString(Token token) const {
+  std::stringstream tempString;
   switch (token.type) {
-  case TypeEvent: {
-#define ET2C(et) (((et) == PALLAS_EVENT_ENTER ? 'E' : (et) == PALLAS_EVENT_LEAVE ? 'L' : 'S'))
-    Event* event = getEvent(token);
-    printf("E%d_%c", token.id, ET2C(event->record));
+  case TypeInvalid:
+    tempString << "U";
     break;
-  }
+  case TypeEvent:
+    tempString << "E";
+    break;
   case TypeSequence:
-    printf("S%d", token.id);
+    tempString << "S";
     break;
   case TypeLoop:
-    printf("L%d", token.id);
-    break;
-  default:
-    printf("U%d_%d", token.type, token.id);
+    tempString << "L";
     break;
   }
+  tempString << token.id;
+  if (token.type == TypeEvent) {
+    Event* event = getEvent(token);
+    tempString << ((event->record) == PALLAS_EVENT_ENTER ? "E" : (event->record) == PALLAS_EVENT_LEAVE ? "L" : "S");
+  }
+  return tempString.str();
+}
+
+void Thread::printToken(Token token) const {
+  std::cout << getTokenString(token);
 }
 
 void Thread::printTokenArray(const Token* array, size_t start_index, size_t len) const {
@@ -114,7 +122,7 @@ void Thread::printEvent(pallas::Event* e) const {
   char output_str[1024];
   size_t buffer_size = 1024;
   printEventToString(e, output_str, buffer_size);
-  printf("%s", output_str);
+  std::cout << output_str;
 }
 
 static inline void pop_data(Event* e, void* data, size_t data_size, byte*& cursor) {

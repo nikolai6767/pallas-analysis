@@ -446,6 +446,7 @@ typedef struct Thread {
    * S and L indicates a Sequence or a Loop.
    */
   void printToken(Token) const;
+  std::string getTokenString(Token) const;
   void printTokenArray(const Token* array, size_t start_index, size_t len) const; /**< Prints an array of Tokens. */
   void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
   void printSequence(Token) const; /**< Prints the Sequence corresponding to the given Token. */

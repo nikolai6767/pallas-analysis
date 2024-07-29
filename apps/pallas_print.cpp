@@ -4,14 +4,14 @@
  */
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <string>
-#include <limits>
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
-#include "pallas/pallas_log.h"
 
 bool verbose = false;
 bool per_thread = false;
@@ -20,40 +20,40 @@ bool show_timestamps = true;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
   if (show_timestamps) {
-    printf("%21.9lf\t", ts / 1e9);
+    std::cout.precision(9);
+    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
   }
 }
 static void _print_timestamp_header() {
   if (show_timestamps) {
-    printf("%21s\t", "Timestamp");
+    std::cout << std::right << std::setw(21) << "Timestamp";
   }
 }
 
 static void _print_duration(pallas_timestamp_t d) {
   if (show_durations) {
-    printf("%21.9lf\t", d / 1e9);
+    std::cout.precision(9);
+    std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
   }
 }
 
 static void _print_duration_header() {
   if (show_durations) {
-    printf("%21s\t", "Duration");
+    std::cout << std::right << std::setw(21) << "Duration";
   }
 }
 
 /* Print one event */
-static void printEvent(const pallas::Thread* thread,
-                       const pallas::Token token,
-                       const pallas::EventOccurence e) {
+static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
   _print_timestamp(e.timestamp);
   _print_duration(e.duration);
 
   if (!per_thread)
-    std::cout << thread->getName() << "\t";
+    std::cout << std::right << std::setw(10) << thread->getName();
   if (verbose) {
-    thread->printToken(token);
-    std::cout << "\t";
+    std::cout << std::right << std::setw(10) << thread->getTokenString(token);
   }
+  std::cout << std::setw(4) << " ";
   thread->printEvent(e.event);
   thread->printEventAttribute(&e);
   std::cout << std::endl;
@@ -68,11 +68,11 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
   return true;
 }
 
-void printTrace(const pallas::GlobalArchive &trace) {
+void printTrace(const pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
   int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++)
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++)
       if (trace.archive_list[i]->threads[j])
         readers.emplace_back(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
   }
@@ -82,7 +82,7 @@ void printTrace(const pallas::GlobalArchive &trace) {
   std::cout << std::endl;
 
   while (!isReadingOver(readers)) {
-    pallas::ThreadReader *min_reader = &readers[0];
+    pallas::ThreadReader* min_reader = &readers[0];
     pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
     for (int i = 1; i < readers.size(); i++) {
       if (!readers[i].isEndOfTrace() && readers[i].referential_timestamp < min_timestamp) {
@@ -102,41 +102,80 @@ void printTrace(const pallas::GlobalArchive &trace) {
   }
 }
 
-void printStructure(const int flags, const pallas::GlobalArchive& trace) {
-  constexpr int reader_options = pallas::ThreadReaderOptions::None;
-  for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
-      if (!trace.archive_list[i]->threads[j])
-        continue;
-      pallas::ThreadReader tr = pallas::ThreadReader(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
-      std::cout << "--- Thread " << j << " ---" << std::endl;
-      auto current_token = tr.pollCurToken();
-      while (true) {
-        for (int k = 0; k < tr.current_frame - 1; k++)
-          std::cout << "  ";
-        tr.thread_trace->printToken(current_token);
-        for (int k = 10; k > tr.current_frame - 1; k--)
-          std::cout << "  ";
-        if (current_token.type == pallas::TypeEvent) {
-          auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
-          std::cout << " : ";
-          printEvent(tr.thread_trace, current_token, occ);
-        } else if (current_token.type == pallas::TypeSequence) {
-          printf("%lu ", tr.tokenCount[current_token]);
-          printf("%21.9lf\n", tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]) / 1e9);
-        } else if (current_token.type == pallas::TypeLoop) {
-          printf("%lu ", tr.tokenCount[current_token]);
-          printf("%21.9lf\n", tr.getLoopDuration(current_token) / 1e9);
-        }
-        auto next_token = tr.getNextToken(flags);
-        if (!next_token.has_value())
-          break;
-        current_token = next_token.value();
-      }
+static std::string structure_indent[MAX_CALLSTACK_DEPTH];
+std::string getCurrentIndent(const pallas::ThreadReader& tr) {
+  if (tr.current_frame <= 1) {
+    return "";
+  }
+  const auto t = tr.pollCurToken();
+  std::string current_indent;
+  bool isLastOfSeq = tr.isEndOfCurrentBlock();
+  structure_indent[tr.current_frame - 2] = (isLastOfSeq ? "╰" : "├");
+    DOFOR(i, tr.current_frame - 1) {
+      current_indent += structure_indent[i];
     }
+    if (t.type != pallas::TypeEvent) {
+      if (t.type == pallas::TypeSequence && tr.thread_trace->getSequence(t)->isFunctionSequence(tr.thread_trace)) {
+        current_indent += "┬"; //"─";
+      } else {
+        current_indent += "┬";
+      }
+//      current_indent += ((t.type == pallas::TypeSequence && e->sequence_occurence.sequence->isFunctionSequence(thread))
+//                         || (isInLoop && !explore_loop_sequences)) ? "─" : "┬";
+    } else {
+      current_indent += "─";
+    }
+    structure_indent[tr.current_frame - 2] = isLastOfSeq ? " " : "│";
+    return current_indent;
+}
+
+void printThreadStructure(const int flags, pallas::ThreadReader& tr) {
+  std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
+  auto current_token = tr.pollCurToken();
+  while (true) {
+    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.current_frame <= 1) ? 0 : tr.current_frame))
+              << tr.thread_trace->getTokenString(current_token) << "";
+    if (current_token.type == pallas::TypeEvent) {
+      auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
+      printEvent(tr.thread_trace, current_token, occ);
+    }
+    else if (current_token.type == pallas::TypeSequence) {
+      if (show_durations) {
+        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]);
+        std::cout << std::setw(21) << "";
+        std::cout.precision(9);
+        std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
+      } std::cout << std::endl;
+    } else if (current_token.type == pallas::TypeLoop) {
+      if (show_durations) {
+      auto d = tr.getLoopDuration(current_token);
+      std::cout << std::setw(21) << "";
+      std::cout.precision(9);
+      std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
+    } std::cout << std::endl;
+    }
+    auto next_token = tr.getNextToken(flags);
+    if (!next_token.has_value())
+      break;
+    current_token = next_token.value();
   }
 }
 
+void printStructure(const int flags, const pallas::GlobalArchive& trace) {
+  constexpr int reader_options = pallas::ThreadReaderOptions::None;
+  for (int i = 0; i < trace.nb_archives; i++) {
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
+      if (!trace.archive_list[i]->threads[j])
+        continue;
+      pallas::ThreadReader tr = pallas::ThreadReader(
+        trace.archive_list[i],
+        trace.archive_list[i]->threads[j]->id,
+        reader_options
+        );
+      printThreadStructure(flags, tr);
+    }
+  }
+}
 
 void usage(const char* prog_name) {
   std::cout << "Usage : " << prog_name << " [options] <trace file>" << std::endl;
@@ -151,11 +190,11 @@ void usage(const char* prog_name) {
 }
 
 int main(const int argc, char* argv[]) {
-  int nb_opts = 0;
   int flags = PALLAS_READ_UNROLL_ALL;
   bool show_structure = false;
+  char* trace_name;
 
-  for (nb_opts = 1; nb_opts < argc; nb_opts++) {
+  for (int nb_opts = 1; nb_opts < argc; nb_opts++) {
     if (!strcmp(argv[nb_opts], "-v")) {
       pallas_debug_level_set(pallas::DebugLevel::Debug);
     } else if (!strcmp(argv[nb_opts], "-h") || !strcmp(argv[nb_opts], "-?")) {
@@ -179,11 +218,10 @@ int main(const int argc, char* argv[]) {
       /* Unknown parameter name. It's probably the trace's path name. We can stop
        * parsing the parameter list.
        */
-      break;
+      trace_name = argv[nb_opts];
     }
   }
 
-  char* trace_name = argv[nb_opts];
   if (trace_name == nullptr) {
     std::cout << "Missing trace file" << std::endl;
     usage(argv[0]);
@@ -200,7 +238,6 @@ int main(const int argc, char* argv[]) {
 
   return EXIT_SUCCESS;
 }
-
 
 /* -*-
    mode: c;
