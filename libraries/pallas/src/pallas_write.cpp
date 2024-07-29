@@ -464,9 +464,10 @@ void ThreadWriter::recordExitFunction() {
 #endif
 
   const Token seq_id = thread_trace.getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
-  const auto* seq = thread_trace.sequences[seq_id.id];
+  auto* seq = thread_trace.sequences[seq_id.id];
 
-  const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
+  const pallas_timestamp_t sequence_duration = thread_trace.getLastSequenceDuration(seq, 0);
+//  last_timestamp - sequence_start_timestamp[cur_depth];
   // I feel like it's a bad idea to simply... ignore the duration of the "Close" event
   addDurationToComplete(seq->durations->add(sequence_duration));
 
@@ -691,20 +692,27 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
     if (token.type == TokenType::TypeEvent) {
       auto* event = getEventSummary(token);
       DOFOR(i, count) {
-        sum += event->durations->operator[](event->durations->size - i - offset * count - 1);
+        sum += event->durations->at(event->durations->size - i - offset * count - 1);
       }
     }
   }
   if (offset == 0) {
     // We need to remove the duration of the last token, because it hasn't been calculated yet
-    auto& token = sequence->tokens.back();
-    if (token.type == TokenType::TypeEvent) {
-      auto* event = getEventSummary(token);
-      sum -= event->durations->back();
-    } else {
-      auto* seq = getSequence(token);
-      sum -= seq->durations->back();
+    auto token = sequence->tokens.back();
+    while (token.type != TokenType::TypeEvent) {
+      if (token.type == TokenType::TypeSequence) {
+        auto* seq = getSequence(token);
+        token = seq->tokens.back();
+        continue;
+      } else {
+        auto* loop = getLoop(token);
+        auto* loop_seq = getSequence(loop->repeated_token);
+        token = loop_seq->tokens.back();
+        continue;
+      }
     }
+    auto* event = getEventSummary(token);
+    sum -= event->durations->back();
   }
   return sum;
 }
