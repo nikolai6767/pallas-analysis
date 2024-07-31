@@ -87,10 +87,10 @@ void printTrace(const pallas::GlobalArchive& trace) {
   while (!isReadingOver(readers)) {
     pallas::ThreadReader* min_reader = &readers[0];
     pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
-    for (int i = 1; i < readers.size(); i++) {
-      if (!readers[i].isEndOfTrace() && readers[i].referential_timestamp < min_timestamp) {
-        min_reader = &readers[i];
-        min_timestamp = readers[i].referential_timestamp;
+    for (auto & reader : readers) {
+      if (!reader.isEndOfTrace() && reader.referential_timestamp < min_timestamp) {
+        min_reader = &reader;
+        min_timestamp = reader.referential_timestamp;
       }
     }
 
