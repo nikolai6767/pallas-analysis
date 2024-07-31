@@ -52,7 +52,7 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int options) {
   callstack_iterable[0].id = 0;
 
   // Enter sequence 0
-  this->enterBlock(this->pollCurToken());
+  enterBlock(pollCurToken());
 }
 
 const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
@@ -534,15 +534,7 @@ bool ThreadReader::exitIfEndOfBlock(int flags) {
 }
 
 ThreadReader::~ThreadReader() {
-  bool hasStillThreads = false;
-  if (archive) {
-    archive->freeThread(thread_trace->id);
-    DOFOR(i, archive->nb_threads) {
-      hasStillThreads = hasStillThreads || archive->threads[i] != nullptr;
-    }
-  }
-  if (!hasStillThreads)
-    delete archive;
+  archive->freeThread(thread_trace->id);
 }
 
 ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
