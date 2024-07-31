@@ -415,18 +415,21 @@ void ThreadReader::moveToPrevToken() {
       referential_timestamp-=getEventSummary(previous_token)->durations->at(tokenCount[previous_token]);
       break;
 
-    case TypeLoop:
-      for (int i = 0; i < thread_trace->getLoop(previous_token)->nb_iterations[tokenCount[previous_token]]; i++) {
-        tokenCount -=  thread_trace->getSequence(thread_trace->getLoop(previous_token)->repeated_token)->getTokenCount(thread_trace);
-        tokenCount[thread_trace->getLoop(previous_token)->repeated_token]--;
+    case TypeLoop: {
+      auto prev_loop = thread_trace->getLoop(previous_token);
+      for (int i = 0; i < prev_loop->nb_iterations[tokenCount[previous_token]]; i++) {
+        tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCount(thread_trace);
+        tokenCount[prev_loop->repeated_token]--;
       }
-      referential_timestamp-=getLoopDuration(previous_token);
+      referential_timestamp -= getLoopDuration(previous_token);
       break;
-
-    case TypeSequence:
-      tokenCount -= thread_trace->getSequence(previous_token)->getTokenCount(thread_trace);
-      referential_timestamp-=thread_trace->getSequence(previous_token)->durations->at(tokenCount[previous_token]);
+    }
+    case TypeSequence: {
+      auto prev_sequence = thread_trace->getSequence(previous_token);
+      tokenCount -= prev_sequence->getTokenCount(thread_trace);
+      referential_timestamp -= prev_sequence->durations->at(tokenCount[previous_token]);
       break;
+    }
 
     case TypeInvalid:
       pallas_error("Token is Invalid");
