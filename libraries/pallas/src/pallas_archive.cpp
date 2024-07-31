@@ -209,7 +209,7 @@ void GlobalArchive::addAttribute(AttributeRef attribute_ref, StringRef name_ref,
 }
 
 Archive::~Archive() {
-  delete[] dir_name;
+  free(dir_name);
   delete[] trace_name;
   delete[] fullpath;
   delete[] threads;
