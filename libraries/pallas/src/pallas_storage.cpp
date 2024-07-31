@@ -1139,7 +1139,7 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
 static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
 
-  pallas_log(pallas::DebugLevel::Normal, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
+  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
 
   threadFile.write(&th->id, sizeof(th->id), 1);
@@ -1279,7 +1279,7 @@ void pallasStoreArchive(pallas::Archive* archive) {
   pallas::File file = pallas::File(fullpath, "w");
   delete[] fullpath;
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
-  pallas_log(pallas::DebugLevel::Normal, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
+  pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
   if (archive->id== 0) {
     for (int i = 0; i < archive->nb_threads; i ++) {
       std::cout << i << ": " << archive->threads[i] << std::endl;
