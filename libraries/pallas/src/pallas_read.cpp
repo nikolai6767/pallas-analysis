@@ -418,7 +418,7 @@ void ThreadReader::moveToPrevToken() {
     case TypeLoop:
       for (int i = 0; i < thread_trace->getLoop(previous_token)->nb_iterations[tokenCount[previous_token]]; i++) {
         tokenCount -=  thread_trace->getSequence(thread_trace->getLoop(previous_token)->repeated_token)->getTokenCount(thread_trace);
-        tokenCount[thread_trace->getLoop(current_token)->repeated_token]--;
+        tokenCount[thread_trace->getLoop(previous_token)->repeated_token]--;
       }
       referential_timestamp-=getLoopDuration(previous_token);
       break;
