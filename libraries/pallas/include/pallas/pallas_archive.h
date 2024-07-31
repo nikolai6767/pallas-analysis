@@ -144,7 +144,9 @@ typedef struct Archive {
   int nb_threads;           /**< Number of Thread in #threads. */
   int nb_allocated_threads; /**< Size of #threads. */
 #ifdef __cplusplus
-  [[nodiscard]] Thread* getThread(ThreadId) const;
+  [[nodiscard]] Thread* getThread(ThreadId);
+  [[nodiscard]] Thread* getThreadAt(size_t i);
+  void freeThread(ThreadId);
   /**
    * Open a trace file and loads it it that Archive.
    * @param dirname Path to the file.

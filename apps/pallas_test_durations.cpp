@@ -64,7 +64,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
 }
 
 /* Print all the events of a thread */
-static void testThreadDuration(const pallas::Archive& trace, const pallas::Thread& thread) {
+static void testThreadDuration(pallas::Archive& trace, const pallas::Thread& thread) {
   printf("Testing durations for Thread %u (%s):\n", thread.id, thread.getName());
 
   constexpr int readerOptions = pallas::ThreadReaderOptions::None;
@@ -114,7 +114,9 @@ int main(const int argc, char* argv[]) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
 
       printf("\n");
-      testThreadDuration(*trace.archive_list[i], *trace.archive_list[i]->threads[j]);
+      auto thread = trace.archive_list[i]->getThreadAt(j);
+      if (thread != nullptr)
+      testThreadDuration(*trace.archive_list[i], *thread);
     }
   }
 

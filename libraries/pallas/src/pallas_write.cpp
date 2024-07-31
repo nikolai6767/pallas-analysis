@@ -559,8 +559,6 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
     return;
   pallas_recursion_shield++;
 
-  pallas_assert(archive->getThread(thread_id) == nullptr);
-
   pallas_log(DebugLevel::Debug, "ThreadWriter(%ux)::open\n", thread_id);
 
   thread_trace.initThread(archive, thread_id);

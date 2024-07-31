@@ -11,9 +11,9 @@
 #endif
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
-#include "pallas/pallas_log.h"
 
 #define DURATION_WIDTH 15
 
@@ -39,16 +39,15 @@ void info_sequence(Sequence* s) {
 }
 
 void info_loop(Loop* l, Thread* t) {
-  std::cout << "{.nb_loops: " << l->nb_iterations.size() <<
-                  ", .repeated_token: " << t->getTokenString(l->repeated_token) <<
-                  ", .nb_iterations: [";
+  std::cout << "{.nb_loops: " << l->nb_iterations.size()
+            << ", .repeated_token: " << t->getTokenString(l->repeated_token) << ", .nb_iterations: [";
   for (const auto& i : l->nb_iterations) {
     std::cout << i;
     if (&i != &l->nb_iterations.back()) {
       std::cout << ", ";
     }
   }
-  std::cout <<"]}" << std::endl;
+  std::cout << "]}" << std::endl;
 }
 
 void info_thread(Thread* t) {
@@ -70,7 +69,8 @@ void info_thread(Thread* t) {
                 << "\n\t\t\tMean: " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->mean / 1e9
                 << std::endl;
     } else {
-      std::cout << "\t\t\tDuration: " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->front() / 1e9 << std::endl;
+      std::cout << "\t\t\tDuration: " << std::fixed << std::setw(DURATION_WIDTH)
+                << t->sequences[i]->durations->front() / 1e9 << std::endl;
     }
   }
 
@@ -100,9 +100,8 @@ void info_global_archive(GlobalArchive* archive) {
 
   if (!archive->location_groups.empty())
     printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
-  for (auto& locationGroup: archive->location_groups) {
-    printf("\t\t%d: %s", locationGroup.id,
-           archive->getString(locationGroup.name)->str);
+  for (auto& locationGroup : archive->location_groups) {
+    printf("\t\t%d: %s", locationGroup.id, archive->getString(locationGroup.name)->str);
     if (locationGroup.parent != PALLAS_LOCATION_GROUP_ID_INVALID)
       printf(", parent: %d", locationGroup.parent);
     if (locationGroup.mainLoc != PALLAS_THREAD_ID_INVALID)
@@ -112,9 +111,8 @@ void info_global_archive(GlobalArchive* archive) {
 
   if (!archive->locations.empty())
     printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
-  for (auto location: archive->locations) {
-    printf("\t\t%d: %s, parent: %d\n", location.id,
-           archive->getString(location.name)->str, location.parent);
+  for (auto location : archive->locations) {
+    printf("\t\t%d: %s, parent: %d\n", location.id, archive->getString(location.name)->str, location.parent);
   }
   if (archive->nb_archives)
     printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
@@ -123,16 +121,16 @@ void info_global_archive(GlobalArchive* archive) {
 }
 
 void info_archive(Archive* archive) {
-    printf("Archive %d:\n", archive->id);
+  printf("Archive %d:\n", archive->id);
 
   if (archive->nb_threads)
     printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {
-      if (archive->threads[i]) {
-        printf("\t\t%d: {.archive=%d, .nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", archive->threads[i]->id,
-               archive->threads[i]->archive->id, archive->threads[i]->nb_events, archive->threads[i]->nb_sequences,
-               archive->threads[i]->nb_loops);
+      auto thread = archive->getThreadAt(i);
+      if (thread) {
+        printf("\t\t%d: {.archive=%d, .nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", thread->id,
+               thread->archive->id, thread->nb_events, thread->nb_sequences, thread->nb_loops);
       }
     }
   }
@@ -147,8 +145,9 @@ void info_trace(GlobalArchive* trace) {
 
   for (int i = 0; i < trace->nb_archives; i++) {
     for (int j = 0; j < trace->archive_list[i]->nb_threads; j++) {
-      if (trace->archive_list[i]->threads[j])
-      info_thread(trace->archive_list[i]->threads[j]);
+      auto thread = trace->archive_list[i]->getThreadAt(j);
+      if (thread)
+        info_thread(thread);
     }
   }
 }
@@ -184,7 +183,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = GlobalArchive ();
+  auto trace = GlobalArchive();
   pallasReadGlobalArchive(&trace, trace_name);
   info_trace(&trace);
 

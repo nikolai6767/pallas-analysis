@@ -28,7 +28,7 @@ Checkpoint::Checkpoint(const ThreadReader* reader) {
 Checkpoint::~Checkpoint() {
 }
 
-ThreadReader::ThreadReader(const Archive* archive, ThreadId threadId, int options) {
+ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int options) {
   // Setup the basic
   this->archive = archive;
   this->options = options;
@@ -534,17 +534,14 @@ bool ThreadReader::exitIfEndOfBlock(int flags) {
 }
 
 ThreadReader::~ThreadReader() {
-  bool hasStilThreads = false;
+  bool hasStillThreads = false;
   if (archive) {
+    archive->freeThread(thread_trace->id);
     DOFOR(i, archive->nb_threads) {
-      hasStilThreads = hasStilThreads || archive->threads[i] != nullptr;
-      if (archive->threads[i] == thread_trace) {
-        archive->threads[i] = nullptr;
-      }
+      hasStillThreads = hasStillThreads || archive->threads[i] != nullptr;
     }
   }
-  delete thread_trace;
-  if (!hasStilThreads)
+  if (!hasStillThreads)
     delete archive;
 }
 

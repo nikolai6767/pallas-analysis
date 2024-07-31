@@ -134,18 +134,6 @@ const Attribute* GlobalArchive::getAttribute(AttributeRef attribute_ref) {
 }
 
 /**
- * Getter for a Thread from its id.
- * @returns First Thread matching the given pallas::ThreadId, or nullptr if it doesn't have a match.
- */
-Thread* Archive::getThread(ThreadId thread_id) const {
-  for (int i = 0; i < nb_threads; i++) {
-    if (threads[i] && threads[i]->id == thread_id)
-      return threads[i];
-  }
-  return nullptr;
-}
-
-/**
  * Getter for a LocationGroup from its id.
  * @returns First LocationGroup matching the given pallas::LocationGroupId in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.

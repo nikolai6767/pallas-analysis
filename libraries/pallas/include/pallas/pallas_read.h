@@ -113,7 +113,7 @@ typedef struct Checkpoint {
  */
 typedef struct ThreadReader {
   /** Archive being read by this reader. */
-  const struct Archive* archive;
+  struct Archive* archive;
   /** Thread being read. */
   struct Thread* thread_trace;
   /** The current referential timestamp. */
@@ -145,7 +145,7 @@ typedef struct ThreadReader {
    * @param threadId Id of the thread to read.
    * @param options Options as defined in ThreadReaderOptions.
    */
-  ThreadReader(const Archive* archive, ThreadId threadId, int options);
+  ThreadReader(Archive* archive, ThreadId threadId, int options);
 
   /** Returns the Sequence being run at the given frame. */
   [[nodiscard]] const Token& getFrameInCallstack(int frame_number) const;

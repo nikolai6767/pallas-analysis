@@ -23,10 +23,10 @@
 #endif
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
-#include "pallas/pallas_log.h"
 
 short STORE_TIMESTAMPS = 1;
 static short STORE_HASHING = 0;
@@ -1139,7 +1139,7 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
 static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
 
-  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
+  pallas_log(pallas::DebugLevel::Normal, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
 
   threadFile.write(&th->id, sizeof(th->id), 1);
@@ -1279,6 +1279,16 @@ void pallasStoreArchive(pallas::Archive* archive) {
   pallas::File file = pallas::File(fullpath, "w");
   delete[] fullpath;
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
+  pallas_log(pallas::DebugLevel::Normal, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
+  if (archive->id== 0) {
+    for (int i = 0; i < archive->nb_threads; i ++) {
+      std::cout << i << ": " << archive->threads[i] << std::endl;
+      std::cout << "\t#Seq " << archive->threads[i]->nb_sequences << std::endl;
+    }
+  }
+  while (archive->threads[archive->nb_threads - 1] == nullptr) {
+    archive->nb_threads --;
+  }
   file.write(&archive->nb_threads, sizeof(int), 1);
   file.close();
 }
@@ -1362,7 +1372,7 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
   if (!archive->location_groups.empty()) {
     pallasReadLocationGroups(archive, file);
   } else {
-      pallas_warn("Global archive has no LocationGroups, ie no Archive ! Trace will look empty.\n");
+    pallas_warn("Global archive has no LocationGroups, ie no Archive ! Trace will look empty.\n");
   }
 
   if (!archive->locations.empty()) {
@@ -1397,8 +1407,7 @@ static void pallasReadArchive(pallas::GlobalArchive* global_archive,
   file.close();
 }
 
-pallas::Archive* pallas::GlobalArchive::getArchive(pallas::LocationGroupId archive_id,
-                                         bool print_warning) {
+pallas::Archive* pallas::GlobalArchive::getArchive(pallas::LocationGroupId archive_id, bool print_warning) {
   /* check if archive_id is already known */
   for (int i = 0; i < nb_archives; i++) {
     if (archive_list[i] != nullptr && archive_list[i]->id == archive_id) {
@@ -1444,6 +1453,55 @@ void pallas::GlobalArchive::freeArchive(pallas::LocationGroupId archiveId) {
   }
 };
 
+/**
+ * Getter for a Thread from its id. Loads it from a file if need be.
+ * @returns First Thread matching the given pallas::ThreadId, or nullptr if it doesn't have a match.
+ */
+pallas::Thread* pallas::Archive::getThread(ThreadId thread_id) {
+  for (int i = 0; i < nb_threads; i++) {
+    if (threads[i] && threads[i]->id == thread_id)
+      return threads[i];
+  }
+  pallas_log(pallas::DebugLevel::Verbose, "Loading Thread %d in Archive %d\n", thread_id, id);
+  auto* thread = new pallas::Thread();
+  auto location = global_archive->getLocation(thread_id);
+  if (location == nullptr)
+    return nullptr;
+  auto parent = global_archive->getLocationGroup(location->parent);
+  if (id == parent->mainLoc || id == parent->id) {
+    thread->archive = this;
+    pallasReadThread(global_archive, thread, location->id);
+    int index = 0;
+    while (index < nb_threads && threads[index] != nullptr)
+      index++;
+    if (index >= nb_threads)
+      return nullptr;
+    threads[index] = thread;
+    return thread;
+  }
+  return nullptr;
+}
+
+pallas::Thread* pallas::Archive::getThreadAt(size_t index) {
+  if (index >= nb_threads) {
+    return nullptr;
+  }
+  auto lg = global_archive->getLocationGroup(id);
+  if (lg == nullptr) {
+    lg = global_archive->getLocationGroup(global_archive->getLocation(id)->parent);
+  }
+  return getThread(lg->mainLoc + index);
+}
+
+void pallas::Archive::freeThread(pallas::ThreadId thread_id) {
+  for (int i = 0; i < nb_threads; i++) {
+    if (threads[i] && threads[i]->id == thread_id) {
+      delete threads[i];
+      threads[i] = nullptr;
+    }
+  }
+};
+
 void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_filename) {
   auto* temp_main_filename = strdup(main_filename);
   char* trace_name = strdup(basename(temp_main_filename));
@@ -1457,19 +1515,6 @@ void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, char* main_fi
       globalArchive->getArchive(locationGroup.id);
     else
       globalArchive->getArchive(locationGroup.mainLoc);
-  }
-
-  for (auto& location : globalArchive->locations) {
-    auto* thread = new pallas::Thread();
-    auto parent = globalArchive->getLocationGroup(location.parent);
-    if (parent->mainLoc == PALLAS_THREAD_ID_INVALID)
-      thread->archive = globalArchive->getArchive(parent->id);
-    else
-      thread->archive = globalArchive->getArchive(parent->mainLoc);
-
-    pallasReadThread(globalArchive, thread, location.id);
-    int index = location.id - parent->mainLoc;
-    thread->archive->threads[index] = thread;
   }
 }
 

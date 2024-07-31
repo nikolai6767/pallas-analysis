@@ -73,9 +73,11 @@ void printTrace(const pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
   int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++)
-      if (trace.archive_list[i]->threads[j])
-        readers.emplace_back(trace.archive_list[i], trace.archive_list[i]->threads[j]->id, reader_options);
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
+      auto thread = trace.archive_list[i]->getThreadAt(j);
+      if (thread != nullptr)
+        readers.emplace_back(trace.archive_list[i], thread->id, reader_options);
+    }
   }
 
   _print_timestamp_header();
@@ -166,11 +168,12 @@ void printStructure(const int flags, const pallas::GlobalArchive& trace) {
   constexpr int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
-      if (!trace.archive_list[i]->threads[j])
+      auto thread = trace.archive_list[i]->getThreadAt(j);
+      if (thread == nullptr)
         continue;
       pallas::ThreadReader tr = pallas::ThreadReader(
         trace.archive_list[i],
-        trace.archive_list[i]->threads[j]->id,
+        thread->id,
         reader_options
         );
       printThreadStructure(flags, tr);
