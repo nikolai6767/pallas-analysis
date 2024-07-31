@@ -1280,12 +1280,6 @@ void pallasStoreArchive(pallas::Archive* archive) {
   delete[] fullpath;
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
   pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
-  if (archive->id== 0) {
-    for (int i = 0; i < archive->nb_threads; i ++) {
-      std::cout << i << ": " << archive->threads[i] << std::endl;
-      std::cout << "\t#Seq " << archive->threads[i]->nb_sequences << std::endl;
-    }
-  }
   while (archive->threads[archive->nb_threads - 1] == nullptr) {
     archive->nb_threads --;
   }
