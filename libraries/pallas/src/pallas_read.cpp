@@ -534,7 +534,8 @@ bool ThreadReader::exitIfEndOfBlock(int flags) {
 }
 
 ThreadReader::~ThreadReader() {
-  archive->freeThread(thread_trace->id);
+  if (archive)
+    archive->freeThread(thread_trace->id);
 }
 
 ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
