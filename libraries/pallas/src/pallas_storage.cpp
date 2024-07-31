@@ -170,30 +170,11 @@ static void pallasStoreSequence(pallas::Sequence& sequence,
 
 static void pallasStoreLoop(pallas::Loop& loop, const pallas::File& loopFile);
 
-static void pallasStoreString(pallas::Archive* a);
-static void pallasStoreRegions(pallas::Archive* a);
-static void pallasStoreAttributes(pallas::Archive* a);
-
-static void pallasStoreLocationGroups(pallas::Archive* a);
-static void pallasStoreLocations(pallas::Archive* a);
-
 static void pallasReadEvent(pallas::EventSummary& event,
                             const pallas::File& eventFile,
                             const pallas::File& durationFile,
                             const char* durationFileName);
-static void pallasReadSequence(pallas::Sequence& sequence,
-                               const pallas::File& sequenceFile,
-                               const pallas::File& durationFile,
-                               const char* durationFileName);
 static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile);
-
-static void pallasReadString(pallas::GlobalArchive* a);
-static void pallasReadRegions(pallas::GlobalArchive* a);
-static void pallasReadAttributes(pallas::GlobalArchive* a);
-static void pallasReadLocationGroups(pallas::GlobalArchive* a);
-static void pallasReadLocations(pallas::GlobalArchive* a);
-
-void pallasLoadThread(pallas::Archive* globalArchive, pallas::ThreadId thread_id);
 
 /******************* Read/Write/Compression function for vectors and arrays *******************/
 
