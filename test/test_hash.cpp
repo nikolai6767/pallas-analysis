@@ -6,6 +6,8 @@
 #include <inttypes.h>
 #include <malloc.h>
 #include "pallas/pallas_hash.h"
+#include "pallas/pallas_log.h"
+
 #include "stdlib.h"
 
 #define MAX_EVENT (1000000)
@@ -26,11 +28,11 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
 
   // Start with testing the single events and sequences and loops
   printf("Testing all the events up to %d\n", MAX_EVENT);
-  struct timespec start_time;
+  struct timespec start_time{};
   clock_gettime(CLOCK_MONOTONIC, &start_time);
   for (uint32_t i = 0; i < MAX_EVENT; i++) {
     Token token = Token(TypeEvent, i);
-    hash[0]= hash32(&token, 1, SEED);
+    hash[0]= hash32(reinterpret_cast<uint8_t *>(&token), sizeof(Token)/sizeof(uint8_t ), SEED);
     uint32_t new_key = hash[0] % SIZE_COLLISION_ARRAY;
     int buffer = collisions[new_key]++;
     if (buffer) {
@@ -43,7 +45,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   printf("Testing all the sequences up to %d\n", MAX_SEQUENCE);
   for (uint32_t i = 0; i < MAX_SEQUENCE; i++) {
     Token token = Token(TypeSequence, i);
-    hash[0] = hash32(&token, 1, SEED);
+    hash[0] = hash32(reinterpret_cast<uint8_t *>(&token), sizeof(Token)/sizeof(uint8_t ), SEED);
     uint32_t new_key = hash[0] % SIZE_COLLISION_ARRAY;
     int buffer = collisions[new_key]++;
     if (buffer) {
@@ -56,7 +58,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   printf("Testing all the loops up to %d\n", MAX_LOOP);
   for (uint32_t i = 0; i < MAX_LOOP; i++) {
     Token token = Token(TypeLoop, i);
-    hash[0] = hash32(&token, 1, SEED);
+    hash[0] = hash32(reinterpret_cast<uint8_t *>(&token), sizeof(Token)/sizeof(uint8_t ), SEED);
     uint32_t new_key = hash[0] % SIZE_COLLISION_ARRAY;
     int buffer = collisions[new_key]++;
     if (buffer) {
@@ -89,7 +91,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
         }
       }
 
-      hash[0] = hash32(token, sequence_size, SEED);
+      hash[0] = hash32(reinterpret_cast<uint8_t *>(token), sizeof(Token)/sizeof(uint8_t ) * sequence_size, SEED);
       uint32_t new_key = hash[0] % SIZE_COLLISION_ARRAY;
       int buffer = collisions[new_key]++;
       if (buffer == 1)

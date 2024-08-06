@@ -12,6 +12,7 @@
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_log.h"
 
 using namespace pallas;
 void print_sequence(const Sequence* s) {
@@ -81,42 +82,49 @@ void info_thread(Thread* t) {
   }
 }
 
-void info_archive(Archive* archive) {
-  if (archive->id == PALLAS_MAIN_LOCATION_GROUP_ID)
-    printf("Main archive:\n");
-  else
-    printf("Archive %d:\n", archive->id);
+void info_global_archive(GlobalArchive* archive) {
+  printf("Main archive:\n");
   printf("\tdir_name:   %s\n", archive->dir_name);
   printf("\ttrace_name: %s\n", archive->trace_name);
   printf("\tfullpath:   %s\n", archive->fullpath);
-  printf("\n");
-  // printf("\tglobal_archive: %d\n", archive->global_archive ? archive->global_archive->id : -1);
-  if (archive->definitions.strings.size())
+  if (!archive->definitions.strings.empty())
     printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
-  for (auto& stringPair : archive->definitions.strings) {
-    printf("\t\t%d: '%s'\n", stringPair.second.string_ref, stringPair.second.str);
+  for (auto& [stringRef, string] : archive->definitions.strings) {
+    printf("\t\t%d: '%s'\n", string.string_ref, string.str);
   }
-  if (archive->definitions.regions.size())
+  if (!archive->definitions.regions.empty())
     printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
-  for (auto& regionPair : archive->definitions.regions) {
-    printf("\t\t%d: %d ('%s')\n", regionPair.second.region_ref, regionPair.second.string_ref,
-           archive->getString(regionPair.second.string_ref)->str);
+  for (auto& [regionRef, region] : archive->definitions.regions) {
+    printf("\t\t%d: %s\n", region.region_ref, archive->getString(region.string_ref)->str);
   }
 
-  if (archive->location_groups.size())
+  if (!archive->location_groups.empty())
     printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
-  for (unsigned i = 0; i < archive->location_groups.size(); i++) {
-    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->location_groups[i].id, archive->location_groups[i].name,
-           archive->getString(archive->location_groups[i].name)->str, archive->location_groups[i].parent);
+  for (auto& locationGroup: archive->location_groups) {
+    printf("\t\t%d: %s", locationGroup.id,
+           archive->getString(locationGroup.name)->str);
+    if (locationGroup.parent != PALLAS_LOCATION_GROUP_ID_INVALID)
+      printf(", parent: %d", locationGroup.parent);
+    if (locationGroup.mainLoc != PALLAS_THREAD_ID_INVALID)
+      printf(", mainLocation: %d", locationGroup.mainLoc);
+    printf("\n");
   }
 
-  if (archive->locations.size())
+  if (!archive->locations.empty())
     printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
-  for (unsigned i = 0; i < archive->locations.size(); i++) {
-    printf("\t\t%d: %d ('%s'), parent: %d\n", archive->locations[i].id, archive->locations[i].name,
-           archive->getString(archive->locations[i].name)->str, archive->locations[i].parent);
+  for (auto location: archive->locations) {
+    printf("\t\t%d: %s, parent: %d\n", location.id,
+           archive->getString(location.name)->str, location.parent);
   }
+  if (archive->nb_archives)
+    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
+
+  printf("\n");
+}
+
+void info_archive(Archive* archive) {
+    printf("Archive %d:\n", archive->id);
 
   if (archive->nb_threads)
     printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
@@ -129,13 +137,11 @@ void info_archive(Archive* archive) {
       }
     }
   }
-
-  if (archive->nb_archives)
-    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
+  printf("\n");
 }
 
-void info_trace(Archive* trace) {
-  info_archive(trace);
+void info_trace(GlobalArchive* trace) {
+  info_global_archive(trace);
   for (int i = 0; i < trace->nb_archives; i++) {
     info_archive(trace->archive_list[i]);
   }
@@ -151,7 +157,7 @@ void info_trace(Archive* trace) {
 void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
   printf("\t-v          Verbose mode\n");
-  printf("\t-?  -h      Display this help and exit\n");
+  printf("\t-?  -h --help     Display this help and exit\n");
 }
 
 int main(int argc, char** argv) {
@@ -162,7 +168,7 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[i], "-v")) {
       pallas_debug_level_set(DebugLevel::Debug);
       nb_opts++;
-    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?")) {
+    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
       usage(argv[0]);
       return EXIT_SUCCESS;
     } else {
@@ -179,8 +185,8 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  Archive trace = Archive();
-  pallas_read_main_archive(&trace, trace_name);
+  auto trace = GlobalArchive ();
+  pallasReadGlobalArchive(&trace, trace_name);
   info_trace(&trace);
 
   return EXIT_SUCCESS;

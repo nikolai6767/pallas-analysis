@@ -4,6 +4,7 @@
  */
 
 #include "pallas/pallas_linked_vector.h"
+#include "pallas/pallas_log.h"
 #include <cstring>
 using namespace pallas;
 

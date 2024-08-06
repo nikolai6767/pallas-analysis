@@ -4,6 +4,8 @@
  */
 
 #include "pallas/pallas.h"
+#include "pallas/pallas_log.h"
+#include <cinttypes>
 #include "pallas/pallas_archive.h"
 
 namespace pallas {
@@ -21,19 +23,25 @@ Event* Thread::getEvent(Token token) const {
 }
 
 EventSummary* Thread::getEventSummary(Token token) const {
-  pallas_assert(token.type == TokenType::TypeEvent);
+  if (token.type != TokenType::TypeEvent) {
+    pallas_error("Trying to getEventSummary of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_events);
   return &this->events[token.id];
 }
 
 Sequence* Thread::getSequence(Token token) const {
-  pallas_assert(token.type == TokenType::TypeSequence);
+  if (token.type != TokenType::TypeSequence) {
+    pallas_error("Trying to getSequence of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_sequences);
   return this->sequences[token.id];
 }
 
 Loop* Thread::getLoop(Token token) const {
-  pallas_assert(token.type == TokenType::TypeLoop);
+  if (token.type != TokenType::TypeLoop) {
+    pallas_error("Trying to getLoop of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
+  }
   pallas_assert(token.id < this->nb_loops);
   return &this->loops[token.id];
 }
@@ -102,6 +110,252 @@ void Thread::printSequence(pallas::Token token) const {
   printTokenVector(sequence->tokens);
 }
 
+void Thread::printEvent(pallas::Event* e) const {
+  char output_str[1024];
+  size_t buffer_size = 1024;
+  printEventToString(e, output_str, buffer_size);
+  printf("%s", output_str);
+}
+
+static inline void pop_data(Event* e, void* data, size_t data_size, byte*& cursor) {
+  if (cursor == nullptr) {
+    /* initialize the cursor to the begining of event data */
+    cursor = &e->event_data[0];
+  }
+
+  uintptr_t last_event_byte = ((uintptr_t)e) + e->event_size;
+  uintptr_t last_read_byte = ((uintptr_t)cursor) + data_size;
+  pallas_assert(last_read_byte <= last_event_byte);
+
+  memcpy(data, cursor, data_size);
+  cursor += data_size;
+}
+
+void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const {
+  byte* cursor = nullptr;
+  switch (e->record) {
+  case PALLAS_EVENT_ENTER: {
+    RegionRef region_ref;
+    pop_data(e, &region_ref, sizeof(region_ref), cursor);
+    const Region* region = archive->global_archive->getRegion(region_ref);
+    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+    snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
+    break;
+  }
+  case PALLAS_EVENT_LEAVE: {
+    RegionRef region_ref;
+    pop_data(e, &region_ref, sizeof(region_ref), cursor);
+    const Region* region = archive->global_archive->getRegion(region_ref);
+    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+    snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
+    break;
+  }
+
+  case PALLAS_EVENT_THREAD_BEGIN:
+    snprintf(output_str, buffer_size, "THREAD_BEGIN()");
+    break;
+
+  case PALLAS_EVENT_THREAD_END:
+    snprintf(output_str, buffer_size, "THREAD_END()");
+    break;
+
+  case PALLAS_EVENT_THREAD_TEAM_BEGIN:
+    snprintf(output_str, buffer_size, "THREAD_TEAM_BEGIN()");
+    break;
+
+  case PALLAS_EVENT_THREAD_TEAM_END:
+    snprintf(output_str, buffer_size, "THREAD_TEAM_END()");
+    break;
+
+  case PALLAS_EVENT_THREAD_FORK: {
+    uint32_t numberOfRequestedThreads;
+    pop_data(e, &numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    snprintf(output_str, buffer_size, "THREAD_FORK(nRequThreads=%d)\n", numberOfRequestedThreads);
+    break;
+  }
+
+  case PALLAS_EVENT_THREAD_JOIN:
+    snprintf(output_str, buffer_size, "THREAD_JOIN\n");
+    break;
+
+  case PALLAS_EVENT_MPI_SEND: {
+    uint32_t receiver;
+    uint32_t communicator;
+    uint32_t msgTag;
+    uint64_t msgLength;
+
+    pop_data(e, &receiver, sizeof(receiver), cursor);
+    pop_data(e, &communicator, sizeof(communicator), cursor);
+    pop_data(e, &msgTag, sizeof(msgTag), cursor);
+    pop_data(e, &msgLength, sizeof(msgLength), cursor);
+    snprintf(output_str, buffer_size, "MPI_SEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ")", receiver, communicator,
+             msgTag, msgLength);
+    break;
+  }
+  case PALLAS_EVENT_MPI_ISEND: {
+    uint32_t receiver;
+    uint32_t communicator;
+    uint32_t msgTag;
+    uint64_t msgLength;
+    uint64_t requestID;
+
+    pop_data(e, &receiver, sizeof(receiver), cursor);
+    pop_data(e, &communicator, sizeof(communicator), cursor);
+    pop_data(e, &msgTag, sizeof(msgTag), cursor);
+    pop_data(e, &msgLength, sizeof(msgLength), cursor);
+    pop_data(e, &requestID, sizeof(requestID), cursor);
+    snprintf(output_str, buffer_size, "MPI_ISEND(dest=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIx64 ")", receiver,
+             communicator, msgTag, msgLength, requestID);
+    break;
+  }
+  case PALLAS_EVENT_MPI_ISEND_COMPLETE: {
+    uint64_t requestID;
+    pop_data(e, &requestID, sizeof(requestID), cursor);
+    snprintf(output_str, buffer_size, "MPI_ISEND_COMPLETE(req=%" PRIx64 ")", requestID);
+    break;
+  }
+  case PALLAS_EVENT_MPI_IRECV_REQUEST: {
+    uint64_t requestID;
+    pop_data(e, &requestID, sizeof(requestID), cursor);
+    snprintf(output_str, buffer_size, "MPI_IRECV_REQUEST(req=%" PRIx64 ")", requestID);
+    break;
+  }
+  case PALLAS_EVENT_MPI_RECV: {
+    uint32_t sender;
+    uint32_t communicator;
+    uint32_t msgTag;
+    uint64_t msgLength;
+
+    pop_data(e, &sender, sizeof(sender), cursor);
+    pop_data(e, &communicator, sizeof(communicator), cursor);
+    pop_data(e, &msgTag, sizeof(msgTag), cursor);
+    pop_data(e, &msgLength, sizeof(msgLength), cursor);
+
+    snprintf(output_str, buffer_size, "MPI_RECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ")", sender, communicator,
+             msgTag, msgLength);
+    break;
+  }
+  case PALLAS_EVENT_MPI_IRECV: {
+    uint32_t sender;
+    uint32_t communicator;
+    uint32_t msgTag;
+    uint64_t msgLength;
+    uint64_t requestID;
+    pop_data(e, &sender, sizeof(sender), cursor);
+    pop_data(e, &communicator, sizeof(communicator), cursor);
+    pop_data(e, &msgTag, sizeof(msgTag), cursor);
+    pop_data(e, &msgLength, sizeof(msgLength), cursor);
+    pop_data(e, &requestID, sizeof(requestID), cursor);
+
+    snprintf(output_str, buffer_size, "MPI_IRECV(src=%d, comm=%x, tag=%x, len=%" PRIu64 ", req=%" PRIu64 ")", sender,
+             communicator, msgTag, msgLength, requestID);
+    break;
+  }
+  case PALLAS_EVENT_MPI_COLLECTIVE_BEGIN: {
+    snprintf(output_str, buffer_size, "MPI_COLLECTIVE_BEGIN()");
+    break;
+  }
+  case PALLAS_EVENT_MPI_COLLECTIVE_END: {
+    uint32_t collectiveOp;
+    uint32_t communicator;
+    uint32_t root;
+    uint64_t sizeSent;
+    uint64_t sizeReceived;
+
+    pop_data(e, &collectiveOp, sizeof(collectiveOp), cursor);
+    pop_data(e, &communicator, sizeof(communicator), cursor);
+    pop_data(e, &root, sizeof(root), cursor);
+    pop_data(e, &sizeSent, sizeof(sizeSent), cursor);
+    pop_data(e, &sizeReceived, sizeof(sizeReceived), cursor);
+
+    snprintf(output_str, buffer_size,
+             "MPI_COLLECTIVE_END(op=%x, comm=%x, root=%d, sent=%" PRIu64 ", recved=%" PRIu64 ")", collectiveOp,
+             communicator, root, sizeSent, sizeReceived);
+    break;
+  }
+  case PALLAS_EVENT_OMP_FORK: {
+    uint32_t numberOfRequestedThreads;
+    pop_data(e, &numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    snprintf(output_str, buffer_size, "OMP_FORK(nRequThreads=%d)", numberOfRequestedThreads);
+    break;
+  }
+  case PALLAS_EVENT_OMP_JOIN:
+    snprintf(output_str, buffer_size, "OMP_JOIN()");
+    break;
+  case PALLAS_EVENT_OMP_ACQUIRE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "OMP_ACQUIRE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_ACQUIRE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "THREAD_ACQUIRE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_RELEASE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "OMP_RELEASE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_RELEASE_LOCK: {
+    uint32_t lockID;
+    uint32_t acquisitionOrder;
+    pop_data(e, &lockID, sizeof(lockID), cursor);
+    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    snprintf(output_str, buffer_size, "THREAD_RELEASE_LOCK(lockID=%d)", lockID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_CREATE: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_CREATE(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_SWITCH: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_SWITCH(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_OMP_TASK_COMPLETE: {
+    uint64_t taskID;
+    pop_data(e, &taskID, sizeof(taskID), cursor);
+    snprintf(output_str, buffer_size, "OMP_TASK_COMPLETE(taskID=%lu)", taskID);
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_CREATE: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_CREATE()");
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_SWITCH: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_SWITCH()");
+    break;
+  }
+  case PALLAS_EVENT_THREAD_TASK_COMPLETE: {
+    snprintf(output_str, buffer_size, "THREAD_TASK_COMPLETE()");
+    break;
+  }
+  case PALLAS_EVENT_GENERIC: {
+    StringRef eventNameRef;
+    pop_data(e, &eventNameRef, sizeof(eventNameRef), cursor);
+    auto eventName = archive->global_archive->getString(eventNameRef);
+    snprintf(output_str, buffer_size, "%s", eventName->str);
+    break;
+  }
+  default:
+    snprintf(output_str, buffer_size, "{.record: %x, .size:%x}", e->record, e->event_size);
+  }
+}
+
 Thread::Thread() {
   archive = nullptr;
   id = PALLAS_THREAD_ID_INVALID;
@@ -124,16 +378,17 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   id = thread_id;
 
   nb_allocated_events = NB_EVENT_DEFAULT;
-  events = new EventSummary[nb_allocated_events];
+  events = new EventSummary[nb_allocated_events]();
   nb_events = 0;
 
   nb_allocated_sequences = NB_SEQUENCE_DEFAULT;
-  sequences = new Sequence*[nb_allocated_sequences];
+  sequences = new Sequence*[nb_allocated_sequences]();
   nb_sequences = 0;
   hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();
+  hashToEvent = std::unordered_map<uint32_t, std::vector<TokenId>>();
 
   nb_allocated_loops = NB_LOOP_DEFAULT;
-  loops = new Loop[nb_allocated_loops];
+  loops = new Loop[nb_allocated_loops]();
   nb_loops = 0;
 
   pthread_mutex_lock(&archive->lock);
@@ -145,14 +400,6 @@ void Thread::initThread(Archive* a, ThreadId thread_id) {
   }
   archive->threads[archive->nb_threads++] = this;
   pthread_mutex_unlock(&archive->lock);
-}
-
-Archive::~Archive() {
-  delete[] dir_name;
-  delete[] trace_name;
-  delete[] fullpath;
-  delete[] threads;
-  delete[] archive_list;
 }
 
 Thread::~Thread() {
@@ -169,7 +416,7 @@ Thread::~Thread() {
 }
 
 const char* Thread::getName() const {
-  return archive->getString(archive->getLocation(id)->name)->str;
+  return archive->global_archive->getString(archive->global_archive->getLocation(id)->name)->str;
 }
 
 bool Sequence::isFunctionSequence(const struct Thread* thread) const {

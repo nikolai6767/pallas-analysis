@@ -24,7 +24,7 @@
 #include "pallas/pallas_write.h"
 
 struct OTF2_GlobalDefWriter_struct {
-  struct Archive* archive;
+  struct GlobalArchive * archive;
 };
 
 struct OTF2_DefWriter_struct {
@@ -102,7 +102,7 @@ struct OTF2_GlobalDefReaderCallbacks_struct {
 };
 
 struct OTF2_GlobalDefReader_struct {
-  struct Archive* archive;
+  struct GlobalArchive *archive;
 
   OTF2_GlobalDefReaderCallbacks callbacks;
   void* user_data;
@@ -110,13 +110,14 @@ struct OTF2_GlobalDefReader_struct {
 
 struct OTF2_DefReader_struct {
   //  OTF2_LocationRef locationRef;
-  struct Archive* archive;
+  struct GlobalArchive *archive;
 
   //  struct ThreadWriter* thread_writer;
 };
 
 struct OTF2_Reader_struct {
-  struct Archive *archive;
+  struct GlobalArchive *archive;
+  //  struct Archive *archive;
   int nb_locations;
 
   OTF2_GlobalEvtReader* global_evt_reader;

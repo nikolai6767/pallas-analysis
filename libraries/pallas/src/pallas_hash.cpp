@@ -65,16 +65,8 @@ static FORCE_INLINE uint64_t fmix64(uint64_t k) {
 //-----------------------------------------------------------------------------
 
 namespace pallas {
-uint32_t hash32(const void* key, const size_t len, const uint32_t seed) {
-  // Here's the issue: We'll be feeding it an array of Token
-  // An Token is 32 bits long
-  // So either we change every uint8_t here to a uint32_t
-  // But that might lead to some unforeseen consequences
-  // Or ! We simply take that into account, and change the "true_len" variable
-  // For now we'll try the second one, and see what it does.
-  const size_t true_len = len * (sizeof(pallas::Token) / sizeof(uint8_t));
-  const uint8_t* data = (const uint8_t*)key;
-  const int nblocks = true_len / 4;
+uint32_t hash32(const byte* data, size_t len, uint32_t seed) {
+  const int nblocks = len / 4;
 
   uint32_t h1 = seed;
 
@@ -105,7 +97,7 @@ uint32_t hash32(const void* key, const size_t len, const uint32_t seed) {
 
   uint32_t k1 = 0;
 
-  switch (true_len & 3) {
+  switch (len & 3) {
   case 3:
     k1 ^= tail[2] << 16;
     [[fallthrough]];
@@ -123,23 +115,15 @@ uint32_t hash32(const void* key, const size_t len, const uint32_t seed) {
   //----------
   // finalization
 
-  h1 ^= true_len;
+  h1 ^= len;
 
   h1 = fmix32(h1);
 
   return h1;
 }
 
-void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* out) {
-  // Here's the issue: We'll be feeding it an array of Token
-  // An Token is 32 bits long
-  // So either we change every uint8_t here to a uint32_t
-  // But that might lead to some unforeseen consequences
-  // Or ! We simply take that into account, and change the "true_len" variable
-  // For now we'll try the second one, and see what it does.
-  const size_t true_len = len * (sizeof(pallas::Token) / sizeof(uint8_t));
-  const uint8_t* data = (const uint8_t*)key;
-  const int nblocks = true_len / 16;
+uint64_t hash64(const byte* data, size_t len, uint32_t seed) {
+  const int nblocks = len / 16;
   int i;
 
   uint64_t h1 = seed;
@@ -184,7 +168,7 @@ void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* ou
   uint64_t k1 = 0;
   uint64_t k2 = 0;
 
-  switch (true_len & 15) {
+  switch (len & 15) {
   case 15:
     k2 ^= (uint64_t)(tail[14]) << 48;
     [[fallthrough]];
@@ -243,8 +227,8 @@ void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* ou
   //----------
   // finalization
 
-  h1 ^= true_len;
-  h2 ^= true_len;
+  h1 ^= len;
+  h2 ^= len;
 
   h1 += h2;
   h2 += h1;
@@ -256,8 +240,7 @@ void hash64(const void* key, const size_t len, const uint32_t seed, uint64_t* ou
   h2 += h1;
 
   // We don't need the 128-bit hash I think.
-  ((uint64_t*)out)[0] = h1;
-  //	((uint64_t*)out)[1] = h2;
+  return h1;
 }
 }  // namespace pallas
 /* -*-

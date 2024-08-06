@@ -164,12 +164,14 @@ typedef struct LinkedVector {
    */
   void print();
   /**
-   * Writes the vector to the given file as an array.
-   * You may write the size of the vector as a header.
-   * Then its min, max, and mean are written.
-   * Finally, writes the array.
-   * @param vectorFile File descriptor.
-   * @param writeSize Boolean indicating wether you should write the size of the LinkedVector as a header.
+   * Writes the vector to the given files.
+   * If size >= 4, we do the following:\n
+   *    - To vectorFile, we write [size, min, max, mean, offset] in that order.\n
+   *    - To valueFile, we write the array.\n
+   * If size <= 3, we don't write anything to valueFile.
+   * Instead, we write [size] + array to vectorFile.\n
+   * @param vectorFile File where metadata is stored.
+   * @param valueFile  File where data is stored (most of the time).
    */
   void writeToFile(FILE* vectorFile, FILE* valueFile);
 

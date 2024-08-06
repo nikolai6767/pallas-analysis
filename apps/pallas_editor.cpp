@@ -9,6 +9,7 @@
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_log.h"
 
 using namespace pallas;
 
@@ -52,8 +53,8 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  Archive trace = Archive();
-  pallas_read_main_archive(&trace, trace_name);
+  auto trace = GlobalArchive();
+  pallasReadGlobalArchive(&trace, trace_name);
   if (compressionAlgorithm != pallas::CompressionAlgorithm::Invalid &&
       compressionAlgorithm != parameterHandler->getCompressionAlgorithm()) {
     char* newDirName = new char[strlen(trace.dir_name) + 10];
@@ -64,14 +65,14 @@ int main(int argc, char** argv) {
       trace.archive_list[i]->dir_name = newDirName;
     }
     auto originalCompressionAlgorithm = parameterHandler->compressionAlgorithm;
-    DOFOR(i, trace.nb_threads) {
-      std::cout << "Reading thread " << i << std::endl;
-      parameterHandler->compressionAlgorithm = originalCompressionAlgorithm;
-      trace.threads[i]->loadTimestamps();
-      std::cout << "Compressing thread " << i << std::endl;
-      parameterHandler->compressionAlgorithm = compressionAlgorithm;
-      trace.threads[i]->finalizeThread();
-    }
+//    DOFOR(i, trace.nb_threads) {
+//      std::cout << "Reading thread " << i << std::endl;
+//      parameterHandler->compressionAlgorithm = originalCompressionAlgorithm;
+//      trace.threads[i]->loadTimestamps();
+//      std::cout << "Compressing thread " << i << std::endl;
+//      parameterHandler->compressionAlgorithm = compressionAlgorithm;
+//      trace.threads[i]->finalizeThread();
+//    }
   }
 
   DOFOR(i, trace.nb_archives) {

@@ -16,7 +16,7 @@ extern "C" {
  * Creates the directories for the trace to be written.
  * @param archive Archive to be written to a folder.
  */
-void pallas_storage_init(PALLAS(Archive) * archive);
+void pallas_storage_init(const char * dir_name);
 /**
  * Finalize the writing process by writing the thread.
  * @param thread Thread to be written to folder.
@@ -26,7 +26,12 @@ void pallas_storage_finalize_thread(PALLAS(Thread) * thread);
  * Finalize the writing process by writing the whole archive.
  * @param archive Archive to be written to a folder.
  */
-void pallas_storage_finalize(PALLAS(Archive) * archive);
+void pallasStoreArchive(PALLAS(Archive) * archive);
+/**
+ * Finalize the writing process by writing the global archive.
+ * @param archive Archive to be written to a folder.
+ */
+void pallasStoreGlobalArchive(PALLAS(GlobalArchive) * archive);
 /**
  * Returns the path of the archive's folder.
  * @param dir_name Directory for the archive's storage.
@@ -36,10 +41,10 @@ void pallas_storage_finalize(PALLAS(Archive) * archive);
 char* pallas_archive_fullpath(char* dir_name, char* trace_name);
 /**
  * Read an archive from a `main.pallas` file.
- * @param archive Pointer to an allocated archive.
+ * @param globalArchive Pointer to an allocated archive.
  * @param main_filename Path to a `main.pallas` file.
  */
-void pallas_read_main_archive(PALLAS(Archive) * archive, const char* main_filename);
+void pallasReadGlobalArchive(PALLAS(GlobalArchive) * globalArchive, const char* main_filename);
 #ifdef __cplusplus
 };
 #endif

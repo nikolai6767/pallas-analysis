@@ -1,5 +1,5 @@
-FROM debian:bookworm
+FROM intel/oneapi
 
 # Install build tools
 RUN apt update \
-  && apt install -y build-essential cmake wget git gawk libzstd-dev libjsoncpp-dev pkg-config clang
+  && apt install -y build-essential cmake wget git gawk libzstd-dev pkg-config clang

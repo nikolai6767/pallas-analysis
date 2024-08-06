@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "pallas/pallas.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_storage.h"
 #include "otf2/OTF2_Reader.h"
 #include "otf2/otf2.h"
@@ -16,10 +17,10 @@ OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
   OTF2_Reader* reader = (OTF2_Reader*)malloc(sizeof(OTF2_Reader));
   memset(reader, 0, sizeof(OTF2_Reader));
 
-  reader->archive = (struct Archive*) pallas_archive_new();
-  PALLAS(Archive)* archive = (PALLAS(Archive)*)reader->archive;
+  reader->archive = (struct GlobalArchive*) pallas_global_archive_new();
+  PALLAS(GlobalArchive)* archive = (PALLAS(GlobalArchive)*)reader->archive;
 
-  pallas_read_main_archive(archive, anchorFilePath);
+  pallasReadGlobalArchive(archive, anchorFilePath);
 
   for (int i = 0; i < archive->nb_archives; i++) {
     reader->nb_locations += archive->archive_list[i]->nb_threads;  
@@ -164,7 +165,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalDefinitions(OTF2_Reader* reader,
                                                  OTF2_GlobalDefReader* defReader,
                                                  uint64_t definitionsToRead,
                                                  uint64_t* definitionsRead) {
-  PALLAS(Archive)* archive = (PALLAS(Archive)*)reader->archive;
+  PALLAS(GlobalArchive)* archive = (PALLAS(GlobalArchive)*)reader->archive;
   int nb_definition_read = 0;
 
 #define CHECK_OTF2_CALLBACK_SUCCESS(_f_) do {			  \

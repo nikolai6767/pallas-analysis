@@ -10,71 +10,57 @@
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_log.h"
 
-static void testSequenceDuration(pallas::ThreadReader* reader,
-                                 const pallas::Token token,
-                                 pallas::SequenceOccurence* sequenceOccurence,
-                                 const int depth,
-                                 const pallas_duration_t givenDuration) {
-  if (sequenceOccurence) {
-    reader->loadSavestate(sequenceOccurence->savestate);
+static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) {
+  auto token = reader->pollCurToken();
+  switch (token.type) {
+  case pallas::TypeEvent: {
+    return reader->getEventOccurence(token, reader->tokenCount[token]).duration;
+  }
+
+  case pallas::TypeSequence: {
+    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t sum_of_durations_in_sequence = 0;
     reader->enterBlock(token);
+
+    while (reader->pollNextToken().has_value()) {
+      sum_of_durations_in_sequence += testCurrentTokenDuration(reader);
+      reader->moveToNextToken();
+    }
+    sum_of_durations_in_sequence += testCurrentTokenDuration(reader);
+
+    reader->leaveBlock();
+
+    reader->printCurToken();
+    std::cout << " Expected : " << sequence_duration << ", got : " << sum_of_durations_in_sequence << std::endl;
+
+    return sequence_duration;
   }
-  const auto currentLevel = reader->readCurrentLevel();
-  for (const auto& [token, occurence] : currentLevel) {
-    switch (token->type) {
-    case pallas::TypeSequence: {
-      testSequenceDuration(reader, *token, &occurence->sequence_occurence, depth + 1,
-                           occurence->sequence_occurence.duration);
-      break;
+
+  case pallas::TypeLoop: {
+    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t sum_of_durations_in_loop = 0;
+    reader->enterBlock(token);
+
+    while (reader->pollNextToken().has_value()) {
+      sum_of_durations_in_loop += testCurrentTokenDuration(reader);
+      reader->moveToNextToken();
     }
-    case pallas::TypeLoop: {
-      const pallas::LoopOccurence& loop = occurence->loop_occurence;
-      for (uint j = 0; j < loop.nb_iterations; j++) {
-        pallas::SequenceOccurence* seq = &loop.full_loop[j];
-        testSequenceDuration(reader, loop.loop->repeated_token, seq, depth + 2, seq->duration);
-      }
-      break;
-    }
-    default: {
-      break;
-    };
-    }
+    sum_of_durations_in_loop += testCurrentTokenDuration(reader);
+
+    reader->leaveBlock();
+
+    reader->printCurToken();
+    std::cout << " Expected : " << loop_duration << ", got : " << sum_of_durations_in_loop << std::endl;
+
+    return loop_duration;
   }
-  if (sequenceOccurence) {
-    sequenceOccurence->full_sequence = new pallas::TokenOccurence[currentLevel.size()];
-    // memcpy(sequenceOccurence->full_sequence, currentLevel.data(), currentLevel.size() * sizeof(pallas::TokenOccurence));
+
+  case pallas::TypeInvalid:
+    pallas_error("This should not have happened");
   }
-  std::cout << "Sequence " << token.id << ":\n";
-  long double actualDuration = 0;
-  for (const auto& [token, occurence] : currentLevel) {
-    switch (token->type) {
-    case pallas::TypeEvent: {
-      std::cout << "\tE" << std::setw(7) << std::left <<  token->id
-                << std::setw(7) << std::right << occurence->event_occurence.duration << "\n";
-      actualDuration += occurence->event_occurence.duration;
-      break;
-    }
-    case pallas::TypeSequence: {
-      std::cout << "\tS" << std::setw(7) << std::left <<  token->id
-                << std::setw(7) << std::right << occurence->sequence_occurence.duration << "\n";
-      actualDuration += occurence->sequence_occurence.duration;
-      break;
-    }
-    case pallas::TypeLoop: {
-      std::cout << "\tL" << std::setw(7) << std::left <<  token->id
-                << std::setw(7) << std::right << occurence->loop_occurence.duration << "\n";
-      actualDuration += occurence->loop_occurence.duration;
-      break;
-    }
-    default:
-      pallas_error("This should not have happened\n");
-    }
-  }
-  std::cout << "\tSum   \t" << std::setw(7) << std::right << actualDuration << "\n";
-  std::cout << "\tStored\t" << std::setw(7) << std::right << givenDuration
-            << "\tDiff = " << (actualDuration - givenDuration) * 100 / (givenDuration) << "%" << std::endl;
-  reader->leaveBlock();
+  return 0;
 }
 
 /* Print all the events of a thread */
@@ -84,7 +70,10 @@ static void testThreadDuration(const pallas::Archive& trace, const pallas::Threa
   constexpr int readerOptions = pallas::ThreadReaderOptions::None;
   auto* reader = new pallas::ThreadReader(&trace, thread.id, readerOptions);
 
-  testSequenceDuration(reader, PALLAS_SEQUENCE_ID(0), nullptr, 0, reader->thread_trace->sequences[0]->durations->front());
+  reader->leaveBlock();
+  testCurrentTokenDuration(reader);
+
+  delete reader;
 }
 
 void usage(const char* prog_name) {
@@ -118,12 +107,15 @@ int main(const int argc, char* argv[]) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = pallas::Archive();
-  pallas_read_main_archive(&trace, trace_name);
+  auto trace = pallas::GlobalArchive();
+  pallasReadGlobalArchive(&trace, trace_name);
 
-  for (int i = 0; i < trace.nb_threads; i++) {
-    printf("\n");
-    testThreadDuration(trace, *trace.threads[i]);
+  for (int i = 0; i < trace.nb_archives; i++) {
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
+
+      printf("\n");
+      testThreadDuration(*trace.archive_list[i], *trace.archive_list[i]->threads[j]);
+    }
   }
 
   return EXIT_SUCCESS;

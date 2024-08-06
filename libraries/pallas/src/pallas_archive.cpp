@@ -7,6 +7,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_write.h"
+#include "pallas/pallas_log.h"
 
 namespace pallas {
 /**
@@ -101,11 +102,11 @@ void Definition::addAttribute(AttributeRef attribute_ref,
  * @returns First String matching the given pallas::StringRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const String* Archive::getString(StringRef string_ref) {
+const String* GlobalArchive::getString(StringRef string_ref) {
   pthread_mutex_lock(&lock);
   auto res = definitions.getString(string_ref);
   pthread_mutex_unlock(&lock);
-  return (res) ? res : (global_archive) ? global_archive->getString(string_ref) : nullptr;
+  return res;
 }
 
 /**
@@ -113,11 +114,11 @@ const String* Archive::getString(StringRef string_ref) {
  * @returns First Region matching the given pallas::RegionRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const Region* Archive::getRegion(RegionRef region_ref) {
+const Region* GlobalArchive::getRegion(RegionRef region_ref) {
   pthread_mutex_lock(&lock);
   auto res = definitions.getRegion(region_ref);
   pthread_mutex_unlock(&lock);
-  return (res) ? res : (global_archive) ? global_archive->getRegion(region_ref) : nullptr;
+  return res;
 }
 
 /**
@@ -125,11 +126,11 @@ const Region* Archive::getRegion(RegionRef region_ref) {
  * @returns First Attribute matching the given pallas::AttributeRef in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const Attribute* Archive::getAttribute(AttributeRef attribute_ref) {
+const Attribute* GlobalArchive::getAttribute(AttributeRef attribute_ref) {
   pthread_mutex_lock(&lock);
   auto res = definitions.getAttribute(attribute_ref);
   pthread_mutex_unlock(&lock);
-  return (res) ? res : (global_archive) ? global_archive->getAttribute(attribute_ref) : nullptr;
+  return res;
 }
 
 /**
@@ -149,13 +150,13 @@ Thread* Archive::getThread(ThreadId thread_id) const {
  * @returns First LocationGroup matching the given pallas::LocationGroupId in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const LocationGroup* Archive::getLocationGroup(LocationGroupId location_group_id) const {
+const LocationGroup* GlobalArchive::getLocationGroup(LocationGroupId location_group_id) const {
   for (auto& lc : location_groups) {
     if (lc.id == location_group_id) {
       return &lc;
     }
   }
-  return (global_archive) ? global_archive->getLocationGroup(location_group_id) : nullptr;
+  return nullptr;
   // The global_archive is the only one for which the global_archive field is nullptr
 }
 
@@ -164,13 +165,13 @@ const LocationGroup* Archive::getLocationGroup(LocationGroupId location_group_id
  * @returns First Location matching the given pallas::ThreadId in this archive, or in the global_archive if it
  * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
  */
-const Location* Archive::getLocation(ThreadId location_id) const {
+const Location* GlobalArchive::getLocation(ThreadId location_id) const {
   for (auto& l : locations) {
     if (l.id == location_id) {
       return &l;
     }
   }
-  return (global_archive) ? global_archive->getLocation(location_id) : nullptr;
+  return nullptr;
   // The global_archive is the only one for which the global_archive field is nullptr
 }
 
@@ -179,7 +180,7 @@ const Location* Archive::getLocation(ThreadId location_id) const {
  * Error if the given pallas::StringRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-void Archive::addString(StringRef string_ref, const char* string) {
+void GlobalArchive::addString(StringRef string_ref, const char* string) {
   pthread_mutex_lock(&lock);
   definitions.addString(string_ref, string);
   pthread_mutex_unlock(&lock);
@@ -190,7 +191,7 @@ void Archive::addString(StringRef string_ref, const char* string) {
  * Error if the given pallas::RegionRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-void Archive::addRegion(RegionRef region_ref, StringRef name_ref) {
+void GlobalArchive::addRegion(RegionRef region_ref, StringRef name_ref) {
   pthread_mutex_lock(&lock);
   definitions.addRegion(region_ref, name_ref);
   pthread_mutex_unlock(&lock);
@@ -201,11 +202,19 @@ void Archive::addRegion(RegionRef region_ref, StringRef name_ref) {
  * Error if the given pallas::AttributeRef is already in use.
  * Locks and unlocks the mutex for that operation.
  */
-void Archive::addAttribute(AttributeRef attribute_ref, StringRef name_ref, StringRef description_ref, pallas_type_t type) {
+void GlobalArchive::addAttribute(AttributeRef attribute_ref, StringRef name_ref, StringRef description_ref, pallas_type_t type) {
   pthread_mutex_lock(&lock);
   definitions.addAttribute(attribute_ref, name_ref, description_ref, type);
   pthread_mutex_unlock(&lock);
 }
+
+Archive::~Archive() {
+  delete[] dir_name;
+  delete[] trace_name;
+  delete[] fullpath;
+  delete[] threads;
+}
+
 } /* namespace pallas*/
 
 /********************** C Bindings **********************/
@@ -213,37 +222,41 @@ pallas::Archive* pallas_archive_new() {
   return new pallas::Archive();
 };
 
-pallas::Thread* pallas_archive_get_thread(pallas::Archive* archive, pallas::ThreadId thread_id) {
+pallas::GlobalArchive * pallas_global_archive_new() {
+  return new pallas::GlobalArchive ();
+}
+
+pallas::Thread* pallas_archive_get_thread(pallas::Archive * archive, pallas::ThreadId thread_id) {
   return archive->getThread(thread_id);
 };
 
-const pallas::LocationGroup* pallas_archive_get_location_group(pallas::Archive* archive, pallas::LocationGroupId location_group) {
+const pallas::LocationGroup* pallas_archive_get_location_group(pallas::GlobalArchive* archive, pallas::LocationGroupId location_group) {
   return archive->getLocationGroup(location_group);
 };
 
-const pallas::Location* pallas_archive_get_location(pallas::Archive* archive, pallas::ThreadId threadId) {
+const pallas::Location* pallas_archive_get_location(pallas::GlobalArchive* archive, pallas::ThreadId threadId) {
   return archive->getLocation(threadId);
 }
-void pallas_archive_register_string(pallas::Archive* archive, pallas::StringRef string_ref, const char* string) {
+void pallas_archive_register_string(pallas::GlobalArchive* archive, pallas::StringRef string_ref, const char* string) {
   archive->addString(string_ref, string);
 }
-void pallas_archive_register_region(pallas::Archive* archive, pallas::RegionRef region_ref, pallas::StringRef string_ref) {
+void pallas_archive_register_region(pallas::GlobalArchive* archive, pallas::RegionRef region_ref, pallas::StringRef string_ref) {
   archive->addRegion(region_ref, string_ref);
 }
-void pallas_archive_register_attribute(pallas::Archive* archive,
+void pallas_archive_register_attribute(pallas::GlobalArchive* archive,
                                     pallas::AttributeRef attribute_ref,
                                     pallas::StringRef name_ref,
                                     pallas::StringRef description_ref,
                                     pallas::pallas_type_t type) {
   archive->addAttribute(attribute_ref, name_ref, description_ref, type);
 }
-const pallas::String* pallas_archive_get_string(pallas::Archive* archive, pallas::StringRef string_ref) {
+const pallas::String* pallas_archive_get_string(pallas::GlobalArchive* archive, pallas::StringRef string_ref) {
   return archive->getString(string_ref);
 }
-const pallas::Region* pallas_archive_get_region(pallas::Archive* archive, pallas::RegionRef region_ref) {
+const pallas::Region* pallas_archive_get_region(pallas::GlobalArchive* archive, pallas::RegionRef region_ref) {
   return archive->getRegion(region_ref);
 }
-const pallas::Attribute* pallas_archive_get_attribute(pallas::Archive* archive, pallas::AttributeRef attribute_ref) {
+const pallas::Attribute* pallas_archive_get_attribute(pallas::GlobalArchive* archive, pallas::AttributeRef attribute_ref) {
   return archive->getAttribute(attribute_ref);
 }
 

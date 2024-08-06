@@ -5,6 +5,7 @@
 
 #include "pallas/pallas_dbg.h"
 #include "pallas/pallas_linked_vector.h"
+#include "pallas/pallas_log.h"
 
 int main(int argc, char** argv) {
   if (argc < 2) {
