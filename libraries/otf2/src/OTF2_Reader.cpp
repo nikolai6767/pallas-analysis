@@ -209,6 +209,29 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
 									 region_ref);
 	
       }
+      break;
+    case pallas::PALLAS_EVENT_LEAVE:
+      if(evtReader->callbacks.OTF2_GlobalEvtReaderCallback_Leave_callback) {
+	AttributeList* attribute_list;
+	pallas_timestamp_t time;
+	pallas::RegionRef region_ref;
+
+	pallas_read_leave(thread_reader,
+			  (PALLAS(AttributeList)**) &attribute_list,
+			  &time,
+			  &region_ref);
+	
+	evtReader->callbacks.OTF2_GlobalEvtReaderCallback_Leave_callback(thread_reader->thread_trace->id,
+									 time,
+									 evtReader->user_data,
+									 attribute_list,
+									 region_ref);
+	
+      }
+      break;
+      
+    default:
+      printf("Unsupported event type %d\n", event_type);
     }
 
   } // todo: else ? 

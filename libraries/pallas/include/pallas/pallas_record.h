@@ -32,6 +32,11 @@ extern void pallas_record_leave(ThreadWriter* thread_writer,
                                 pallas_timestamp_t time,
                                 RegionRef region_ref);
 
+extern void pallas_read_leave(ThreadReader* thread_reader,
+			      AttributeList** attributeList,
+			      pallas_timestamp_t* time,
+			      RegionRef* region_ref);
+
 extern void pallas_record_thread_begin(ThreadWriter* thread_writer,
                                        AttributeList* attributeList,
                                        pallas_timestamp_t time);

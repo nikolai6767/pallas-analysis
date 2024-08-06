@@ -140,12 +140,22 @@ OTF2_CallbackCode print_enter(OTF2_LocationRef locationID,
   return OTF2_CALLBACK_SUCCESS;
 }
 
+OTF2_CallbackCode print_leave(OTF2_LocationRef locationID,
+			      OTF2_TimeStamp time,
+			      void *userData,
+			      OTF2_AttributeList *attributeList,
+			      OTF2_RegionRef region) {
+  printf("LEAVE(locationID=%d, time=%d, userData=%p, attributeList=%p, region=%d)\n",
+	 locationID, time, userData, attributeList, region);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
 
 OTF2_GlobalEvtReaderCallbacks* otf2_print_create_global_evt_callbacks(OTF2_Reader *reader) {
   OTF2_GlobalEvtReaderCallbacks* evt_callbacks = OTF2_GlobalEvtReaderCallbacks_New();
 
   OTF2_GlobalEvtReaderCallbacks_SetEnterCallback( evt_callbacks, print_enter );
-//  OTF2_GlobalEvtReaderCallbacks_SetLeaveCallback( evt_callbacks, print_leave );
+  OTF2_GlobalEvtReaderCallbacks_SetLeaveCallback( evt_callbacks, print_leave );
 //  OTF2_GlobalEvtReaderCallbacks_SetMpiSendCallback( evt_callbacks, print_mpi_send );
 //  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCallback( evt_callbacks, print_mpi_isend );
 //  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCompleteCallback( evt_callbacks, print_mpi_isend_complete );

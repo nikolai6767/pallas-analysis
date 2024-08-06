@@ -81,27 +81,24 @@ void pallas_record_enter(ThreadWriter* thread_writer,
   pallas_recursion_shield--;
 }
 
+#define PALLAS_READ_PROLOG(expected_event_type)				\
+  byte* cursor = nullptr;						\
+  auto token = thread_reader->pollCurToken();				\
+  pallas_assert (token.type == pallas::TypeEvent);			\
+  const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]); \
+  pallas::Record event_type = e.event->record;				\
+  pallas_assert(event_type == expected_event_type);
+
   
-  void pallas_read_enter(ThreadReader* thread_reader,
+void pallas_read_enter(ThreadReader* thread_reader,
                          struct AttributeList** attribute_list,
                          pallas_timestamp_t *time,
                          RegionRef *region_ref) {
-  byte* cursor = nullptr;
-  auto token = thread_reader->pollCurToken();
-  pallas_assert (token.type == pallas::TypeEvent);
-  const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
-
-  pallas::Record event_type = e.event->record;
-  pallas_assert(event_type == PALLAS_EVENT_ENTER);
-    
-  if(attribute_list)
-    *attribute_list = NULL; 	// TODO : add support for attribute_lists
-
-  if(time)
-    *time = e.timestamp;
-  if(region_ref)
-    pop_data(e.event, region_ref, sizeof(*region_ref), cursor);
-  }
+  PALLAS_READ_PROLOG(PALLAS_EVENT_ENTER);
+   if(attribute_list)  *attribute_list = NULL; 	// TODO : add support for attribute_lists
+  if(time)             *time = e.timestamp;
+  if(region_ref)       pop_data(e.event, region_ref, sizeof(*region_ref), cursor);
+}
 
 void pallas_record_leave(ThreadWriter* thread_writer,
                          struct AttributeList* attribute_list __attribute__((unused)),
@@ -120,6 +117,16 @@ void pallas_record_leave(ThreadWriter* thread_writer,
   thread_writer->storeEvent(PALLAS_BLOCK_END, e_id, time, attribute_list);
 
   pallas_recursion_shield--;
+}
+
+void pallas_read_leave(ThreadReader* thread_reader,
+                         struct AttributeList** attribute_list,
+                         pallas_timestamp_t *time,
+                         RegionRef *region_ref) {
+  PALLAS_READ_PROLOG(PALLAS_EVENT_LEAVE);
+  if(attribute_list) *attribute_list = NULL; 	// TODO : add support for attribute_lists
+  if(time)           *time = e.timestamp;
+  if(region_ref)     pop_data(e.event, region_ref, sizeof(*region_ref), cursor);
 }
 
 void pallas_record_thread_begin(ThreadWriter* thread_writer,
