@@ -115,6 +115,8 @@ typedef struct GlobalArchive {
 
   [[nodiscard]] const LocationGroup* getLocationGroup(LocationGroupId) const;
   [[nodiscard]] const Location* getLocation(ThreadId) const;
+  [[nodiscard]] struct Archive* getArchiveFromLocation(ThreadId) const;
+
 #endif
 } GlobalArchive;
 
@@ -186,6 +188,12 @@ extern const struct PALLAS(LocationGroup) *
  */
 extern const struct PALLAS(Location) *
   pallas_archive_get_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id);
+
+/**
+ * @returns The archive that contains a pallas::ThreadId, or nullptr if not found.
+ */
+extern const PALLAS(Archive)*
+  pallas_archive_get_archive_from_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id);
 
 /**
  * Creates a new String and adds it to that Archive.

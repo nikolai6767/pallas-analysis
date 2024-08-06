@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include "otf2/otf2.h"
+#include "pallas/pallas_log.h"
 
 #define check_status( status, ...) if(status != OTF2_SUCCESS) {	\
     fprintf(stderr,  __VA_ARGS__);				\
@@ -61,14 +62,68 @@ OTF2_CallbackCode print_global_def_region(void *userData,
 
 }
 
+OTF2_CallbackCode print_global_def_attribute(void *userData,
+					     OTF2_AttributeRef self,
+					     OTF2_StringRef name,
+					     OTF2_StringRef description,
+					     OTF2_Type type) {
+  printf("Global_def_attribute(userData=%p, self=%d, name=%d, description=%d, type=%d)\n",
+	 userData,
+	 self,
+	 name,
+	 description,
+	 type);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_global_def_location_group(void *userData,
+						  OTF2_LocationGroupRef self,
+						  OTF2_StringRef name,
+						  OTF2_LocationGroupType locationGroupType,
+						  OTF2_SystemTreeNodeRef systemTreeParent,
+						  OTF2_LocationGroupRef creatingLocationGroup) {
+  printf("Global_def_location_group(userData=%p, self=%d, name=%d, locationGroupType=%d, systemTreeParent=%d, creatingLocationGroup=%d)\n",
+	 userData,
+	 self,
+	 name,
+	 locationGroupType,
+	 systemTreeParent,
+	 creatingLocationGroup);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_global_def_location(void *userData,
+					    OTF2_LocationRef self,
+					    OTF2_StringRef name,
+					    OTF2_LocationType locationType,
+					    uint64_t numberOfEvents,
+					    OTF2_LocationGroupRef locationGroup) {
+  printf("Global_def_location(userData=%p, self=%ld, name=%d, locationType=%d, numberOfEvents=%ld, locationGroup=%d)\n",
+	 userData,
+	 self,
+	 name,
+	 locationType,
+	 numberOfEvents,
+	 locationGroup);
+
+  struct otf2_print_user_data *user_data = userData;
+  int index = user_data->nb_locations++;
+  user_data->locations = realloc(user_data->locations, sizeof(uint64_t)*user_data->nb_locations);
+  pallas_assert(user_data->locations);
+  user_data->locations[index] = self;
+  return OTF2_CALLBACK_SUCCESS;
+  
+}
+
+
 OTF2_GlobalDefReaderCallbacks* otf2_print_define_global_def_callbacks(OTF2_Reader *reader) {
   OTF2_GlobalDefReaderCallbacks* def_callbacks = OTF2_GlobalDefReaderCallbacks_New();
 
   OTF2_GlobalDefReaderCallbacks_SetStringCallback( def_callbacks, print_global_def_string );
-//  OTF2_GlobalDefReaderCallbacks_SetAttributeCallback( def_callbacks, print_global_def_attribute );
+  OTF2_GlobalDefReaderCallbacks_SetAttributeCallback( def_callbacks, print_global_def_attribute );
 //  OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodeCallback( def_callbacks, print_global_def_system_tree_node );
-//  OTF2_GlobalDefReaderCallbacks_SetLocationGroupCallback( def_callbacks, print_global_def_location_group );
-//  OTF2_GlobalDefReaderCallbacks_SetLocationCallback( def_callbacks, print_global_def_location );
+  OTF2_GlobalDefReaderCallbacks_SetLocationGroupCallback( def_callbacks, print_global_def_location_group );
+  OTF2_GlobalDefReaderCallbacks_SetLocationCallback( def_callbacks, print_global_def_location );
   OTF2_GlobalDefReaderCallbacks_SetRegionCallback( def_callbacks, print_global_def_region );
 //  OTF2_GlobalDefReaderCallbacks_SetGroupCallback( def_callbacks, print_global_def_group );
 
@@ -158,7 +213,7 @@ int main(int argc, char** argv) {
 	       num_locations );
 
   struct otf2_print_user_data user_data;
-
+  memset(&user_data, 0, sizeof(user_data));
   /* Read global definitions. */
   uint64_t              definitions_read  = 0;
   OTF2_GlobalDefReader* global_def_reader = OTF2_Reader_GetGlobalDefReader( reader );

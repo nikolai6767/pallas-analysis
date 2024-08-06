@@ -12,6 +12,11 @@ static void init_OTF2_GlobalDefReader(OTF2_Reader* reader, OTF2_GlobalDefReader*
   global_def_reader->archive = reader->archive;
 }
 
+static void init_OTF2_GlobalEvtReader(OTF2_Reader* reader, OTF2_GlobalEvtReader* global_evt_reader) {
+  memset(global_evt_reader, 0, sizeof(OTF2_GlobalEvtReader));
+  global_evt_reader->otf2_reader = reader;
+}
+
 OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
 
   OTF2_Reader* reader = (OTF2_Reader*)malloc(sizeof(OTF2_Reader));
@@ -23,11 +28,31 @@ OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
   pallasReadGlobalArchive(archive, anchorFilePath);
 
   for (int i = 0; i < archive->nb_archives; i++) {
-    reader->nb_locations += archive->archive_list[i]->nb_threads;  
+    printf("Archive %d: %d threads\n", i, archive->archive_list[i]->nb_threads);
+    reader->nb_locations += archive->archive_list[i]->nb_threads;
+    int nb_threads = archive->archive_list[i]->nb_threads;
+    for(int j = 0; j<nb_threads; j++) {
+      pallas::Thread* t = archive->archive_list[i]->threads[i];
+      printf("\tthread %d\n", t->id);
+    }
+  }
+  reader->locations = new PALLAS(ThreadId)[reader->nb_locations];
+  reader->evt_readers = (struct OTF2_EvtReader_struct*) calloc(reader->nb_locations, sizeof(struct OTF2_EvtReader_struct));
+  reader->def_readers = (struct OTF2_DefReader_struct*) calloc(reader->nb_locations, sizeof(struct OTF2_DefReader_struct));
+  reader->thread_readers = (pallas::ThreadReader**) calloc(reader->nb_locations, sizeof(pallas::ThreadReader*));
+
+  for(int i = 0; i< reader->nb_locations; i++) {
+    reader->locations[i] =   archive->locations[i].id;
+    reader->evt_readers->location = OTF2_UNDEFINED_LOCATION;
+    reader->def_readers->location = OTF2_UNDEFINED_LOCATION;
   }
 
+
+  reader->selected_locations = (int*) calloc(reader->nb_locations, sizeof(int));
   reader->global_def_reader = (OTF2_GlobalDefReader*)malloc(sizeof(OTF2_GlobalDefReader));
   init_OTF2_GlobalDefReader(reader, reader->global_def_reader);
+  reader->global_evt_reader = (OTF2_GlobalEvtReader*)malloc(sizeof(OTF2_GlobalEvtReader));
+  init_OTF2_GlobalEvtReader(reader, reader->global_evt_reader);
   
   return reader;
 }
@@ -76,7 +101,9 @@ OTF2_ErrorCode OTF2_Reader_RegisterDefCallbacks(OTF2_Reader* reader,
                                                 OTF2_DefReader* defReader,
                                                 const OTF2_DefReaderCallbacks* callbacks,
                                                 void* userData) {
-  NOT_IMPLEMENTED;
+  memcpy(&defReader->callbacks, callbacks, sizeof(OTF2_DefReaderCallbacks));
+  defReader->user_data = userData;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_RegisterGlobalDefCallbacks(OTF2_Reader* reader,
@@ -152,13 +179,27 @@ OTF2_ErrorCode OTF2_Reader_ReadLocalDefinitions(OTF2_Reader* reader,
                                                 OTF2_DefReader* defReader,
                                                 uint64_t definitionsToRead,
                                                 uint64_t* definitionsRead) {
-  NOT_IMPLEMENTED;
+  PALLAS(Archive)* archive = (PALLAS(Archive)*)defReader->thread_reader->archive;
+  int nb_definition_read = 0;
+
+#define CHECK_OTF2_CALLBACK_SUCCESS(_f_) do {			\
+    if(nb_definition_read >= definitionsToRead) goto out;	\
+    if(_f_ != OTF2_CALLBACK_SUCCESS) goto out;			\
+    nb_definition_read++;					\
+  } while(0)
+
+  
+  // TODO: implement local definition
+  // out:
+  *definitionsRead = nb_definition_read;
+  pallas_assert(*definitionsRead <= definitionsToRead);
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadAllLocalDefinitions(OTF2_Reader* reader,
                                                    OTF2_DefReader* defReader,
                                                    uint64_t* definitionsRead) {
-  NOT_IMPLEMENTED;
+  return OTF2_Reader_ReadLocalDefinitions(reader, defReader, UINT64_MAX, definitionsRead);
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadGlobalDefinitions(OTF2_Reader* reader,
@@ -211,6 +252,32 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalDefinitions(OTF2_Reader* reader,
     }
   }
 
+  if(defReader->callbacks.OTF2_GlobalDefReaderCallback_LocationGroup_callback) {
+    for ( const auto &lg : archive->location_groups ) {
+      CHECK_OTF2_CALLBACK_SUCCESS(defReader->callbacks.OTF2_GlobalDefReaderCallback_LocationGroup_callback
+				  (defReader->user_data,
+				   lg.id, // self
+				   lg.name, // name
+				   OTF2_LOCATION_GROUP_TYPE_UNKNOWN, // locationGroupType
+				   OTF2_UNDEFINED_SYSTEM_TREE_NODE, // systemTreeParent
+				   lg.parent // creatingLocationGroup
+				   ));
+    }
+  }
+
+  if(defReader->callbacks.OTF2_GlobalDefReaderCallback_Location_callback) {
+    for ( const auto &loc : archive->locations ) {
+      CHECK_OTF2_CALLBACK_SUCCESS(defReader->callbacks.OTF2_GlobalDefReaderCallback_Location_callback
+				  (defReader->user_data,
+				   loc.id, // self
+				   loc.name, // name
+				   OTF2_LOCATION_TYPE_UNKNOWN, // locationType
+				   0, // numberOfEvents
+				   loc.parent // locationGroup
+				   ));
+    }
+  }
+
   // todo: handle the other definitions
 
  out:
@@ -222,7 +289,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalDefinitions(OTF2_Reader* reader,
 OTF2_ErrorCode OTF2_Reader_ReadAllGlobalDefinitions(OTF2_Reader* reader,
                                                     OTF2_GlobalDefReader* defReader,
                                                     uint64_t* definitionsRead) {
-  NOT_IMPLEMENTED;
+  return OTF2_Reader_ReadGlobalDefinitions(reader, defReader, UINT64_MAX, definitionsRead);
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadLocalSnapshots(OTF2_Reader* reader,
@@ -263,16 +330,55 @@ OTF2_ErrorCode OTF2_Reader_ReadAllMarkers(OTF2_Reader* reader, OTF2_MarkerReader
 }
 
 OTF2_EvtReader* OTF2_Reader_GetEvtReader(OTF2_Reader* reader, OTF2_LocationRef location) {
-  NOT_IMPLEMENTED;
+  for(int i = 0; i<reader->nb_locations; i++) {
+    if(reader->locations[i] == location &&
+       reader->selected_locations[i]) {
+
+      if(reader->evt_readers[i].location == OTF2_UNDEFINED_LOCATION) {
+	// This evt readers has not been open yet.
+	reader->evt_readers[i].location = location;
+      }
+      if(! reader->thread_readers[i]) {
+	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
+	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
+	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
+      }
+      if(! reader->evt_readers[i].thread_reader)
+	reader->evt_readers[i].thread_reader = reader->thread_readers[i];
+
+      return &reader->evt_readers[i];
+    }
+  }
+  return NULL;
 }
 
 OTF2_GlobalEvtReader* OTF2_Reader_GetGlobalEvtReader(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+
+  return reader->global_evt_reader;
 }
 
 OTF2_DefReader* OTF2_Reader_GetDefReader(OTF2_Reader* reader, OTF2_LocationRef location) {
-  
-  NOT_IMPLEMENTED;
+  for(int i = 0; i<reader->nb_locations; i++) {
+    if(reader->locations[i] == location &&
+       reader->selected_locations[i]) {
+
+      if(! reader->thread_readers[i]) {
+	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
+	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
+	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
+      }
+
+      if(reader->def_readers[i].location == OTF2_UNDEFINED_LOCATION) {
+	// This def readers has not been open yet.
+	memset(&reader->def_readers[i], 0, sizeof(struct OTF2_DefReader_struct));
+	reader->def_readers[i].location = location;
+	reader->def_readers[i].thread_reader = reader->thread_readers[i];
+      }
+
+      return &reader->def_readers[i];
+    }
+  }
+  return NULL;
 }
 
 OTF2_GlobalDefReader* OTF2_Reader_GetGlobalDefReader(OTF2_Reader* reader) {
@@ -309,11 +415,13 @@ OTF2_ErrorCode OTF2_Reader_CloseGlobalEvtReader(OTF2_Reader* reader, OTF2_Global
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseDefReader(OTF2_Reader* reader, OTF2_DefReader* defReader) {
-  NOT_IMPLEMENTED;
+  // TODO: free/unitinialize def_reader?
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseGlobalDefReader(OTF2_Reader* reader, OTF2_GlobalDefReader* globalDefReader) {
-  NOT_IMPLEMENTED;
+  // TODO: free reader->global_def_reader?
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseSnapReader(OTF2_Reader* reader, OTF2_SnapReader* snapReader) {
@@ -400,31 +508,37 @@ OTF2_ErrorCode OTF2_Reader_GetNumberOfThumbnails(OTF2_Reader* reader, uint32_t* 
 }
 
 OTF2_ErrorCode OTF2_Reader_OpenEvtFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseEvtFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_OpenDefFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseDefFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_OpenSnapFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseSnapFiles(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_SelectLocation(OTF2_Reader* reader, OTF2_LocationRef location) {
-  NOT_IMPLEMENTED;
+  for(int i=0; i<reader->nb_locations; i++) {
+    if(reader->locations[i] == location) {
+      reader->selected_locations[i] = 1;
+    }
+  }
+
+  return OTF2_SUCCESS;
 }
 
 /** @brief Determines if this reader is the primary archive which handles the

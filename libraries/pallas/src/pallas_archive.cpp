@@ -175,6 +175,19 @@ const Location* GlobalArchive::getLocation(ThreadId location_id) const {
   // The global_archive is the only one for which the global_archive field is nullptr
 }
 
+struct Archive* GlobalArchive::getArchiveFromLocation(ThreadId location_id) const {
+  for(int i =0; i<nb_archives; i++) {
+    if(archive_list[i]->getThread(location_id))
+      return archive_list[i];
+  }
+  return nullptr;
+}
+
+const Archive*
+pallas_archive_get_archive_from_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id) {
+  return archive->getArchiveFromLocation(thread_id);
+}
+
 /**
  * Creates a new String and adds it to that Archive.
  * Error if the given pallas::StringRef is already in use.
