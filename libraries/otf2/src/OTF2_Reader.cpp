@@ -4,6 +4,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_log.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_record.h"
 #include "otf2/OTF2_Reader.h"
 #include "otf2/otf2.h"
 
@@ -43,8 +44,8 @@ OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
 
   for(int i = 0; i< reader->nb_locations; i++) {
     reader->locations[i] =   archive->locations[i].id;
-    reader->evt_readers->location = OTF2_UNDEFINED_LOCATION;
-    reader->def_readers->location = OTF2_UNDEFINED_LOCATION;
+    reader->evt_readers[i].location = OTF2_UNDEFINED_LOCATION;
+    reader->def_readers[i].location = OTF2_UNDEFINED_LOCATION;
   }
 
 
@@ -58,7 +59,8 @@ OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
 }
 
 OTF2_ErrorCode OTF2_Reader_Close(OTF2_Reader* reader) {
-  NOT_IMPLEMENTED;
+  // TODO: free memory
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_SetHint(OTF2_Reader* reader, OTF2_Hint hint, void* value) {
@@ -94,7 +96,9 @@ OTF2_ErrorCode OTF2_Reader_RegisterGlobalEvtCallbacks(OTF2_Reader* reader,
                                                       OTF2_GlobalEvtReader* evtReader,
                                                       const OTF2_GlobalEvtReaderCallbacks* callbacks,
                                                       void* userData) {
-  NOT_IMPLEMENTED;
+  memcpy(&evtReader->callbacks, callbacks, sizeof(OTF2_GlobalEvtReaderCallbacks));
+  evtReader->user_data = userData;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_RegisterDefCallbacks(OTF2_Reader* reader,
@@ -154,25 +158,98 @@ OTF2_ErrorCode OTF2_Reader_ReadLocalEventsBackward(OTF2_Reader* reader,
   NOT_IMPLEMENTED;
 }
 
+/* return the threadRead that contains the next event to process (ie. the one with the minimum
+ * timestamp)
+ */
+pallas::ThreadReader* _get_next_global_event(OTF2_Reader* reader, OTF2_GlobalEvtReader* evtReader) {
+  pallas::ThreadReader* retval = nullptr;
+
+  pallas_timestamp_t min_timestamp = ULONG_MAX;
+
+  for(int i = 0; i<reader->nb_locations; i++) {
+    if(reader->selected_locations[i]) {
+      pallas::ThreadReader *tr = reader->thread_readers[i];
+      if(tr->isEndOfTrace())
+	continue;
+      if(tr->referential_timestamp < min_timestamp) {
+	min_timestamp = tr->referential_timestamp;
+	retval = tr;
+      }
+    }
+  }  
+  
+  return retval;
+}
+
 OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtReader* evtReader) {
-  NOT_IMPLEMENTED;
+  pallas::ThreadReader* thread_reader = _get_next_global_event(reader, evtReader);
+
+  auto token = thread_reader->pollCurToken();
+  if (token.type == pallas::TypeEvent) {
+    const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
+
+    pallas::Record event_type = e.event->record;
+    //    printf("event type: %d\n", event_type);
+    switch(event_type) {
+    case pallas::PALLAS_EVENT_ENTER:
+      if(evtReader->callbacks.OTF2_GlobalEvtReaderCallback_Enter_callback) {
+	AttributeList* attribute_list;
+	pallas_timestamp_t time;
+	pallas::RegionRef region_ref;
+
+	pallas_read_enter(thread_reader,
+			  (PALLAS(AttributeList)**)&attribute_list,
+			  &time,
+			  &region_ref);
+	
+	evtReader->callbacks.OTF2_GlobalEvtReaderCallback_Enter_callback(thread_reader->thread_trace->id,
+									 time,
+									 evtReader->user_data,
+									 attribute_list,
+									 region_ref);
+	
+      }
+    }
+
+  } // todo: else ? 
+
+  if (! thread_reader->getNextToken(PALLAS_READ_UNROLL_ALL).has_value()) {
+    pallas_assert(thread_reader->isEndOfTrace());
+  }
+
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_HasGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtReader* evtReader, int* flag) {
-  NOT_IMPLEMENTED;
+  pallas::ThreadReader*thread_reader = _get_next_global_event(reader, evtReader);
+  *flag = (thread_reader!=nullptr);
+
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadGlobalEvents(OTF2_Reader* reader,
                                             OTF2_GlobalEvtReader* evtReader,
                                             uint64_t eventsToRead,
                                             uint64_t* eventsRead) {
-  NOT_IMPLEMENTED;
+  // TODO: implement
+  int i = 0;
+  for(i = 0; i < eventsToRead; i++) {
+    int flag;
+    OTF2_Reader_HasGlobalEvent(reader, evtReader,  &flag);
+    if(!flag)			// no more event to process
+      break;
+
+    OTF2_Reader_ReadGlobalEvent(reader, evtReader);
+  }
+
+  *eventsRead = i;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadAllGlobalEvents(OTF2_Reader* reader,
                                                OTF2_GlobalEvtReader* evtReader,
                                                uint64_t* eventsRead) {
-  NOT_IMPLEMENTED;
+  return OTF2_Reader_ReadGlobalEvents(reader, evtReader, UINT64_MAX, eventsRead) ;
 }
 
 OTF2_ErrorCode OTF2_Reader_ReadLocalDefinitions(OTF2_Reader* reader,
@@ -330,21 +407,27 @@ OTF2_ErrorCode OTF2_Reader_ReadAllMarkers(OTF2_Reader* reader, OTF2_MarkerReader
 }
 
 OTF2_EvtReader* OTF2_Reader_GetEvtReader(OTF2_Reader* reader, OTF2_LocationRef location) {
+  printf("GetEvtWriter(%d)\n", location);
+  for(int i = 0; i<reader->nb_locations; i++) {
+    printf("locations[%d]: %d\n", i, reader->evt_readers[i].location);
+  }
   for(int i = 0; i<reader->nb_locations; i++) {
     if(reader->locations[i] == location &&
        reader->selected_locations[i]) {
 
-      if(reader->evt_readers[i].location == OTF2_UNDEFINED_LOCATION) {
-	// This evt readers has not been open yet.
-	reader->evt_readers[i].location = location;
-      }
       if(! reader->thread_readers[i]) {
+	printf("\tInit thread reader\n");
 	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
 	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
 	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
       }
-      if(! reader->evt_readers[i].thread_reader)
+
+      if(reader->evt_readers[i].location == OTF2_UNDEFINED_LOCATION) {
+	printf("\tInit evt writer %d (index %d)\n", location, i);
+	// This evt readers has not been open yet.
+	reader->evt_readers[i].location = location;
 	reader->evt_readers[i].thread_reader = reader->thread_readers[i];
+      }
 
       return &reader->evt_readers[i];
     }
@@ -358,17 +441,20 @@ OTF2_GlobalEvtReader* OTF2_Reader_GetGlobalEvtReader(OTF2_Reader* reader) {
 }
 
 OTF2_DefReader* OTF2_Reader_GetDefReader(OTF2_Reader* reader, OTF2_LocationRef location) {
+  printf("GetDefWriter(%d)\n", location);
   for(int i = 0; i<reader->nb_locations; i++) {
     if(reader->locations[i] == location &&
        reader->selected_locations[i]) {
 
       if(! reader->thread_readers[i]) {
+	printf("\tInit thread reader\n");
 	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
 	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
 	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
       }
 
       if(reader->def_readers[i].location == OTF2_UNDEFINED_LOCATION) {
+	printf("\tInit def writer %d (index %d)\n", location, i);
 	// This def readers has not been open yet.
 	memset(&reader->def_readers[i], 0, sizeof(struct OTF2_DefReader_struct));
 	reader->def_readers[i].location = location;
@@ -411,7 +497,7 @@ OTF2_ErrorCode OTF2_Reader_CloseEvtReader(OTF2_Reader* reader, OTF2_EvtReader* e
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseGlobalEvtReader(OTF2_Reader* reader, OTF2_GlobalEvtReader* globalEvtReader) {
-  NOT_IMPLEMENTED;
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_Reader_CloseDefReader(OTF2_Reader* reader, OTF2_DefReader* defReader) {

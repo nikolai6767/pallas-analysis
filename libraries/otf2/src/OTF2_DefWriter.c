@@ -77,8 +77,6 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocation(OTF2_DefWriter* writer,
       writer->archive->id = parent_id;
   }
   pallas_write_define_location(writer->archive->global_archive, thread_id, name, parent_id);
-
-  printf("WriteLocation %d\n", self);
   return OTF2_SUCCESS;
 }
 

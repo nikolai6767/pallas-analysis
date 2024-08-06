@@ -130,10 +130,21 @@ OTF2_GlobalDefReaderCallbacks* otf2_print_define_global_def_callbacks(OTF2_Reade
   return def_callbacks;
 }
 
+OTF2_CallbackCode print_enter(OTF2_LocationRef locationID,
+			      OTF2_TimeStamp time,
+			      void *userData,
+			      OTF2_AttributeList *attributeList,
+			      OTF2_RegionRef region) {
+  printf("ENTER(locationID=%d, time=%d, userData=%p, attributeList=%p, region=%d)\n",
+	 locationID, time, userData, attributeList, region);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+
 OTF2_GlobalEvtReaderCallbacks* otf2_print_create_global_evt_callbacks(OTF2_Reader *reader) {
   OTF2_GlobalEvtReaderCallbacks* evt_callbacks = OTF2_GlobalEvtReaderCallbacks_New();
 
-//  OTF2_GlobalEvtReaderCallbacks_SetEnterCallback( evt_callbacks, print_enter );
+  OTF2_GlobalEvtReaderCallbacks_SetEnterCallback( evt_callbacks, print_enter );
 //  OTF2_GlobalEvtReaderCallbacks_SetLeaveCallback( evt_callbacks, print_leave );
 //  OTF2_GlobalEvtReaderCallbacks_SetMpiSendCallback( evt_callbacks, print_mpi_send );
 //  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCallback( evt_callbacks, print_mpi_isend );
@@ -331,24 +342,15 @@ int main(int argc, char** argv) {
     int otf2_EVENT_COLUMN_WIDTH=20;
     uint64_t events_read = otf2_STEP;
 
-    while ( events_read == otf2_STEP )
-    {
-        printf( "%-*s %15s %20s  Attributes\n",
-		otf2_EVENT_COLUMN_WIDTH, "Event", "Location", "Timestamp" );
-	printf( "--------------------------------------------------------------------------------\n" );
-
+    printf( "%-*s %15s %20s  Attributes\n",
+	    otf2_EVENT_COLUMN_WIDTH, "Event", "Location", "Timestamp" );
+    printf( "--------------------------------------------------------------------------------\n" );
+    while ( events_read > 0 )  {
         status = OTF2_Reader_ReadGlobalEvents( reader,
                                                global_evt_reader,
-                                               otf2_STEP,
+                                               1,
                                                &events_read );
         check_status( status, "Read %" PRIu64 " events.", events_read );
-
-        /* Step through output if otf2_STEP is defined. */
-        if ( otf2_STEP != OTF2_UNDEFINED_UINT64 )
-        {
-            printf( "Press ENTER to print next %" PRIu64 " events.", otf2_STEP );
-            getchar();
-        }
     }
     status = OTF2_Reader_CloseGlobalEvtReader( reader,
                                                global_evt_reader );

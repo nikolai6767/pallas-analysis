@@ -21,6 +21,21 @@ static inline void push_data(Event* e, void* data, size_t data_size) {
   e->event_size += data_size;
 }
 
+// FIXME: this function is duplicated in pallas.cpp
+static inline void pop_data(Event* e, void* data, size_t data_size, byte*& cursor) {
+  if (cursor == nullptr) {
+    /* initialize the cursor to the begining of event data */
+    cursor = &e->event_data[0];
+  }
+
+//  uintptr_t last_event_byte = ((uintptr_t)e) + e->event_size;
+//  uintptr_t last_read_byte = ((uintptr_t)cursor) + data_size;
+//  pallas_assert(last_read_byte <= last_event_byte);
+
+  memcpy(data, cursor, data_size);
+  cursor += data_size;
+}
+
 void pallas_record_generic(ThreadWriter* thread_writer,
                            struct AttributeList* attribute_list,
                            pallas_timestamp_t time,
@@ -65,6 +80,28 @@ void pallas_record_enter(ThreadWriter* thread_writer,
 
   pallas_recursion_shield--;
 }
+
+  
+  void pallas_read_enter(ThreadReader* thread_reader,
+                         struct AttributeList** attribute_list,
+                         pallas_timestamp_t *time,
+                         RegionRef *region_ref) {
+  byte* cursor = nullptr;
+  auto token = thread_reader->pollCurToken();
+  pallas_assert (token.type == pallas::TypeEvent);
+  const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
+
+  pallas::Record event_type = e.event->record;
+  pallas_assert(event_type == PALLAS_EVENT_ENTER);
+    
+  if(attribute_list)
+    *attribute_list = NULL; 	// TODO : add support for attribute_lists
+
+  if(time)
+    *time = e.timestamp;
+  if(region_ref)
+    pop_data(e.event, region_ref, sizeof(*region_ref), cursor);
+  }
 
 void pallas_record_leave(ThreadWriter* thread_writer,
                          struct AttributeList* attribute_list __attribute__((unused)),
