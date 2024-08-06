@@ -125,7 +125,7 @@ target_sources(
         src/OTF2_MarkerReaderCallbacks.c
         src/OTF2_MarkerReader.c
         src/OTF2_MarkerWriter.c
-        src/OTF2_Reader.c
+        src/OTF2_Reader.cpp
         src/OTF2_SnapReaderCallbacks.c
         src/OTF2_SnapReader.c
         src/OTF2_SnapWriter.c

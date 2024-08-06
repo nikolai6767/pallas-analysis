@@ -1411,7 +1411,7 @@ static pallas::Archive* pallasGetArchive(pallas::Archive* global_archive,
   return arch;
 }
 
-void pallas_read_main_archive(pallas::Archive* archive, char* main_filename) {
+void pallas_read_main_archive(pallas::Archive* archive, const char* main_filename) {
   auto* temp_main_filename = strdup(main_filename);
   char* trace_name = strdup(basename(temp_main_filename));
   char* dir_name = strdup(dirname(temp_main_filename));

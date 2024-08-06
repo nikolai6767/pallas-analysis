@@ -39,7 +39,7 @@ char* pallas_archive_fullpath(char* dir_name, char* trace_name);
  * @param archive Pointer to an allocated archive.
  * @param main_filename Path to a `main.pallas` file.
  */
-void pallas_read_main_archive(PALLAS(Archive) * archive, char* main_filename);
+void pallas_read_main_archive(PALLAS(Archive) * archive, const char* main_filename);
 #ifdef __cplusplus
 };
 #endif
