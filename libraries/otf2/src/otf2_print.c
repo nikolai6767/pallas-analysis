@@ -20,17 +20,85 @@
     abort();							\
   }
 
+static int otf2_EVENT_COLUMN_WIDTH=20;
+
+#define STRING_MAX_LEN 1024
+#define SMALL_BUFFER 128
+
+struct otf2_string {
+  OTF2_StringRef ref;
+  char str[STRING_MAX_LEN];
+};
+
+struct otf2_region {
+  OTF2_RegionRef ref;
+  OTF2_StringRef name;
+  struct otf2_string* name_str;
+};
+
 struct otf2_print_user_data {
   size_t nb_locations;
   uint64_t* locations;
+
+  struct otf2_string *strings;
+  int nb_strings;
+
+  struct otf2_region *regions;
+  int nb_regions;
+
 };
 
-void _set_callbacks(OTF2_Reader* reader) {
+struct otf2_string* get_string_t(struct otf2_print_user_data *user_data, OTF2_StringRef string) {
+  for(int i = 0; i<user_data->nb_strings; i++) {
+    if(user_data->strings[i].ref == string)
+      return &user_data->strings[i];
+  }
+  return NULL;
+}
 
+char* get_string(struct otf2_print_user_data *user_data, OTF2_StringRef string) {
+  struct otf2_string* str = get_string_t(user_data, string);
+  if(str) return str->str;
+  return NULL;
+}
+
+struct otf2_region* get_region_t(struct otf2_print_user_data *user_data, OTF2_RegionRef region) {
+  for(int i = 0; i<user_data->nb_regions; i++) {
+    if(user_data->regions[i].ref == region) {
+      if(! user_data->regions[i].name_str)
+	user_data->regions[i].name_str = get_string_t(user_data, user_data->regions[i].name);
+      return &user_data->regions[i];
+    }
+  }
+  return NULL;
+}
+
+char* get_region_str(struct otf2_print_user_data *user_data, OTF2_RegionRef region) {
+  struct otf2_region* r = get_region_t(user_data, region);
+  if(r) {
+    return r->name_str->str;
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Region_%d", region);
+    return buf;			/* warning: memory leak ! */
+  } else {
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Unknown_Region_%d", region);
+    return buf; 		/* warning: memory leak ! */
+  }
 }
 
 OTF2_CallbackCode print_global_def_string(void *userData, OTF2_StringRef self, const char *string) {
   printf("Global_def_string(userData=%p, self=%d, string='%s');\n", userData, self, string);
+  struct otf2_print_user_data* user_data = userData;
+
+  struct otf2_string* s = get_string_t(user_data, self);
+  pallas_assert(s == NULL);
+  int index = user_data->nb_strings++;
+  user_data->strings = realloc(user_data->strings, sizeof(struct otf2_string) * user_data->nb_strings);
+  s = &user_data->strings[index];
+  s->ref = self;
+  strncpy(s->str, string, STRING_MAX_LEN);
+
   return OTF2_CALLBACK_SUCCESS;
 }
 
@@ -58,6 +126,17 @@ OTF2_CallbackCode print_global_def_region(void *userData,
 	 sourceFile,
 	 beginLineNumber,
 	 endLineNumber);
+  struct otf2_print_user_data* user_data = userData;
+
+  struct otf2_region* r = get_region_t(user_data, self);
+  pallas_assert(r == NULL);
+  int index = user_data->nb_regions++;
+  user_data->regions = realloc(user_data->regions, sizeof(struct otf2_region) * user_data->nb_regions);
+  r = &user_data->regions[index];
+  r->ref = self;
+  r->name = name;
+  r->name_str = NULL;
+
   return OTF2_CALLBACK_SUCCESS;
 
 }
@@ -130,13 +209,19 @@ OTF2_GlobalDefReaderCallbacks* otf2_print_define_global_def_callbacks(OTF2_Reade
   return def_callbacks;
 }
 
+
+
+#define OTF2_PRINT_GENERIC(event, location, timestamp, attributes)	\
+  printf( "%-*s %15ld %20lu  %s\n", otf2_EVENT_COLUMN_WIDTH, event, location, timestamp, attributes)
+
+
 OTF2_CallbackCode print_enter(OTF2_LocationRef locationID,
 			      OTF2_TimeStamp time,
 			      void *userData,
 			      OTF2_AttributeList *attributeList,
 			      OTF2_RegionRef region) {
-  printf("ENTER(locationID=%d, time=%d, userData=%p, attributeList=%p, region=%d)\n",
-	 locationID, time, userData, attributeList, region);
+  OTF2_PRINT_GENERIC("ENTER",  locationID, time, get_region_str(userData, region));
+
   return OTF2_CALLBACK_SUCCESS;
 }
 
@@ -145,8 +230,7 @@ OTF2_CallbackCode print_leave(OTF2_LocationRef locationID,
 			      void *userData,
 			      OTF2_AttributeList *attributeList,
 			      OTF2_RegionRef region) {
-  printf("LEAVE(locationID=%d, time=%d, userData=%p, attributeList=%p, region=%d)\n",
-	 locationID, time, userData, attributeList, region);
+  OTF2_PRINT_GENERIC("LEAVE",  locationID, time, get_region_str(userData, region));
   return OTF2_CALLBACK_SUCCESS;
 }
 
@@ -220,8 +304,6 @@ int main(int argc, char** argv) {
 
   const char* trace_file = argv[1];
   OTF2_Reader* reader = OTF2_Reader_Open(trace_file);
-
-  _set_callbacks(reader);
 
   /* Define definition callbacks. */
   OTF2_GlobalDefReaderCallbacks* def_callbacks = otf2_print_define_global_def_callbacks(reader);
@@ -349,7 +431,6 @@ int main(int argc, char** argv) {
     OTF2_GlobalEvtReaderCallbacks_Delete( evt_callbacks );
     /* Read until events are all read. */
     uint64_t otf2_STEP = 1;
-    int otf2_EVENT_COLUMN_WIDTH=20;
     uint64_t events_read = otf2_STEP;
 
     printf( "%-*s %15s %20s  Attributes\n",
