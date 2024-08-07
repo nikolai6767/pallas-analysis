@@ -1301,12 +1301,14 @@ void pallas::ParameterHandler::writeToFile(FILE* file) const {
 }
 
 void pallas::ParameterHandler::readFromFile(FILE* file) {
+  pallas_log(pallas::DebugLevel::Debug, "Reading configuration from trace.\n");
   _pallas_fread(&compressionAlgorithm, sizeof(compressionAlgorithm), 1, file);
   _pallas_fread(&encodingAlgorithm, sizeof(encodingAlgorithm), 1, file);
   _pallas_fread(&zstdCompressionLevel, sizeof(zstdCompressionLevel), 1, file);
   _pallas_fread(&loopFindingAlgorithm, sizeof(loopFindingAlgorithm), 1, file);
   _pallas_fread(&maxLoopLength, sizeof(maxLoopLength), 1, file);
   _pallas_fread(&timestampStorage, sizeof(timestampStorage), 1, file);
+  pallas_log(pallas::DebugLevel::Debug, "%s\n", this->to_string().c_str());
 }
 
 static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_name, char* trace_name) {
