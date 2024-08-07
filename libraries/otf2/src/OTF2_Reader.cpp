@@ -29,12 +29,10 @@ OTF2_Reader* OTF2_Reader_Open(const char* anchorFilePath) {
   pallasReadGlobalArchive(archive, anchorFilePath);
 
   for (int i = 0; i < archive->nb_archives; i++) {
-    printf("Archive %d: %d threads\n", i, archive->archive_list[i]->nb_threads);
     reader->nb_locations += archive->archive_list[i]->nb_threads;
     int nb_threads = archive->archive_list[i]->nb_threads;
     for(int j = 0; j<nb_threads; j++) {
       pallas::Thread* t = archive->archive_list[i]->threads[i];
-      printf("\tthread %d\n", t->id);
     }
   }
   reader->locations = new PALLAS(ThreadId)[reader->nb_locations];
@@ -189,7 +187,6 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
     const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
 
     pallas::Record event_type = e.event->record;
-    //    printf("event type: %d\n", event_type);
     switch(event_type) {
     case pallas::PALLAS_EVENT_ENTER:
       if(evtReader->callbacks.OTF2_GlobalEvtReaderCallback_Enter_callback) {
@@ -226,6 +223,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
 									 evtReader->user_data,
 									 attribute_list,
 									 region_ref);
+	break;
       case pallas::PALLAS_EVENT_MPI_SEND:
 	if(evtReader->callbacks.OTF2_GlobalEvtReaderCallback_MpiSend_callback) {
 	  AttributeList* attribute_list;
@@ -989,23 +987,17 @@ OTF2_ErrorCode OTF2_Reader_ReadAllMarkers(OTF2_Reader* reader, OTF2_MarkerReader
 }
 
 OTF2_EvtReader* OTF2_Reader_GetEvtReader(OTF2_Reader* reader, OTF2_LocationRef location) {
-  printf("GetEvtWriter(%d)\n", location);
-  for(int i = 0; i<reader->nb_locations; i++) {
-    printf("locations[%d]: %d\n", i, reader->evt_readers[i].location);
-  }
   for(int i = 0; i<reader->nb_locations; i++) {
     if(reader->locations[i] == location &&
        reader->selected_locations[i]) {
 
       if(! reader->thread_readers[i]) {
-	printf("\tInit thread reader\n");
 	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
 	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
 	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
       }
 
       if(reader->evt_readers[i].location == OTF2_UNDEFINED_LOCATION) {
-	printf("\tInit evt writer %d (index %d)\n", location, i);
 	// This evt readers has not been open yet.
 	reader->evt_readers[i].location = location;
 	reader->evt_readers[i].thread_reader = reader->thread_readers[i];
@@ -1023,20 +1015,17 @@ OTF2_GlobalEvtReader* OTF2_Reader_GetGlobalEvtReader(OTF2_Reader* reader) {
 }
 
 OTF2_DefReader* OTF2_Reader_GetDefReader(OTF2_Reader* reader, OTF2_LocationRef location) {
-  printf("GetDefWriter(%d)\n", location);
   for(int i = 0; i<reader->nb_locations; i++) {
     if(reader->locations[i] == location &&
        reader->selected_locations[i]) {
 
       if(! reader->thread_readers[i]) {
-	printf("\tInit thread reader\n");
 	PALLAS(GlobalArchive)* global_archive = (PALLAS(GlobalArchive)*)reader->archive;
 	PALLAS(Archive)* thread_archive = global_archive->getArchiveFromLocation(location);
 	reader->thread_readers[i] = new	pallas::ThreadReader(thread_archive, location, 0);
       }
 
       if(reader->def_readers[i].location == OTF2_UNDEFINED_LOCATION) {
-	printf("\tInit def writer %d (index %d)\n", location, i);
 	// This def readers has not been open yet.
 	memset(&reader->def_readers[i], 0, sizeof(struct OTF2_DefReader_struct));
 	reader->def_readers[i].location = location;

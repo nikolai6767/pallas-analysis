@@ -20,6 +20,10 @@
     abort();							\
   }
 
+int show_definitions = 0;
+
+#define OTF2_PRINT_DEF(format, ...) do {if(show_definitions) printf(format, __VA_ARGS__); } while(0)
+
 static int otf2_EVENT_COLUMN_WIDTH=20;
 
 #define STRING_MAX_LEN 1024
@@ -88,7 +92,7 @@ char* get_region_str(struct otf2_print_user_data *user_data, OTF2_RegionRef regi
 }
 
 OTF2_CallbackCode print_global_def_string(void *userData, OTF2_StringRef self, const char *string) {
-  printf("Global_def_string(userData=%p, self=%d, string='%s');\n", userData, self, string);
+  OTF2_PRINT_DEF("Global_def_string(userData=%p, self=%d, string='%s');\n", userData, self, string);
   struct otf2_print_user_data* user_data = userData;
 
   struct otf2_string* s = get_string_t(user_data, self);
@@ -114,7 +118,7 @@ OTF2_CallbackCode print_global_def_region(void *userData,
 					  OTF2_StringRef sourceFile,
 					  uint32_t beginLineNumber,
 					  uint32_t endLineNumber) {
-  printf("Global_def_region(userData=%p, self=%d, name=%d, canonicalName=%d, description=%d, regionRole=%d, paradigm=%d, regionFlags=%d, sourceFile=%d, beginLineNumber=%d, endLineNumber=%d)\n",
+  OTF2_PRINT_DEF("Global_def_region(userData=%p, self=%d, name=%d, canonicalName=%d, description=%d, regionRole=%d, paradigm=%d, regionFlags=%d, sourceFile=%d, beginLineNumber=%d, endLineNumber=%d)\n",
 	 userData,
 	 self,
 	 name,
@@ -146,7 +150,7 @@ OTF2_CallbackCode print_global_def_attribute(void *userData,
 					     OTF2_StringRef name,
 					     OTF2_StringRef description,
 					     OTF2_Type type) {
-  printf("Global_def_attribute(userData=%p, self=%d, name=%d, description=%d, type=%d)\n",
+  OTF2_PRINT_DEF("Global_def_attribute(userData=%p, self=%d, name=%d, description=%d, type=%d)\n",
 	 userData,
 	 self,
 	 name,
@@ -161,7 +165,7 @@ OTF2_CallbackCode print_global_def_location_group(void *userData,
 						  OTF2_LocationGroupType locationGroupType,
 						  OTF2_SystemTreeNodeRef systemTreeParent,
 						  OTF2_LocationGroupRef creatingLocationGroup) {
-  printf("Global_def_location_group(userData=%p, self=%d, name=%d, locationGroupType=%d, systemTreeParent=%d, creatingLocationGroup=%d)\n",
+  OTF2_PRINT_DEF("Global_def_location_group(userData=%p, self=%d, name=%d, locationGroupType=%d, systemTreeParent=%d, creatingLocationGroup=%d)\n",
 	 userData,
 	 self,
 	 name,
@@ -177,7 +181,7 @@ OTF2_CallbackCode print_global_def_location(void *userData,
 					    OTF2_LocationType locationType,
 					    uint64_t numberOfEvents,
 					    OTF2_LocationGroupRef locationGroup) {
-  printf("Global_def_location(userData=%p, self=%ld, name=%d, locationType=%d, numberOfEvents=%ld, locationGroup=%d)\n",
+  OTF2_PRINT_DEF("Global_def_location(userData=%p, self=%ld, name=%d, locationType=%d, numberOfEvents=%ld, locationGroup=%d)\n",
 	 userData,
 	 self,
 	 name,

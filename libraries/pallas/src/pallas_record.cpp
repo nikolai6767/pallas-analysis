@@ -255,7 +255,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_THREAD_FORK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(numberOfRequestedThreads) pop_data(e.event, numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    if(numberOfRequestedThreads) pop_data(e.event, numberOfRequestedThreads, sizeof(*numberOfRequestedThreads), cursor);
   }
 
   void pallas_record_thread_join(ThreadWriter* thread_writer,
@@ -309,13 +309,14 @@ namespace pallas {
 				     uint32_t* msgTag,
 			    uint64_t* msgLength) {
     PALLAS_READ_PROLOG(PALLAS_EVENT_MPI_SEND);
+
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
 
-    if(receiver) pop_data(e.event, receiver, sizeof(receiver), cursor);
-    if(communicator) pop_data(e.event, communicator, sizeof(communicator), cursor);
-    if(msgTag) pop_data(e.event, msgTag, sizeof(msgTag), cursor);
-    if(msgLength) pop_data(e.event, msgLength, sizeof(msgLength), cursor);
+    if(receiver) pop_data(e.event, receiver, sizeof(*receiver), cursor);
+    if(communicator) pop_data(e.event, communicator, sizeof(*communicator), cursor);
+    if(msgTag) pop_data(e.event, msgTag, sizeof(*msgTag), cursor);
+    if(msgLength) pop_data(e.event, msgLength, sizeof(*msgLength), cursor);
   }
 
   void pallas_record_mpi_isend(ThreadWriter* thread_writer,
@@ -357,11 +358,11 @@ namespace pallas {
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
 
-    if(receiver) pop_data(e.event, receiver, sizeof(receiver), cursor);
-    if(communicator) pop_data(e.event, communicator, sizeof(communicator), cursor);
-    if(msgTag) pop_data(e.event, msgTag, sizeof(msgTag), cursor);
-    if(msgLength) pop_data(e.event, msgLength, sizeof(msgLength), cursor);
-    if(requestID) pop_data(e.event, requestID, sizeof(requestID), cursor);
+    if(receiver) pop_data(e.event, receiver, sizeof(*receiver), cursor);
+    if(communicator) pop_data(e.event, communicator, sizeof(*communicator), cursor);
+    if(msgTag) pop_data(e.event, msgTag, sizeof(*msgTag), cursor);
+    if(msgLength) pop_data(e.event, msgLength, sizeof(*msgLength), cursor);
+    if(requestID) pop_data(e.event, requestID, sizeof(*requestID), cursor);
   }
   
 
@@ -391,7 +392,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_MPI_ISEND_COMPLETE);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(requestID) pop_data(e.event, requestID, sizeof(requestID), cursor);
+    if(requestID) pop_data(e.event, requestID, sizeof(*requestID), cursor);
   }
 
 
@@ -421,7 +422,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_MPI_IRECV_REQUEST);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(requestID) pop_data(e.event, requestID, sizeof(requestID), cursor);
+    if(requestID) pop_data(e.event, requestID, sizeof(*requestID), cursor);
   }
 
 
@@ -460,10 +461,10 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_MPI_RECV);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(sender) pop_data(e.event, sender, sizeof(sender), cursor);
-    if(communicator) pop_data(e.event, communicator, sizeof(communicator), cursor);
-    if(msgTag) pop_data(e.event, msgTag, sizeof(msgTag), cursor);
-    if(msgLength) pop_data(e.event, msgLength, sizeof(msgLength), cursor);
+    if(sender) pop_data(e.event, sender, sizeof(*sender), cursor);
+    if(communicator) pop_data(e.event, communicator, sizeof(*communicator), cursor);
+    if(msgTag) pop_data(e.event, msgTag, sizeof(*msgTag), cursor);
+    if(msgLength) pop_data(e.event, msgLength, sizeof(*msgLength), cursor);
   }
 
   void pallas_record_mpi_irecv(ThreadWriter* thread_writer,
@@ -504,11 +505,11 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_MPI_IRECV);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(sender) pop_data(e.event, sender, sizeof(sender), cursor);
-    if(communicator) pop_data(e.event, communicator, sizeof(communicator), cursor);
-    if(msgTag) pop_data(e.event, msgTag, sizeof(msgTag), cursor);
-    if(msgLength) pop_data(e.event, msgLength, sizeof(msgLength), cursor);
-    if(requestID) pop_data(e.event, requestID, sizeof(requestID), cursor);
+    if(sender) pop_data(e.event, sender, sizeof(*sender), cursor);
+    if(communicator) pop_data(e.event, communicator, sizeof(*communicator), cursor);
+    if(msgTag) pop_data(e.event, msgTag, sizeof(*msgTag), cursor);
+    if(msgLength) pop_data(e.event, msgLength, sizeof(*msgLength), cursor);
+    if(requestID) pop_data(e.event, requestID, sizeof(*requestID), cursor);
   }
 
 
@@ -576,11 +577,11 @@ namespace pallas {
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
    
-    if(collectiveOp) pop_data(e.event, collectiveOp, sizeof(collectiveOp), cursor);
-    if(communicator) pop_data(e.event, communicator, sizeof(communicator), cursor);
-    if(root) pop_data(e.event, root, sizeof(root), cursor);
-    if(sizeSent) pop_data(e.event, sizeSent, sizeof(sizeSent), cursor);
-    if(sizeReceived) pop_data(e.event, sizeReceived, sizeof(sizeReceived), cursor);
+    if(collectiveOp) pop_data(e.event, collectiveOp, sizeof(*collectiveOp), cursor);
+    if(communicator) pop_data(e.event, communicator, sizeof(*communicator), cursor);
+    if(root) pop_data(e.event, root, sizeof(*root), cursor);
+    if(sizeSent) pop_data(e.event, sizeSent, sizeof(*sizeSent), cursor);
+    if(sizeReceived) pop_data(e.event, sizeReceived, sizeof(*sizeReceived), cursor);
   }
 
   void pallas_record_omp_fork(ThreadWriter* thread_writer,
@@ -606,7 +607,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_FORK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(numberOfRequestedThreads) pop_data(e.event, numberOfRequestedThreads, sizeof(numberOfRequestedThreads), cursor);
+    if(numberOfRequestedThreads) pop_data(e.event, numberOfRequestedThreads, sizeof(*numberOfRequestedThreads), cursor);
   }
 
   
@@ -656,7 +657,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_ACQUIRE_LOCK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(lockID) pop_data(e.event, lockID, sizeof(lockID), cursor);
+    if(lockID) pop_data(e.event, lockID, sizeof(*lockID), cursor);
   }
 
   
@@ -685,7 +686,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_THREAD_ACQUIRE_LOCK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(lockID) pop_data(e.event, lockID, sizeof(lockID), cursor);
+    if(lockID) pop_data(e.event, lockID, sizeof(*lockID), cursor);
     if(acquisitionOrder) *acquisitionOrder = 0;
   }
 
@@ -715,7 +716,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_THREAD_RELEASE_LOCK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(lockID) pop_data(e.event, lockID, sizeof(lockID), cursor);
+    if(lockID) pop_data(e.event, lockID, sizeof(*lockID), cursor);
     if(acquisitionOrder) *acquisitionOrder = 0;
   }
 
@@ -745,7 +746,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_RELEASE_LOCK);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(lockID) pop_data(e.event, lockID, sizeof(lockID), cursor);
+    if(lockID) pop_data(e.event, lockID, sizeof(*lockID), cursor);
     if(acquisitionOrder) *acquisitionOrder = 0;
   }
 
@@ -772,7 +773,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_TASK_CREATE);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(taskID) pop_data(e.event, taskID, sizeof(taskID), cursor);
+    if(taskID) pop_data(e.event, taskID, sizeof(*taskID), cursor);
   }
 
   void pallas_record_omp_task_switch(ThreadWriter* thread_writer,
@@ -797,7 +798,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_TASK_SWITCH);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(taskID) pop_data(e.event, taskID, sizeof(taskID), cursor);
+    if(taskID) pop_data(e.event, taskID, sizeof(*taskID), cursor);
   }
 
   void pallas_record_omp_task_complete(ThreadWriter* thread_writer,
@@ -822,7 +823,7 @@ namespace pallas {
     PALLAS_READ_PROLOG(PALLAS_EVENT_OMP_TASK_COMPLETE);
     if(attribute_list) * attribute_list = NULL;
     if(time) *time = e.timestamp;
-    if(taskID) pop_data(e.event, taskID, sizeof(taskID), cursor);
+    if(taskID) pop_data(e.event, taskID, sizeof(*taskID), cursor);
   }
 
   void pallas_record_thread_task_create(ThreadWriter* thread_writer,

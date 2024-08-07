@@ -1394,7 +1394,6 @@ static void pallasReadArchive(pallas::GlobalArchive* global_archive,
 
   file.read(&archive->id, sizeof(pallas::LocationGroupId), 1);
   file.read(&archive->nb_threads, sizeof(int), 1);
-  printf("%d threads in archive\n", archive->nb_threads);
   archive->threads = new pallas::Thread*[archive->nb_threads]();
   archive->nb_allocated_threads = archive->nb_threads;
 
