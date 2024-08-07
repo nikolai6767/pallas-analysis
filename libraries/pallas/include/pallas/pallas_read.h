@@ -7,13 +7,16 @@
  */
 #pragma once
 
-#include <optional>
-
 #include "pallas.h"
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
 
+#ifdef __cplusplus
+#include <optional>
+
 namespace pallas {
+#endif
+
 /** Maximum Callstack Size. */
 #define MAX_CALLSTACK_DEPTH 100
 
@@ -101,11 +104,13 @@ typedef struct Checkpoint {
   int current_frame;
 
   DEFINE_TokenCountMap(tokenCount);
+#ifdef __cplusplus
   /** Creates a savestate of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
   Checkpoint(const struct ThreadReader* reader);
   Checkpoint() = default;
   ~Checkpoint();
+#endif
 } Checkpoint;
 
 /**
@@ -139,6 +144,7 @@ typedef struct ThreadReader {
    * Options as defined in pallas::ThreadReaderOptions.
    */
   int options;
+#ifdef __cplusplus
   /**
    * Make a new ThreadReader from an Archive and a threadId.
    * @param archive Archive to read.
@@ -217,11 +223,86 @@ typedef struct ThreadReader {
 
   ThreadReader(const ThreadReader &) = default;
   ThreadReader(ThreadReader&& other) noexcept ;
+#endif
 } ThreadReader;
 
+/* C bindings */
 
+/**
+ * Make a new ThreadReader from an Archive and a threadId.
+ * @param archive Archive to read.
+ * @param threadId Id of the thread to read.
+ * @param options Options as defined in ThreadReaderOptions.
+ */
+ThreadReader pallasCreateThreadReader(Archive* archive, ThreadId threadId, int options);
+/** Prints the current Token. */
+void pallasPrintCurToken(ThreadReader *thread_reader);
+/** Gets the current Iterable. */
+const Token* pallasGetCurIterable(ThreadReader *thread_reader);
+/** Prints the current Sequence. */
+void pallasPrintCurSequence(ThreadReader *thread_reader);
+/** Prints the whole current callstack. */
+void pallasPrintCallstack(ThreadReader *thread_reader);
+/** Returns the EventSummary of the given Event. */
+EventSummary* pallasGetEventSummary(ThreadReader *thread_reader, Token event);
+/** Returns the timestamp of the given event occurring at the given index. */
+pallas_timestamp_t pallasGetEventTimestamp(ThreadReader *thread_reader, Token event, int occurence_id);
+/** Returns whether the given sequence still has more Tokens after the given current_index. */
+bool pallasIsEndOfSequence(ThreadReader *thread_reader, int current_index, Token sequence_id);
+/** Returns whether the given loop still has more Tokens after the given current_index. */
+bool pallasIsEndOfLoop(ThreadReader *thread_reader, int current_index, Token loop_id);
+/** Returns whether the cursor is at the end of the current block. */
+bool pallasIsEndOfCurrentBlock(ThreadReader *thread_reader);
+/** Returns whether the cursor is at the end of the trace. */
+bool pallasIsEndOfTrace(ThreadReader *thread_reader);
+/** Returns the duration of the given Loop. */
+pallas_duration_t pallasGetLoopDuration(ThreadReader *thread_reader, Token loop_id);
+
+/** Returns an EventOccurence for the given Token appearing at the given occurence_id.
+ * Timestamp is set to Reader's referential timestamp.*/
+EventOccurence pallasGetEventOccurence(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
+/** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
+ * Timestamp is set to Reader's referential timestamp.*/
+SequenceOccurence pallasGetSequenceOccurence(ThreadReader *thread_reader,
+                                             Token sequence_id,
+                                             size_t occurence_id,
+                                             bool create_checkpoint = false);
+/** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
+ * Timestamp is set to Reader's referential timestamp.*/
+LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id, size_t occurence_id);
+
+/** Returns a pointer to the AttributeList for the given occurence of the given Event. */
+AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
+
+void pallasLoadCheckpoint(ThreadReader *thread_reader, Checkpoint *checkpoint);
+
+//******************* EXPLORATION FUNCTIONS ********************
+
+/** Gets the current Token. */
+const Token* pallasPollCurToken(ThreadReader *thread_reader);
+/** Peeks at and return the next token without actually updating the state */
+const Token* pallasPollNextToken(ThreadReader *thread_reader);
+/** Peeks at and return the previous token without actually updating the state */
+const Token* pallasPollPrevToken(ThreadReader *thread_reader);
+/** Updates the internal state */
+void pallasMoveToNextToken(ThreadReader *thread_reader);
+/** Updates the internal state */
+void pallasMoveToPrevToken(ThreadReader *thread_reader);
+/** Gets the next token and updates the reader's state if it returns a value.
+ * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
+Token* pallasGetNextToken(ThreadReader *thread_reader, int flags);
+/** Enters a block */
+void pallasEnterBlock(ThreadReader *thread_reader, Token new_block);
+/** Leaves the current block */
+void pallasLeaveBlock(ThreadReader *thread_reader);
+/** Exits a block if at the end of it and flags allow it, returns a boolean representing if the reader actually exited a block */
+bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
+
+Checkpoint pallasCreateCheckpoint(ThreadReader *thread_reader);
+
+#ifdef __cplusplus
 }; /* namespace pallas */
-
+#endif
 /* -*-
    mode: c;
    c-file-style: "k&r";
