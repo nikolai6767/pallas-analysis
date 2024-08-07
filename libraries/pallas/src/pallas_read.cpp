@@ -326,29 +326,34 @@ void ThreadReader::moveToNextToken() {
       auto current_token = this->pollCurToken();
       pallas_duration_t token_duration = 0;
       switch (current_token.type) {
-      case TypeEvent:
+      case TypeEvent: {
         token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
         break;
+      }
 
-      case TypeLoop:
+      case TypeLoop: {
         token_duration = getLoopDuration(current_token);
-        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++) {
-          tokenCount +=  thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
-          tokenCount[thread_trace->getLoop(current_token)->repeated_token]++;
-        }
+        auto loop = thread_trace->getLoop(current_token);
+        auto loopCount = loop->nb_iterations[tokenCount[current_token]];
+        tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace) * loopCount;
+        tokenCount[loop->repeated_token] += loopCount;
         break;
+      }
 
-      case TypeSequence:
-        token_duration = thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
-        tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
+      case TypeSequence: {
+        auto seq = thread_trace->getSequence(current_token);
+        token_duration = seq->durations->at(tokenCount[current_token]);
+        tokenCount += seq->getTokenCount(thread_trace);
         break;
+      }
 
       case TypeInvalid:
         pallas_error("Token is Invalid");
       }
 #ifdef DEBUG
       if (referential_timestamp + token_duration < referential_timestamp) {
-        pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id, token_duration);
+        pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id,
+                     token_duration);
       }
 #endif
       referential_timestamp+=token_duration;
