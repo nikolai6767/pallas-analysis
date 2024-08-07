@@ -234,64 +234,653 @@ OTF2_CallbackCode print_leave(OTF2_LocationRef locationID,
   return OTF2_CALLBACK_SUCCESS;
 }
 
+OTF2_CallbackCode print_mpi_send(OTF2_LocationRef locationID,
+				  OTF2_TimeStamp time,
+				  void* userData,
+				  OTF2_AttributeList* attributeList,
+				  uint32_t receiver,
+				  OTF2_CommRef communicator,
+				  uint32_t msgTag,
+				  uint64_t msgLength) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "receiver: %d, comm: %x, tag: %d, len: %lu",
+	   receiver, communicator, msgTag, msgLength);
+  OTF2_PRINT_GENERIC("MPI_SEND",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_isend(OTF2_LocationRef locationID,
+				  OTF2_TimeStamp time,
+				  void* userData,
+				  OTF2_AttributeList* attributeList,
+				  uint32_t receiver,
+				  OTF2_CommRef communicator,
+				  uint32_t msgTag,
+				  uint64_t msgLength,
+				  uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "receiver: %d, comm: %x, tag: %d, len: %lu, req: %p",
+	   receiver, communicator, msgTag, msgLength, (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_ISEND",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_isend_complete(OTF2_LocationRef locationID,
+					   OTF2_TimeStamp time,
+					   void* userData,
+					   OTF2_AttributeList* attributeList,
+					   uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "req: %p", (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_ISEND_COMPLETE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_irecv_request(OTF2_LocationRef locationID,
+					  OTF2_TimeStamp time,
+					  void* userData,
+					  OTF2_AttributeList* attributeList,
+					  uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "req: %p", (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_IRECV_REQUEST",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_recv(OTF2_LocationRef locationID,
+				 OTF2_TimeStamp time,
+				 void* userData,
+				 OTF2_AttributeList* attributeList,
+				 uint32_t sender,
+				 OTF2_CommRef communicator,
+				 uint32_t msgTag,
+				 uint64_t msgLength) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "sender: %d, comm: %x, tag: %d, len: %lu",
+	   sender, communicator, msgTag, msgLength);
+  OTF2_PRINT_GENERIC("MPI_RECV",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_irecv(OTF2_LocationRef locationID,
+				  OTF2_TimeStamp time,
+				  void* userData,
+				  OTF2_AttributeList* attributeList,
+				  uint32_t sender,
+				  OTF2_CommRef communicator,
+				  uint32_t msgTag,
+				  uint64_t msgLength,
+				  uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "sender: %d, comm: %x, tag: %d, len: %lu, req: %p",
+	   sender, communicator, msgTag, msgLength, (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_IRECV",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_request_test(OTF2_LocationRef locationID,
+					 OTF2_TimeStamp time,
+					 void* userData,
+					 OTF2_AttributeList* attributeList,
+					 uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "req: %p", (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_REQUEST_TEST",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_request_cancelled(OTF2_LocationRef locationID,
+					      OTF2_TimeStamp time,
+					      void* userData,
+					      OTF2_AttributeList* attributeList,
+					      uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "req: %p", (void*)requestID);
+  OTF2_PRINT_GENERIC("MPI_REQUEST_CANCELLED",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_collective_begin(OTF2_LocationRef locationID,
+					     OTF2_TimeStamp time,
+					     void* userData,
+					     OTF2_AttributeList* attributeList) {
+  OTF2_PRINT_GENERIC("MPI_COLLECTIVE_BEGIN",  locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_mpi_collective_end(OTF2_LocationRef locationID,
+					   OTF2_TimeStamp time,
+					   void* userData,
+					   OTF2_AttributeList* attributeList,
+					   OTF2_CollectiveOp collectiveOp,
+					   OTF2_CommRef communicator,
+					   uint32_t root,
+					   uint64_t sizeSent,
+					   uint64_t sizeReceived) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "op: %d, comm: %x, root: %d, sent: %lu, recved: %lu",
+	   collectiveOp, communicator, root, sizeSent, sizeReceived);
+  OTF2_PRINT_GENERIC("MPI_COLLECTIVE_END",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_fork(OTF2_LocationRef locationID,
+				 OTF2_TimeStamp time,
+				 void* userData,
+				 OTF2_AttributeList* attributeList,
+				 uint32_t numberOfRequestedThreads) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "nbThreads: %d", numberOfRequestedThreads);
+  OTF2_PRINT_GENERIC("OMP_FORK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_join(OTF2_LocationRef locationID,
+				 OTF2_TimeStamp time,
+				 void* userData,
+				 OTF2_AttributeList* attributeList) {
+  OTF2_PRINT_GENERIC("OMP_JOIN",  locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_acquire_lock(OTF2_LocationRef locationID,
+					 OTF2_TimeStamp time,
+					 void* userData,
+					 OTF2_AttributeList* attributeList,
+					 uint32_t lockID,
+					 uint32_t acquisitionOrder) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "lockID: %d", lockID);
+  OTF2_PRINT_GENERIC("OMP_ACQUIRE_LOCK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_release_lock(OTF2_LocationRef locationID,
+					 OTF2_TimeStamp time,
+					 void* userData,
+					 OTF2_AttributeList* attributeList,
+					 uint32_t lockID,
+					 uint32_t acquisitionOrder) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "lockID: %d", lockID);
+  OTF2_PRINT_GENERIC("OMP_RELEASE_LOCK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_task_create(OTF2_LocationRef locationID,
+					OTF2_TimeStamp time,
+					void* userData,
+					OTF2_AttributeList* attributeList,
+					uint64_t taskID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "taskID: %lu", taskID);
+  OTF2_PRINT_GENERIC("OMP_TASK_CREATE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_task_switch(OTF2_LocationRef locationID,
+					OTF2_TimeStamp time,
+					void* userData,
+					OTF2_AttributeList* attributeList,
+					uint64_t taskID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "taskID: %lu", taskID);
+  OTF2_PRINT_GENERIC("OMP_TASK_SWITCH",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_omp_task_complete(OTF2_LocationRef locationID,
+					  OTF2_TimeStamp time,
+					  void* userData,
+					  OTF2_AttributeList* attributeList,
+					  uint64_t taskID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "taskID: %lu", taskID);
+  OTF2_PRINT_GENERIC("OMP_TASK_COMPLETE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_fork(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    OTF2_Paradigm model,
+				    uint32_t numberOfRequestedThreads) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "nbThreads: %d", numberOfRequestedThreads);
+  OTF2_PRINT_GENERIC("THREAD_FORK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_thread_team_begin(OTF2_LocationRef locationID,
+					  OTF2_TimeStamp time,
+					  void* userData,
+					  OTF2_AttributeList* attributeList,
+					  OTF2_CommRef threadTeam) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadTeam);
+  OTF2_PRINT_GENERIC("THREAD_TEAM_BEGIN",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_thread_acquire_lock(OTF2_LocationRef locationID,
+					    OTF2_TimeStamp time,
+					    void* userData,
+					    OTF2_AttributeList* attributeList,
+					    OTF2_Paradigm model,
+					    uint32_t lockID,
+					    uint32_t acquisitionOrder) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "lockID: %d", lockID);
+  OTF2_PRINT_GENERIC("THREAD_ACQUIRE_LOCK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_thread_task_create(OTF2_LocationRef locationID,
+					   OTF2_TimeStamp time,
+					   void* userData,
+					   OTF2_AttributeList* attributeList,
+					   OTF2_CommRef threadTeam,
+					   uint32_t creatingThread,
+					   uint32_t generationNumber) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadTeam);
+  OTF2_PRINT_GENERIC("THREAD_TASK_CREATE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_thread_task_complete(OTF2_LocationRef locationID,
+					     OTF2_TimeStamp time,
+					     void* userData,
+					     OTF2_AttributeList* attributeList,
+					     OTF2_CommRef threadTeam,
+					     uint32_t creatingThread,
+					     uint32_t generationNumber) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadTeam);
+  OTF2_PRINT_GENERIC("THREAD_TASK_COMPLETE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_thread_begin(OTF2_LocationRef locationID,
+				     OTF2_TimeStamp time,
+				     void* userData,
+				     OTF2_AttributeList* attributeList,
+				     OTF2_CommRef threadContingent,
+				     uint64_t sequenceCount) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadContingent);
+  OTF2_PRINT_GENERIC("THREAD_BEGIN",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+  }
+  
+
+OTF2_CallbackCode print_thread_end(OTF2_LocationRef locationID,
+				   OTF2_TimeStamp time,
+				   void* userData,
+				   OTF2_AttributeList* attributeList,
+				   OTF2_CommRef threadContingent,
+				   uint64_t sequenceCount) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadContingent);
+  OTF2_PRINT_GENERIC("THREAD_END",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+OTF2_CallbackCode print_thread_wait(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    OTF2_CommRef threadContingent,
+				    uint64_t sequenceCount) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadContingent);
+  OTF2_PRINT_GENERIC("THREAD_WAIT",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_create(OTF2_LocationRef locationID,
+				      OTF2_TimeStamp time,
+				      void* userData,
+				      OTF2_AttributeList* attributeList,
+				      OTF2_CommRef threadContingent,
+				      uint64_t sequenceCount) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadContingent);
+  OTF2_PRINT_GENERIC("THREAD_CREATE",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_task_switch(OTF2_LocationRef locationID,
+					   OTF2_TimeStamp time,
+					   void* userData,
+					   OTF2_AttributeList* attributeList,
+					   OTF2_CommRef threadTeam,
+					   uint32_t creatingThread,
+					   uint32_t generationNumber) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "team: %d", threadTeam);
+  OTF2_PRINT_GENERIC("THREAD_TASK_SWITCH",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_release_lock(OTF2_LocationRef locationID,
+					    OTF2_TimeStamp time,
+					    void* userData,
+					    OTF2_AttributeList* attributeList,
+					    OTF2_Paradigm model,
+					    uint32_t lockID,
+					    uint32_t acquisitionOrder) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "lockID: %d", lockID);
+  OTF2_PRINT_GENERIC("THREAD_RELEASE_LOCK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_team_end(OTF2_LocationRef locationID,
+					OTF2_TimeStamp time,
+					void* userData,
+					OTF2_AttributeList* attributeList,
+					OTF2_CommRef threadTeam) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "threadTeam: %d", threadTeam);
+  OTF2_PRINT_GENERIC("THREAD_TEAM_END_LOCK",  locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_thread_join(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    OTF2_Paradigm model) {
+  OTF2_PRINT_GENERIC("THREAD_JOIN",  locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_create_handle(OTF2_LocationRef locationID,
+					 OTF2_TimeStamp time,
+					 void* userData,
+					 OTF2_AttributeList* attributeList,
+					 OTF2_IoHandleRef handle,
+					 OTF2_IoAccessMode mode,
+					 OTF2_IoCreationFlag creationFlags,
+					 OTF2_IoStatusFlag statusFlags) {
+  OTF2_PRINT_GENERIC("IO_CREATE_HANDLE",  locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_io_duplicate_handle(OTF2_LocationRef locationID,
+					    OTF2_TimeStamp time,
+					    void* userData,
+					    OTF2_AttributeList* attributeList,
+					    OTF2_IoHandleRef oldHandle,
+					    OTF2_IoHandleRef newHandle,
+					    OTF2_IoStatusFlag statusFlags) {
+  OTF2_PRINT_GENERIC("IO_DUPLICATE_HANDLE", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_io_change_status_flags(OTF2_LocationRef locationID,
+					       OTF2_TimeStamp time,
+					       void* userData,
+					       OTF2_AttributeList* attributeList,
+					       OTF2_IoHandleRef handle,
+					       OTF2_IoStatusFlag statusFlags) {
+  OTF2_PRINT_GENERIC("IO_CHANGE_STATUS_FLAGS", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_io_operation_begin(OTF2_LocationRef locationID,
+					   OTF2_TimeStamp time,
+					   void* userData,
+					   OTF2_AttributeList* attributeList,
+					   OTF2_IoHandleRef handle,
+					   OTF2_IoOperationMode mode,
+					   OTF2_IoOperationFlag operationFlags,
+					   uint64_t bytesRequest,
+					   uint64_t matchingId) {
+  OTF2_PRINT_GENERIC("IO_OPERATION_BEGIN", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+  
+
+OTF2_CallbackCode print_io_operation_issued(OTF2_LocationRef locationID,
+					    OTF2_TimeStamp time,
+					    void* userData,
+					    OTF2_AttributeList* attributeList,
+					    OTF2_IoHandleRef handle,
+					    uint64_t matchingId) {
+  OTF2_PRINT_GENERIC("IO_OPERATION_ISSUED", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_operation_test(OTF2_LocationRef locationID,
+					  OTF2_TimeStamp time,
+					  void* userData,
+					  OTF2_AttributeList* attributeList,
+					  OTF2_IoHandleRef handle,
+					  uint64_t matchingId) {
+  OTF2_PRINT_GENERIC("IO_OPERATION_TEST", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_delete_file(OTF2_LocationRef locationID,
+				       OTF2_TimeStamp time,
+				       void* userData,
+				       OTF2_AttributeList* attributeList,
+				       OTF2_IoParadigmRef ioParadigm,
+				       OTF2_IoFileRef file) {
+  OTF2_PRINT_GENERIC("IO_DELETE_FILE", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_seek(OTF2_LocationRef locationID,
+				OTF2_TimeStamp time,
+				void* userData,
+				OTF2_AttributeList* attributeList,
+				OTF2_IoHandleRef handle,
+				int64_t offsetRequest,
+				OTF2_IoSeekOption whence,
+				uint64_t offsetResult) {
+  OTF2_PRINT_GENERIC("IO_SEEK", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_destroy_handle(OTF2_LocationRef locationID,
+					  OTF2_TimeStamp time,
+					  void* userData,
+					  OTF2_AttributeList* attributeList,
+					  OTF2_IoHandleRef handle) {
+  OTF2_PRINT_GENERIC("IO_DESTROY_HANDLE", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_operation_complete(OTF2_LocationRef locationID,
+					      OTF2_TimeStamp time,
+					      void* userData,
+					      OTF2_AttributeList* attributeList,
+					      OTF2_IoHandleRef handle,
+					      uint64_t bytesResult,
+					      uint64_t matchingId) {
+  OTF2_PRINT_GENERIC("IO_OPERATION_COMPLETE", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_operation_cancelled(OTF2_LocationRef locationID,
+					       OTF2_TimeStamp time,
+					       void* userData,
+					       OTF2_AttributeList* attributeList,
+					       OTF2_IoHandleRef handle,
+					       uint64_t matchingId) {
+  OTF2_PRINT_GENERIC("IO_OPERATION_CANCELLED", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_acquire_lock(OTF2_LocationRef locationID,
+					OTF2_TimeStamp time,
+					void* userData,
+					OTF2_AttributeList* attributeList,
+					OTF2_IoHandleRef handle,
+					OTF2_LockType lockType) {
+  OTF2_PRINT_GENERIC("IO_ACQUIRE_LOCK", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_release_lock(OTF2_LocationRef locationID,
+					OTF2_TimeStamp time,
+					void* userData,
+					OTF2_AttributeList* attributeList,
+					OTF2_IoHandleRef handle,
+					OTF2_LockType lockType) {
+  OTF2_PRINT_GENERIC("IO_RELEASE_LOCK", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_io_try_lock(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    OTF2_IoHandleRef handle,
+				    OTF2_LockType lockType) {
+  OTF2_PRINT_GENERIC("IO_TRY_LOCK", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_program_begin(OTF2_LocationRef locationID,
+				      OTF2_TimeStamp time,
+				      void* userData,
+				      OTF2_AttributeList* attributeList,
+				      OTF2_StringRef programName,
+				      uint32_t numberOfArguments,
+				      const OTF2_StringRef* programArguments) {
+  OTF2_PRINT_GENERIC("PROGRAM_BEGIN", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_program_end(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    int64_t exitStatus) {
+  OTF2_PRINT_GENERIC("PROGRAM_END", locationID, time, "");
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_non_blocking_collective_request(
+							OTF2_LocationRef locationID,
+							OTF2_TimeStamp time,
+							void* userData,
+							OTF2_AttributeList* attributeList,
+							uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "requestID: %p", (void*)requestID);
+  OTF2_PRINT_GENERIC("NON_BLOCKING_COLLECTIVE_REQUEST", locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_non_blocking_collective_complete(
+							 OTF2_LocationRef locationID,
+							 OTF2_TimeStamp time,
+							 void* userData,
+							 OTF2_AttributeList* attributeList,
+							 OTF2_CollectiveOp collectiveOp,
+							 OTF2_CommRef communicator,
+							 uint32_t root,
+							 uint64_t sizeSent,
+							 uint64_t sizeReceived,
+							 uint64_t requestID) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "op: %d, comm: %x, root: %d, sent: %lu, recved:%lu, requestID: %p",
+	   collectiveOp, communicator, root, sizeSent, sizeReceived, (void*)requestID);
+  OTF2_PRINT_GENERIC("NON_BLOCKING_COLLECTIVE_COMPLETE", locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_comm_create(OTF2_LocationRef locationID,
+				    OTF2_TimeStamp time,
+				    void* userData,
+				    OTF2_AttributeList* attributeList,
+				    OTF2_CommRef communicator) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "comm: %x", communicator);
+  OTF2_PRINT_GENERIC("COMM_CREATE", locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_comm_destroy(OTF2_LocationRef locationID,
+				     OTF2_TimeStamp time,
+				     void* userData,
+				     OTF2_AttributeList* attributeList,
+				     OTF2_CommRef communicator) {
+  char buffer[STRING_MAX_LEN];
+  snprintf(buffer, STRING_MAX_LEN, "comm: %x", communicator);
+  OTF2_PRINT_GENERIC("COMM_DESTROY", locationID, time, buffer);
+  return OTF2_CALLBACK_SUCCESS;
+}
 
 OTF2_GlobalEvtReaderCallbacks* otf2_print_create_global_evt_callbacks(OTF2_Reader *reader) {
   OTF2_GlobalEvtReaderCallbacks* evt_callbacks = OTF2_GlobalEvtReaderCallbacks_New();
 
   OTF2_GlobalEvtReaderCallbacks_SetEnterCallback( evt_callbacks, print_enter );
   OTF2_GlobalEvtReaderCallbacks_SetLeaveCallback( evt_callbacks, print_leave );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiSendCallback( evt_callbacks, print_mpi_send );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCallback( evt_callbacks, print_mpi_isend );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCompleteCallback( evt_callbacks, print_mpi_isend_complete );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiIrecvRequestCallback( evt_callbacks, print_mpi_irecv_request );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiRecvCallback( evt_callbacks, print_mpi_recv );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiIrecvCallback( evt_callbacks, print_mpi_irecv );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiRequestTestCallback( evt_callbacks, print_mpi_request_test );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiRequestCancelledCallback( evt_callbacks, print_mpi_request_cancelled );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiCollectiveBeginCallback( evt_callbacks, print_mpi_collective_begin );
-//  OTF2_GlobalEvtReaderCallbacks_SetMpiCollectiveEndCallback( evt_callbacks, print_mpi_collective_end );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpForkCallback( evt_callbacks, print_omp_fork );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpJoinCallback( evt_callbacks, print_omp_join );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpAcquireLockCallback( evt_callbacks, print_omp_acquire_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpReleaseLockCallback( evt_callbacks, print_omp_release_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskCreateCallback( evt_callbacks, print_omp_task_create );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskSwitchCallback( evt_callbacks, print_omp_task_switch );
-//  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskCompleteCallback( evt_callbacks, print_omp_task_complete );
-
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadForkCallback( evt_callbacks, print_thread_fork );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadJoinCallback( evt_callbacks, print_thread_join );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadTeamBeginCallback( evt_callbacks, print_thread_team_begin );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadTeamEndCallback( evt_callbacks, print_thread_team_end );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadAcquireLockCallback( evt_callbacks, print_thread_acquire_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadReleaseLockCallback( evt_callbacks, print_thread_release_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskCreateCallback( evt_callbacks, print_thread_task_create );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskSwitchCallback( evt_callbacks, print_thread_task_switch );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskCompleteCallback( evt_callbacks, print_thread_task_complete );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadCreateCallback( evt_callbacks, print_thread_create );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadBeginCallback( evt_callbacks, print_thread_begin );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadWaitCallback( evt_callbacks, print_thread_wait );
-//  OTF2_GlobalEvtReaderCallbacks_SetThreadEndCallback( evt_callbacks, print_thread_end );
-
-//  OTF2_GlobalEvtReaderCallbacks_SetIoCreateHandleCallback( evt_callbacks, print_io_create_handle );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoDestroyHandleCallback( evt_callbacks, print_io_destroy_handle );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoDuplicateHandleCallback( evt_callbacks, print_io_duplicate_handle );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoSeekCallback( evt_callbacks, print_io_seek );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoChangeStatusFlagsCallback( evt_callbacks, print_io_change_status_flags );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoDeleteFileCallback( evt_callbacks, print_io_delete_file );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoOperationBeginCallback( evt_callbacks, print_io_operation_begin );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoOperationTestCallback( evt_callbacks, print_io_operation_test );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoOperationIssuedCallback( evt_callbacks, print_io_operation_issued );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoOperationCompleteCallback( evt_callbacks, print_io_operation_complete );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoOperationCancelledCallback( evt_callbacks, print_io_operation_cancelled );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoAcquireLockCallback( evt_callbacks, print_io_acquire_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoReleaseLockCallback( evt_callbacks, print_io_release_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetIoTryLockCallback( evt_callbacks, print_io_try_lock );
-//  OTF2_GlobalEvtReaderCallbacks_SetProgramBeginCallback( evt_callbacks, print_program_begin );
-//  OTF2_GlobalEvtReaderCallbacks_SetProgramEndCallback( evt_callbacks, print_program_end );
-//  OTF2_GlobalEvtReaderCallbacks_SetNonBlockingCollectiveRequestCallback( evt_callbacks, print_non_blocking_collective_request );
-//  OTF2_GlobalEvtReaderCallbacks_SetNonBlockingCollectiveCompleteCallback( evt_callbacks, print_non_blocking_collective_complete );
-//  OTF2_GlobalEvtReaderCallbacks_SetCommCreateCallback( evt_callbacks, print_comm_create );
-//  OTF2_GlobalEvtReaderCallbacks_SetCommDestroyCallback( evt_callbacks, print_comm_destroy );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiSendCallback( evt_callbacks, print_mpi_send );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCallback( evt_callbacks, print_mpi_isend );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiIsendCompleteCallback( evt_callbacks, print_mpi_isend_complete );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiIrecvRequestCallback( evt_callbacks, print_mpi_irecv_request );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiRecvCallback( evt_callbacks, print_mpi_recv );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiIrecvCallback( evt_callbacks, print_mpi_irecv );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiRequestTestCallback( evt_callbacks, print_mpi_request_test );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiRequestCancelledCallback( evt_callbacks, print_mpi_request_cancelled );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiCollectiveBeginCallback( evt_callbacks, print_mpi_collective_begin );
+  OTF2_GlobalEvtReaderCallbacks_SetMpiCollectiveEndCallback( evt_callbacks, print_mpi_collective_end );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpForkCallback( evt_callbacks, print_omp_fork );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpJoinCallback( evt_callbacks, print_omp_join );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpAcquireLockCallback( evt_callbacks, print_omp_acquire_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpReleaseLockCallback( evt_callbacks, print_omp_release_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskCreateCallback( evt_callbacks, print_omp_task_create );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskSwitchCallback( evt_callbacks, print_omp_task_switch );
+  OTF2_GlobalEvtReaderCallbacks_SetOmpTaskCompleteCallback( evt_callbacks, print_omp_task_complete );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadForkCallback( evt_callbacks, print_thread_fork );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadJoinCallback( evt_callbacks, print_thread_join );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadTeamBeginCallback( evt_callbacks, print_thread_team_begin );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadTeamEndCallback( evt_callbacks, print_thread_team_end );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadAcquireLockCallback( evt_callbacks, print_thread_acquire_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadReleaseLockCallback( evt_callbacks, print_thread_release_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskCreateCallback( evt_callbacks, print_thread_task_create );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskSwitchCallback( evt_callbacks, print_thread_task_switch );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadTaskCompleteCallback( evt_callbacks, print_thread_task_complete );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadCreateCallback( evt_callbacks, print_thread_create );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadBeginCallback( evt_callbacks, print_thread_begin );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadWaitCallback( evt_callbacks, print_thread_wait );
+  OTF2_GlobalEvtReaderCallbacks_SetThreadEndCallback( evt_callbacks, print_thread_end );
+  OTF2_GlobalEvtReaderCallbacks_SetIoCreateHandleCallback( evt_callbacks, print_io_create_handle );
+  OTF2_GlobalEvtReaderCallbacks_SetIoDestroyHandleCallback( evt_callbacks, print_io_destroy_handle );
+  OTF2_GlobalEvtReaderCallbacks_SetIoDuplicateHandleCallback( evt_callbacks, print_io_duplicate_handle );
+  OTF2_GlobalEvtReaderCallbacks_SetIoSeekCallback( evt_callbacks, print_io_seek );
+  OTF2_GlobalEvtReaderCallbacks_SetIoChangeStatusFlagsCallback( evt_callbacks, print_io_change_status_flags );
+  OTF2_GlobalEvtReaderCallbacks_SetIoDeleteFileCallback( evt_callbacks, print_io_delete_file );
+  OTF2_GlobalEvtReaderCallbacks_SetIoOperationBeginCallback( evt_callbacks, print_io_operation_begin );
+  OTF2_GlobalEvtReaderCallbacks_SetIoOperationTestCallback( evt_callbacks, print_io_operation_test );
+  OTF2_GlobalEvtReaderCallbacks_SetIoOperationIssuedCallback( evt_callbacks, print_io_operation_issued );
+  OTF2_GlobalEvtReaderCallbacks_SetIoOperationCompleteCallback( evt_callbacks, print_io_operation_complete );
+  OTF2_GlobalEvtReaderCallbacks_SetIoOperationCancelledCallback( evt_callbacks, print_io_operation_cancelled );
+  OTF2_GlobalEvtReaderCallbacks_SetIoAcquireLockCallback( evt_callbacks, print_io_acquire_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetIoReleaseLockCallback( evt_callbacks, print_io_release_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetIoTryLockCallback( evt_callbacks, print_io_try_lock );
+  OTF2_GlobalEvtReaderCallbacks_SetProgramBeginCallback( evt_callbacks, print_program_begin );
+  OTF2_GlobalEvtReaderCallbacks_SetProgramEndCallback( evt_callbacks, print_program_end );
+  OTF2_GlobalEvtReaderCallbacks_SetNonBlockingCollectiveRequestCallback( evt_callbacks, print_non_blocking_collective_request );
+  OTF2_GlobalEvtReaderCallbacks_SetNonBlockingCollectiveCompleteCallback( evt_callbacks, print_non_blocking_collective_complete );
+  OTF2_GlobalEvtReaderCallbacks_SetCommCreateCallback( evt_callbacks, print_comm_create );
+  OTF2_GlobalEvtReaderCallbacks_SetCommDestroyCallback( evt_callbacks, print_comm_destroy );
   
   return evt_callbacks;
 }
