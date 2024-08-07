@@ -216,11 +216,11 @@ typedef struct Event {
 struct TokenCountMap : public std::map<Token, size_t> {
   /** Adds each (key, value) pair of the other map to this one. */
   void operator+=(const TokenCountMap& other) {
-    for (auto keyValue : other) {
-      if (this->count(keyValue.first) == 0) {
-        this->insert(keyValue);
+    for (const auto& [key, value] : other) {
+      if (count(key) == 0) {
+        insert({key, value});
       } else {
-        this->at(keyValue.first) += keyValue.second;
+        at(key) += value;
       }
     }
   }
@@ -238,8 +238,8 @@ struct TokenCountMap : public std::map<Token, size_t> {
    */
   TokenCountMap operator*(size_t multiplier) const {
     auto otherMap = TokenCountMap();
-    for (auto keyValue : otherMap) {
-      otherMap[keyValue.first] = keyValue.second * multiplier;
+    for (const auto [key, value] : *this) {
+      otherMap[key] = value * multiplier;
     }
     return otherMap;
   }
