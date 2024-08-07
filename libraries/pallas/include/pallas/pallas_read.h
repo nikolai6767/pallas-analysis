@@ -21,10 +21,11 @@ namespace pallas {
 #define MAX_CALLSTACK_DEPTH 100
 
 /** getNextToken flags */
-#define PALLAS_READ_NO_UNROLL 0
-#define PALLAS_READ_UNROLL_SEQUENCE 1
-#define PALLAS_READ_UNROLL_LOOP 2
-#define PALLAS_READ_UNROLL_ALL 3
+#define PALLAS_READ_FLAG_NONE            0
+#define PALLAS_READ_FLAG_NO_UNROLL       (1 << 0)
+#define PALLAS_READ_FLAG_UNROLL_SEQUENCE (1 << 2)
+#define PALLAS_READ_FLAG_UNROLL_LOOP     (1 << 3)
+#define PALLAS_READ_FLAG_UNROLL_ALL (PALLAS_READ_FLAG_UNROLL_SEQUENCE|PALLAS_READ_FLAG_UNROLL_LOOP)
 
 
 /**
@@ -121,29 +122,16 @@ typedef struct ThreadReader {
   struct Archive* archive;
   /** Thread being read. */
   struct Thread* thread_trace;
-  /** The current referential timestamp. */
-  pallas_timestamp_t referential_timestamp;
 
-  /** Stack containing the sequences/loops being read. */
-  Token callstack_iterable[MAX_CALLSTACK_DEPTH];
-
-  /** Stack containing the index in the sequence or the loop iteration. */
-  int callstack_index[MAX_CALLSTACK_DEPTH];
+  Checkpoint currentState;
 
   /** Stack containing the checkpoint in the sequence or the loop iteration. */
   Checkpoint callstack_checkpoints[MAX_CALLSTACK_DEPTH];
 
-  /** Current frame = index of the event/loop being read in the callstacks.
-   * You can view this as the "depth" of the callstack. */
-  int current_frame;
-
-  /** At any point, a token t has been seen tokenCount[t] times. */
-  DEFINE_TokenCountMap(tokenCount);
-
   /**
    * Options as defined in pallas::ThreadReaderOptions.
    */
-  int options;
+  int pallas_read_flag;
 #ifdef __cplusplus
   /**
    * Make a new ThreadReader from an Archive and a threadId.
@@ -151,7 +139,7 @@ typedef struct ThreadReader {
    * @param threadId Id of the thread to read.
    * @param options Options as defined in ThreadReaderOptions.
    */
-  ThreadReader(Archive* archive, ThreadId threadId, int options);
+  ThreadReader(Archive* archive, ThreadId threadId, int pallas_read_flag);
 
   /** Returns the Sequence being run at the given frame. */
   [[nodiscard]] const Token& getFrameInCallstack(int frame_number) const;
@@ -201,23 +189,35 @@ typedef struct ThreadReader {
 
   /** Gets the current Token. */
   [[nodiscard]] const Token& pollCurToken() const;
+
   /** Peeks at and return the next token without actually updating the state */
-  [[nodiscard]] std::optional<Token> pollNextToken() const;
-  /** Peeks at and return the previous token without actually updating the state */
-  [[nodiscard]] std::optional<Token> pollPrevToken() const;
+  [[nodiscard]] std::optional<Token> pollNextToken(int flags=PALLAS_READ_FLAG_NONE) const;
   /** Updates the internal state */
-  void moveToNextToken();
-  /** Updates the internal state */
-  void moveToPrevToken();
+  void moveToNextToken(int flags=PALLAS_READ_FLAG_NONE);
+  /** Equivalent to moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
+  void moveToNextTokenInBlock();
   /** Gets the next token and updates the reader's state if it returns a value.
-   * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
-  std::optional<Token> getNextToken(int flags);
+   * It is exactly equivalent to `moveToNextToken()` then `pollCurToken()` */
+  std::optional<Token> getNextToken(int flags=PALLAS_READ_FLAG_NONE);
+
+  /** Peeks at and return the previous token without actually updating the state */
+  [[nodiscard]] std::optional<Token> pollPrevToken(int flags=PALLAS_READ_FLAG_NONE) const;
+  /** Updates the internal state */
+  void moveToPrevToken(int flags=PALLAS_READ_FLAG_NONE);
+  /** Updates the internal state */
+  void moveToPrevTokenInBlock();
+  /** Gets the previous token and updates the reader's state if it returns a value.
+   * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
+  std::optional<Token> getPrevToken(int flags=PALLAS_READ_FLAG_NONE);
+
   /** Enters a block */
-  void enterBlock(Token new_block);
+  void enterBlock();
   /** Leaves the current block */
   void leaveBlock();
   /** Exits a block if at the end of it and flags allow it, returns a boolean representing if the rader actually exited a block */
   bool exitIfEndOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
+  /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
+  bool enterIfStartOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
 
   ~ThreadReader();
 
