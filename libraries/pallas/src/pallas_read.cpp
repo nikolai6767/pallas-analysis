@@ -193,7 +193,7 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
     eventOccurence.timestamp = referential_timestamp;
     eventOccurence.duration = es->durations->at(occurence_id);
   }
-  eventOccurence.attributes = getEventAttributeList(event_id, occurence_id);
+  eventOccurence.attributes = nullptr;  // getEventAttributeList(event_id, occurence_id);
   return eventOccurence;
 }
 
