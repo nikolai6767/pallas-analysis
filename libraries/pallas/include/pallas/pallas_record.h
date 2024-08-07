@@ -214,10 +214,6 @@ namespace pallas {
 				      AttributeList* attribute_list,
 				      pallas_timestamp_t time,
 				      StringRef event_name);
-    extern void pallas_read_generic(ThreadReader* thread_reader,
-				    AttributeList** attribute_list,
-				    pallas_timestamp_t* time,
-				    StringRef* event_name);
 
     extern void pallas_record_singleton(ThreadWriter* thread_writer,
 					AttributeList* attribute_list,
@@ -317,6 +313,10 @@ namespace pallas {
     extern void pallas_read_thread_task_complete(ThreadReader* thread_reader,
 						 AttributeList** attribute_list,
 						 pallas_timestamp_t* time);
+
+    extern void pallas_read_generic(ThreadReader* thread_reader,
+				    struct AttributeList** attribute_list,
+				    pallas_timestamp_t* time);
 
 #ifdef __cplusplus
   };

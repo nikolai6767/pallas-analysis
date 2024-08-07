@@ -44,6 +44,25 @@ namespace pallas {
 			    reinterpret_cast<byte*>(&event_name));
   }
 
+#define PALLAS_READ_PROLOG(expected_event_type)				\
+  byte* cursor = nullptr;						\
+  auto token = thread_reader->pollCurToken();				\
+  pallas_assert (token.type == pallas::TypeEvent);			\
+  const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]); \
+  pallas::Record event_type = e.event->record;				\
+  pallas_assert(event_type == expected_event_type);
+
+  void pallas_read_generic(ThreadReader* thread_reader,
+			   struct AttributeList** attribute_list,
+			   pallas_timestamp_t* time) {
+    auto token = thread_reader->pollCurToken();
+    pallas_assert (token.type == pallas::TypeEvent);
+    const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
+
+    if(attribute_list)  *attribute_list = NULL; 	// TODO : add support for attribute_lists
+    if(time)             *time = e.timestamp;
+  }
+
   void pallas_record_singleton(ThreadWriter* thread_writer,
 			       struct AttributeList* attribute_list,
 			       Record record,
@@ -80,15 +99,6 @@ namespace pallas {
 
     pallas_recursion_shield--;
   }
-
-#define PALLAS_READ_PROLOG(expected_event_type)				\
-  byte* cursor = nullptr;						\
-  auto token = thread_reader->pollCurToken();				\
-  pallas_assert (token.type == pallas::TypeEvent);			\
-  const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]); \
-  pallas::Record event_type = e.event->record;				\
-  pallas_assert(event_type == expected_event_type);
-
   
   void pallas_read_enter(ThreadReader* thread_reader,
                          struct AttributeList** attribute_list,
