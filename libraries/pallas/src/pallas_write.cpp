@@ -678,7 +678,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
   TokenId index = nb_events++;
   pallas_log(DebugLevel::Max, "getEventId: \tNot found. Adding it with id=%d\n", index);
   auto* new_event = &events[index];
-  new_event->initEventSummary(id, *e);
+  new_event->initEventSummary(index, *e);
   hashToEvent[hash].push_back(index);
 
   return index;
