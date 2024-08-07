@@ -70,37 +70,61 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
 }
 
 void printTrace(const pallas::GlobalArchive& trace) {
-  auto readers = std::vector<pallas::ThreadReader>();
   int reader_options = pallas::ThreadReaderOptions::None;
-  for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
-      auto thread = trace.archive_list[i]->getThreadAt(j);
-      if (thread != nullptr)
-        readers.emplace_back(trace.archive_list[i], thread->id, reader_options);
-    }
-  }
-
-  _print_timestamp_header();
-  _print_duration_header();
-  std::cout << std::endl;
-
-  while (!isReadingOver(readers)) {
-    pallas::ThreadReader* min_reader = &readers[0];
-    pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
-    for (auto & reader : readers) {
-      if (!reader.isEndOfTrace() && reader.referential_timestamp < min_timestamp) {
-        min_reader = &reader;
-        min_timestamp = reader.referential_timestamp;
+  if (! per_thread) {
+    auto readers = std::vector<pallas::ThreadReader>();
+    for (int i = 0; i < trace.nb_archives; i++) {
+      for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
+        auto thread = trace.archive_list[i]->getThreadAt(j);
+        if (thread != nullptr)
+          readers.emplace_back(trace.archive_list[i], thread->id, reader_options);
       }
     }
 
-    auto token = min_reader->pollCurToken();
-    if (token.type == pallas::TypeEvent) {
-      printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->tokenCount[token]));
-    }
+    _print_timestamp_header();
+    _print_duration_header();
+    std::cout << std::endl;
 
-    if (!min_reader->getNextToken(PALLAS_READ_UNROLL_ALL).has_value()) {
-      pallas_assert(min_reader->isEndOfTrace());
+    while (!isReadingOver(readers)) {
+      pallas::ThreadReader* min_reader = &readers[0];
+      pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
+      for (auto& reader : readers) {
+        if (!reader.isEndOfTrace() && reader.referential_timestamp < min_timestamp) {
+          min_reader = &reader;
+          min_timestamp = reader.referential_timestamp;
+        }
+      }
+
+      auto token = min_reader->pollCurToken();
+      if (token.type == pallas::TypeEvent) {
+        printEvent(min_reader->thread_trace, token,
+                   min_reader->getEventOccurence(token, min_reader->tokenCount[token]));
+      }
+
+      if (!min_reader->getNextToken(PALLAS_READ_UNROLL_ALL).has_value()) {
+        pallas_assert(min_reader->isEndOfTrace());
+      }
+    }
+  } else {
+    for (int aid = 0; aid < trace.nb_archives; aid++) {
+      for (int tid = 0; tid < trace.archive_list[aid]->nb_threads; tid++) {
+        auto thread = trace.archive_list[aid]->getThreadAt(tid);
+        if (thread == nullptr)
+          continue;
+        auto reader = pallas::ThreadReader (trace.archive_list[aid], thread->id, reader_options);
+        std::cout << "---------- Process " << aid << " Thread " << tid  << "----------" << std::endl;
+        _print_timestamp_header();
+        _print_duration_header();
+        std::cout << std::endl;
+
+        do {
+          auto token = reader.pollCurToken();
+          if (token.type == pallas::TypeEvent) {
+            printEvent(reader.thread_trace, token,
+                       reader.getEventOccurence(token, reader.tokenCount[token]));
+          }
+        } while (reader.getNextToken(PALLAS_READ_UNROLL_ALL).has_value());
+    }
     }
   }
 }
