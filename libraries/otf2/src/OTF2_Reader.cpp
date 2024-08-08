@@ -910,6 +910,33 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalDefinitions(OTF2_Reader* reader,
     }
   }
 
+  if(defReader->callbacks.OTF2_GlobalDefReaderCallback_Group_callback) {
+    for ( const auto &attr : archive->definitions.groups ) {
+      CHECK_OTF2_CALLBACK_SUCCESS(defReader->callbacks.OTF2_GlobalDefReaderCallback_Group_callback
+				  (defReader->user_data,
+				   attr.first,
+				   attr.second.name,
+				   OTF2_GROUP_TYPE_UNKNOWN, // groupType
+				   OTF2_PARADIGM_UNKNOWN, // paradigm
+				   0, // groupFlags
+				   attr.second.numberOfMembers,
+				   attr.second.members));
+    }
+  }
+
+
+  if(defReader->callbacks.OTF2_GlobalDefReaderCallback_Comm_callback) {
+    for ( const auto &attr : archive->definitions.comms ) {
+      CHECK_OTF2_CALLBACK_SUCCESS(defReader->callbacks.OTF2_GlobalDefReaderCallback_Comm_callback
+				  (defReader->user_data,
+				   attr.first,
+				   attr.second.name,
+				   attr.second.group,
+				   attr.second.parent,
+				   0)); // flags
+    }
+  }
+
   if(defReader->callbacks.OTF2_GlobalDefReaderCallback_LocationGroup_callback) {
     for ( const auto &lg : archive->location_groups ) {
       CHECK_OTF2_CALLBACK_SUCCESS(defReader->callbacks.OTF2_GlobalDefReaderCallback_LocationGroup_callback

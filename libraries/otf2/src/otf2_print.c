@@ -40,6 +40,22 @@ struct otf2_region {
   struct otf2_string* name_str;
 };
 
+struct otf2_group {
+  OTF2_GroupRef ref;    /**< Id of that Group.*/
+  OTF2_StringRef name;
+  uint32_t numberOfMembers;
+  uint64_t* members;
+  struct otf2_string* name_str;
+};
+
+struct otf2_comm {
+  OTF2_CommRef ref;     /**< Id of that Comm.*/
+  OTF2_StringRef name;
+  OTF2_GroupRef group;
+  OTF2_CommRef parent;
+  struct otf2_string* name_str;
+};
+
 struct otf2_print_user_data {
   size_t nb_locations;
   uint64_t* locations;
@@ -49,6 +65,12 @@ struct otf2_print_user_data {
 
   struct otf2_region *regions;
   int nb_regions;
+
+  struct otf2_group *groups;
+  int nb_groups;
+
+  struct otf2_comm *comms;
+  int nb_comms;
 
 };
 
@@ -87,6 +109,56 @@ char* get_region_str(struct otf2_print_user_data *user_data, OTF2_RegionRef regi
   } else {
     char* buf = malloc(SMALL_BUFFER);
     snprintf(buf, SMALL_BUFFER, "Unknown_Region_%d", region);
+    return buf; 		/* warning: memory leak ! */
+  }
+}
+
+struct otf2_group* get_group_t(struct otf2_print_user_data *user_data, OTF2_GroupRef group) {
+  for(int i = 0; i<user_data->nb_groups; i++) {
+    if(user_data->groups[i].ref == group) {
+      if(! user_data->groups[i].name_str)
+	user_data->groups[i].name_str = get_string_t(user_data, user_data->groups[i].name);
+      return &user_data->groups[i];
+    }
+  }
+  return NULL;
+}
+
+char* get_group_str(struct otf2_print_user_data *user_data, OTF2_GroupRef group) {
+  struct otf2_group* r = get_group_t(user_data, group);
+  if(r) {
+    return r->name_str->str;
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Group_%d", group);
+    return buf;			/* warning: memory leak ! */
+  } else {
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Unknown_Group_%d", group);
+    return buf; 		/* warning: memory leak ! */
+  }
+}
+
+struct otf2_comm* get_comm_t(struct otf2_print_user_data *user_data, OTF2_CommRef comm) {
+  for(int i = 0; i<user_data->nb_comms; i++) {
+    if(user_data->comms[i].ref == comm) {
+      if(! user_data->comms[i].name_str)
+	user_data->comms[i].name_str = get_string_t(user_data, user_data->comms[i].name);
+      return &user_data->comms[i];
+    }
+  }
+  return NULL;
+}
+
+char* get_comm_str(struct otf2_print_user_data *user_data, OTF2_CommRef comm) {
+  struct otf2_comm* r = get_comm_t(user_data, comm);
+  if(r) {
+    return r->name_str->str;
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Comm_%d", comm);
+    return buf;			/* warning: memory leak ! */
+  } else {
+    char* buf = malloc(SMALL_BUFFER);
+    snprintf(buf, SMALL_BUFFER, "Unknown_Comm_%d", comm);
     return buf; 		/* warning: memory leak ! */
   }
 }
@@ -142,7 +214,6 @@ OTF2_CallbackCode print_global_def_region(void *userData,
   r->name_str = NULL;
 
   return OTF2_CALLBACK_SUCCESS;
-
 }
 
 OTF2_CallbackCode print_global_def_attribute(void *userData,
@@ -198,6 +269,61 @@ OTF2_CallbackCode print_global_def_location(void *userData,
   
 }
 
+OTF2_CallbackCode print_global_def_group(void* userData,
+					 OTF2_GroupRef self,
+					 OTF2_StringRef name,
+					 OTF2_GroupType groupType,
+					 OTF2_Paradigm paradigm,
+					 OTF2_GroupFlag groupFlags,
+					 uint32_t numberOfMembers,
+					 const uint64_t* members) {
+  OTF2_PRINT_DEF("Global_def_group(userData=%p, self=%d, name=%d, groupType=%d, paradigm=%d, groupFlags=%x, numberOfMembers=%d, [", userData, self, name, groupType, paradigm, groupFlags, numberOfMembers);
+  for(int i=0; i<numberOfMembers; i++ ) {
+    OTF2_PRINT_DEF("%s%lu", i>0?", ":"", members[i]);
+  }
+  OTF2_PRINT_DEF("]%c", '\n');
+
+  struct otf2_print_user_data* user_data = userData;
+
+  struct otf2_group* g = get_group_t(user_data, self);
+  pallas_assert(g == NULL);
+  int index = user_data->nb_groups++;
+  user_data->groups = realloc(user_data->groups, sizeof(struct otf2_group) * user_data->nb_groups);
+  g = &user_data->groups[index];
+  g->ref = self;
+  g->name = name;
+  g->numberOfMembers = numberOfMembers;
+  g->members = malloc(sizeof(uint64_t) * numberOfMembers);
+  for(int i=0; i<numberOfMembers; i++) {
+    g->members[i] = members[i];
+  }
+  g->name_str = NULL;
+
+  return OTF2_CALLBACK_SUCCESS;
+}
+
+OTF2_CallbackCode print_global_def_comm(void* userData,
+					OTF2_CommRef self,
+					OTF2_StringRef name,
+					OTF2_CommRef group,
+					OTF2_CommRef parent,
+					OTF2_CommFlag flags) {
+  OTF2_PRINT_DEF("Global_def_comm(userData=%p, self=%d, name=%d, group=%x, parent=%d, flags=%x)\n", userData, self, name, group, parent, flags);
+  struct otf2_print_user_data* user_data = userData;
+
+  struct otf2_comm* c = get_comm_t(user_data, self);
+  pallas_assert(c == NULL);
+  int index = user_data->nb_comms++;
+  user_data->comms = realloc(user_data->comms, sizeof(struct otf2_comm) * user_data->nb_comms);
+  c = &user_data->comms[index];
+  c->ref = self;
+  c->name = name;
+  c->group = group;
+  c->parent = parent;
+  c->name_str = NULL;
+  return OTF2_CALLBACK_SUCCESS;
+}
+
 
 OTF2_GlobalDefReaderCallbacks* otf2_print_define_global_def_callbacks(OTF2_Reader *reader) {
   OTF2_GlobalDefReaderCallbacks* def_callbacks = OTF2_GlobalDefReaderCallbacks_New();
@@ -208,7 +334,8 @@ OTF2_GlobalDefReaderCallbacks* otf2_print_define_global_def_callbacks(OTF2_Reade
   OTF2_GlobalDefReaderCallbacks_SetLocationGroupCallback( def_callbacks, print_global_def_location_group );
   OTF2_GlobalDefReaderCallbacks_SetLocationCallback( def_callbacks, print_global_def_location );
   OTF2_GlobalDefReaderCallbacks_SetRegionCallback( def_callbacks, print_global_def_region );
-//  OTF2_GlobalDefReaderCallbacks_SetGroupCallback( def_callbacks, print_global_def_group );
+  OTF2_GlobalDefReaderCallbacks_SetGroupCallback( def_callbacks, print_global_def_group );
+  OTF2_GlobalDefReaderCallbacks_SetCommCallback( def_callbacks, print_global_def_comm );
 
   return def_callbacks;
 }
