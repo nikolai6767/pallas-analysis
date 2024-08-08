@@ -7,13 +7,18 @@
  */
 #pragma once
 
+#ifdef __cplusplus
 #include <optional>
+#endif
 
 #include "pallas.h"
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
 
+#ifdef __cplusplus
 namespace pallas {
+#endif
+
 /** Maximum Callstack Size. */
 #define MAX_CALLSTACK_DEPTH 100
 
@@ -83,7 +88,9 @@ typedef struct TokenOccurence {
   /** Occurence corresponding to the Token. */
   Occurence* occurence;
 
+#ifdef __cplusplus
   ~TokenOccurence();
+#endif
 } TokenOccurence;
 
 typedef struct Checkpoint {
@@ -103,9 +110,11 @@ typedef struct Checkpoint {
   DEFINE_TokenCountMap(tokenCount);
   /** Creates a savestate of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
+#ifdef __cplusplus
   Checkpoint(const struct ThreadReader* reader);
   Checkpoint() = default;
   ~Checkpoint();
+#endif
 } Checkpoint;
 
 /**
@@ -139,6 +148,9 @@ typedef struct ThreadReader {
    * Options as defined in pallas::ThreadReaderOptions.
    */
   int options;
+
+
+#ifdef __cplusplus
   /**
    * Make a new ThreadReader from an Archive and a threadId.
    * @param archive Archive to read.
@@ -217,10 +229,15 @@ typedef struct ThreadReader {
 
   ThreadReader(const ThreadReader &) = default;
   ThreadReader(ThreadReader&& other) noexcept ;
+#endif
 } ThreadReader;
 
+  extern void threadReader_init(ThreadReader *thread_reader, Archive* archive, ThreadId threadId, int options);
 
+
+#ifdef __cplusplus
 }; /* namespace pallas */
+#endif
 
 /* -*-
    mode: c;

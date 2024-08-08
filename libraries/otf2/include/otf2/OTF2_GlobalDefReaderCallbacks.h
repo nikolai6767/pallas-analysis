@@ -2023,6 +2023,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetInterCommCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_InterComm interCommCallback);
 
+
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

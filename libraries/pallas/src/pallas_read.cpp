@@ -28,31 +28,38 @@ Checkpoint::Checkpoint(const ThreadReader* reader) {
 Checkpoint::~Checkpoint() {
 }
 
-ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int options) {
+void threadReader_init(ThreadReader *thread_reader,
+		       Archive* archive,
+		       ThreadId threadId,
+		       int options) {
   // Setup the basic
-  this->archive = archive;
-  this->options = options;
+  thread_reader->archive = archive;
+  thread_reader->options = options;
   pallas_assert(threadId != PALLAS_THREAD_ID_INVALID);
-  thread_trace = archive->getThread(threadId);
-  pallas_assert(thread_trace != nullptr);
+  thread_reader->thread_trace = archive->getThread(threadId);
+  pallas_assert(thread_reader->thread_trace != nullptr);
 
   if (debugLevel >= DebugLevel::Verbose) {
     pallas_log(DebugLevel::Verbose, "init callstack for thread %d\n", threadId);
     pallas_log(DebugLevel::Verbose, "The trace contains:\n");
-    thread_trace->printSequence(Token(TypeSequence, 0));
+    thread_reader->thread_trace->printSequence(Token(TypeSequence, 0));
   }
 
   // And initialize the callstack
   // ie set the cursor on the first event
-  referential_timestamp = 0;
-  current_frame = 0;
-  std::memset(callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
-  std::memset((void*)callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
-  callstack_iterable[0].type = TypeSequence;
-  callstack_iterable[0].id = 0;
+  thread_reader->referential_timestamp = 0;
+  thread_reader->current_frame = 0;
+  std::memset(thread_reader->callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
+  std::memset((void*)thread_reader->callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
+  thread_reader->callstack_iterable[0].type = TypeSequence;
+  thread_reader->callstack_iterable[0].id = 0;
 
   // Enter sequence 0
-  enterBlock(pollCurToken());
+  thread_reader->enterBlock(thread_reader->pollCurToken());
+}
+
+ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int options) {
+  threadReader_init(this, archive, threadId, options);
 }
 
 const Token& ThreadReader::getFrameInCallstack(int frame_number) const {

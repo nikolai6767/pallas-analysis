@@ -221,7 +221,7 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteGroup(OTF2_GlobalDefWriter* writerHandl
                                                OTF2_GroupFlag groupFlags,
                                                uint32_t numberOfMembers,
                                                const uint64_t* members) {
-  // NOT_IMPLEMENTED;
+  pallas_archive_register_group(writerHandle->archive, self, name, numberOfMembers, members);
   return OTF2_SUCCESS;
 }
 
@@ -262,7 +262,8 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteComm(OTF2_GlobalDefWriter* writerHandle
                                               OTF2_GroupRef group,
                                               OTF2_CommRef parent,
                                               OTF2_CommFlag flags) {
-  //  NOT_IMPLEMENTED;
+  pallas_archive_register_comm(writerHandle->archive, self, name, group, parent);
+
   return OTF2_SUCCESS;
 }
 
