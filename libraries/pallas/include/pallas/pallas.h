@@ -397,6 +397,36 @@ typedef struct Attribute {
   pallas_type_t type;         /**< Type of that Attribute. */
 } Attribute;
 
+/** Reference for a pallas::Group */
+typedef Ref GroupRef;
+/** Invalid GroupRef */
+#define PALLAS_GROUPREF_INVALID ((PALLAS(StringRef))PALLAS_UNDEFINED_UINT32)
+/**
+ * Define a Group reference structure used by PALLAS format.
+ *
+ */
+typedef struct Group {
+  GroupRef group_ref;    /**< Id of that Group.*/
+  StringRef name;
+  uint32_t numberOfMembers;
+  uint64_t* members;
+} Group;
+
+/** Reference for a pallas::Comm */
+typedef Ref CommRef;
+/** Invalid CommRef */
+#define PALLAS_COMMREF_INVALID ((PALLAS(StringRef))PALLAS_UNDEFINED_UINT32)
+/**
+ * Define a Comm reference structure used by PALLAS format.
+ *
+ */
+typedef struct Comm {
+  CommRef comm_ref;     /**< Id of that Comm.*/
+  StringRef name;
+  GroupRef group;
+  CommRef parent;
+} Comm;
+
 /**
  * A thread contains streams of events.
  *
@@ -454,6 +484,8 @@ typedef struct Thread {
   void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
   void printString(StringRef) const;          /**< Prints a String (checks for validity first). */
   void printAttributeRef(AttributeRef) const; /**< Prints an AttributeRef (checks for validity first). */
+  void printCommRef(CommRef) const; /**< Prints an CommRef (checks for validity first). */
+  void printGroupRef(GroupRef) const; /**< Prints an GroupRef (checks for validity first). */
   void printLocation(Ref) const;              /**< Prints a Ref for a Location (checks for validity first). */
   void printRegion(RegionRef) const;          /**< Prints an RegionRef (checks for validity first). */
   void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const; /**< Prints an AttributeValue.*/

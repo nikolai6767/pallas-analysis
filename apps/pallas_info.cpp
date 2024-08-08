@@ -98,6 +98,20 @@ void info_global_archive(GlobalArchive* archive) {
   for (auto& [regionRef, region] : archive->definitions.regions) {
     printf("\t\t%d: %s\n", region.region_ref, archive->getString(region.string_ref)->str);
   }
+  if (!archive->definitions.groups.empty())
+    printf("\tGroups {.nb_groups: %zu } :\n", archive->definitions.groups.size());
+  for (auto& [groupRef, group] : archive->definitions.groups) {
+    printf("\t\t%d: '%s' [", group.group_ref, archive->getString(group.name)->str);
+    for(uint32_t i = 0; i<group.numberOfMembers; i++) {
+      printf("%s%lu", i>0?", ":"", group.members[i]);
+    }
+    printf("]\n");
+  }
+  if (!archive->definitions.comms.empty())
+    printf("\tComms {.nb_comms: %zu } :\n", archive->definitions.comms.size());
+  for (auto& [commRef, comm] : archive->definitions.comms) {
+    printf("\t\t%d: '%s' (group, %d, parent: %d) \n", comm.comm_ref, archive->getString(comm.name)->str, comm.group, comm.parent);
+  }
 
   if (!archive->location_groups.empty())
     printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());

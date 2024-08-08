@@ -97,6 +97,67 @@ void Definition::addAttribute(AttributeRef attribute_ref,
           attributes.size() - 1, a.attribute_ref, a.name, a.description, a.type);
 }
 
+  /**
+   * Getter for a Group from its id.
+   * @returns First Group matching the given pallas::GroupRef, nullptr if it doesn't have a match.
+   */
+  const Group* Definition::getGroup(GroupRef group_ref) const {
+    if (groups.count(group_ref) > 0)
+      return &groups.at(group_ref);
+    else return nullptr;
+  }
+
+  /**
+   * Creates a new Group and adds it to that definition. Error if the given pallas::GroupRef is already in use.
+   */
+  void Definition::addGroup(GroupRef group_ref, StringRef name, uint32_t number_of_members, const uint64_t* members) {
+    if (getGroup(group_ref)) {
+      pallas_error("Given group_ref was already in use.\n");
+    }
+
+    auto g = Group();
+    g.group_ref = group_ref;
+    g.name = name;
+    g.numberOfMembers = number_of_members;
+    g.members = new uint64_t[number_of_members];
+    for(uint32_t i = 0; i<number_of_members; i++)
+	  g.members[i] = members[i];
+    
+    groups[group_ref] = g;
+
+    pallas_log(DebugLevel::Verbose, "Register group #%zu{.ref=%d, .str=%d, .nbMembers=%d}\n", groups.size() - 1, g.group_ref, g.name, g.numberOfMembers);
+  }
+
+
+  /**
+   * Getter for a Comm from its id.
+   * @returns First Comm matching the given pallas::CommRef, nullptr if it doesn't have a match.
+   */
+  const Comm* Definition::getComm(CommRef comm_ref) const {
+    if (comms.count(comm_ref) > 0)
+      return &comms.at(comm_ref);
+    else return nullptr;
+  }
+
+  /**
+   * Creates a new Comm and adds it to that definition. Error if the given pallas::CommRef is already in use.
+   */
+  void Definition::addComm(CommRef comm_ref, StringRef name, GroupRef group, CommRef parent) {
+    if (getComm(comm_ref)) {
+      pallas_error("Given comm_ref was already in use.\n");
+    }
+
+    auto c = Comm();
+    c.comm_ref = comm_ref;
+    c.name = name;
+    c.group = group;
+    c.parent = parent;
+
+    comms[comm_ref] = c;
+
+    pallas_log(DebugLevel::Verbose, "Register comm #%zu{.ref=%d, .str=%d, .group=%d, .parent=%d}\n", comms.size() - 1, c.comm_ref, c.name, c.group, c.parent);
+  }
+
 /**
  * Getter for a String from its id.
  * @returns First String matching the given pallas::StringRef in this archive, or in the global_archive if it doesn't
@@ -129,6 +190,30 @@ const Region* GlobalArchive::getRegion(RegionRef region_ref) {
 const Attribute* GlobalArchive::getAttribute(AttributeRef attribute_ref) {
   pthread_mutex_lock(&lock);
   auto res = definitions.getAttribute(attribute_ref);
+  pthread_mutex_unlock(&lock);
+  return res;
+}
+
+/**
+ * Getter for a Group from its id.
+ * @returns First Group matching the given pallas::GroupRef in this archive, or in the global_archive if it
+ * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
+ */
+const Group* GlobalArchive::getGroup(GroupRef group_ref) {
+  pthread_mutex_lock(&lock);
+  auto res = definitions.getGroup(group_ref);
+  pthread_mutex_unlock(&lock);
+  return res;
+}
+
+/**
+ * Getter for a Comm from its id.
+ * @returns First Comm matching the given pallas::CommRef in this archive, or in the global_archive if it
+ * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
+ */
+const Comm* GlobalArchive::getComm(CommRef comm_ref) {
+  pthread_mutex_lock(&lock);
+  auto res = definitions.getComm(comm_ref);
   pthread_mutex_unlock(&lock);
   return res;
 }
@@ -221,6 +306,26 @@ void GlobalArchive::addAttribute(AttributeRef attribute_ref, StringRef name_ref,
   pthread_mutex_unlock(&lock);
 }
 
+/**
+ * Creates a new Group and adds it to that definition. Error if the
+ * given pallas::GroupRef is already in use.
+ */
+void GlobalArchive::addGroup(GroupRef group_ref, StringRef name, uint32_t number_of_members, const uint64_t* members) {
+  pthread_mutex_lock(&lock);
+  definitions.addGroup(group_ref, name, number_of_members, members);
+  pthread_mutex_unlock(&lock);
+}
+
+/**
+ * Creates a new Comm and adds it to that definition. Error if the
+ * given pallas::CommRef is already in use.
+ */
+void GlobalArchive::addComm(CommRef comm_ref, StringRef name, GroupRef group, CommRef parent) {
+  pthread_mutex_lock(&lock);
+  definitions.addComm(comm_ref, name, group, parent);
+  pthread_mutex_unlock(&lock);
+}
+
 Archive::~Archive() {
   delete[] dir_name;
   delete[] trace_name;
@@ -263,6 +368,21 @@ void pallas_archive_register_attribute(pallas::GlobalArchive* archive,
                                     pallas::pallas_type_t type) {
   archive->addAttribute(attribute_ref, name_ref, description_ref, type);
 }
+void pallas_archive_register_group(pallas::GlobalArchive* archive,
+				   pallas::GroupRef group_ref,
+				   pallas::StringRef name,
+				   uint32_t numberOfMembers,
+				   const uint64_t* members) {
+  archive->addGroup(group_ref, name, numberOfMembers, members);
+}
+void pallas_archive_register_comm(pallas::GlobalArchive* archive,
+				  pallas::CommRef comm_ref,
+				  pallas::StringRef name,
+				  pallas::GroupRef group,
+				  pallas::CommRef parent) {
+  archive->addComm(comm_ref, name, group, parent);
+}
+
 const pallas::String* pallas_archive_get_string(pallas::GlobalArchive* archive, pallas::StringRef string_ref) {
   return archive->getString(string_ref);
 }
@@ -272,7 +392,14 @@ const pallas::Region* pallas_archive_get_region(pallas::GlobalArchive* archive, 
 const pallas::Attribute* pallas_archive_get_attribute(pallas::GlobalArchive* archive, pallas::AttributeRef attribute_ref) {
   return archive->getAttribute(attribute_ref);
 }
-
+const pallas::Group* pallas_archive_get_group(pallas::GlobalArchive* archive,
+					      pallas::GroupRef group_ref) {
+  return archive->getGroup(group_ref);
+}
+const pallas::Comm* pallas_archive_get_communicator(pallas::GlobalArchive* archive,
+							    pallas::CommRef comm_ref) {
+  return archive->getComm(comm_ref);
+}
 /* -*-
   mode: c++;
   c-file-style: "k&r";
