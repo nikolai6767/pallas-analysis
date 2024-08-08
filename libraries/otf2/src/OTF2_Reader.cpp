@@ -165,8 +165,9 @@ pallas::ThreadReader* _get_next_global_event(OTF2_Reader* reader, OTF2_GlobalEvt
   pallas_timestamp_t min_timestamp = ULONG_MAX;
 
   for(int i = 0; i<reader->nb_locations; i++) {
-    if(reader->selected_locations[i]) {
+    if(reader->thread_readers[i]) {
       pallas::ThreadReader *tr = reader->thread_readers[i];
+
       if(tr->isEndOfTrace())
 	continue;
       if(tr->referential_timestamp < min_timestamp) {
