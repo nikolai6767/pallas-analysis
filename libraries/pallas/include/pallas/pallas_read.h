@@ -53,7 +53,7 @@ typedef struct SequenceOccurence {
   pallas_timestamp_t timestamp;         /**< Timestamp for that occurence.*/
   pallas_duration_t duration;           /**< Duration of that occurence.*/
   struct TokenOccurence* full_sequence; /** Array of the occurrences in this sequence. */
-  struct Checkpoint *checkpoint;
+  struct Cursor *checkpoint;
 } SequenceOccurence;
 
 /**
@@ -90,7 +90,7 @@ typedef struct TokenOccurence {
   ~TokenOccurence();
 } TokenOccurence;
 
-typedef struct Checkpoint {
+typedef struct Cursor {
   /** The current referential timestamp. */
   pallas_timestamp_t referential_timestamp;
 
@@ -108,11 +108,11 @@ typedef struct Checkpoint {
 #ifdef __cplusplus
   /** Creates a savestate of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
-  Checkpoint(const struct ThreadReader* reader);
-  Checkpoint() = default;
-  ~Checkpoint();
+  Cursor(const struct ThreadReader* reader);
+  Cursor() = default;
+  ~Cursor();
 #endif
-} Checkpoint;
+} Cursor;
 
 /**
  * Reads one thread from an Pallas trace.
@@ -123,10 +123,10 @@ typedef struct ThreadReader {
   /** Thread being read. */
   struct Thread* thread_trace;
 
-  Checkpoint currentState;
+  Cursor currentState;
 
   /** Stack containing the checkpoint in the sequence or the loop iteration. */
-  Checkpoint callstack_checkpoints[MAX_CALLSTACK_DEPTH];
+  Cursor callstack_cursors[MAX_CALLSTACK_DEPTH];
 
   /**
    * Options as defined in pallas::ThreadReaderOptions.
@@ -161,6 +161,8 @@ typedef struct ThreadReader {
   [[nodiscard]] bool isEndOfSequence(int current_index, Token sequence_id) const;
   /** Returns whether the given loop still has more Tokens after the given current_index. */
   [[nodiscard]] bool isEndOfLoop(int current_index, Token loop_id) const;
+  /** Returns whether the given iterable token still has more Tokens after the given current_index. */
+  [[nodiscard]] bool isEndOfBlock(int index, Token iterable_token) const;
   /** Returns whether the cursor is at the end of the current block. */
   [[nodiscard]] bool isEndOfCurrentBlock() const;
   /** Returns whether the cursor is at the end of the trace. */
@@ -183,7 +185,7 @@ typedef struct ThreadReader {
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
-  void loadCheckpoint(Checkpoint *checkpoint);
+  void loadCheckpoint(Cursor *checkpoint);
 
   //******************* EXPLORATION FUNCTIONS ********************
 
@@ -193,31 +195,31 @@ typedef struct ThreadReader {
   /** Peeks at and return the next token without actually updating the state */
   [[nodiscard]] std::optional<Token> pollNextToken(int flags=PALLAS_READ_FLAG_NONE) const;
   /** Updates the internal state */
-  void moveToNextToken(int flags=PALLAS_READ_FLAG_NONE);
+  bool moveToNextToken(int flags = PALLAS_READ_FLAG_NONE);
   /** Equivalent to moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
   void moveToNextTokenInBlock();
   /** Gets the next token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToNextToken()` then `pollCurToken()` */
-  std::optional<Token> getNextToken(int flags=PALLAS_READ_FLAG_NONE);
+  std::optional<Token> getNextToken(int flags = PALLAS_READ_FLAG_NONE);
 
   /** Peeks at and return the previous token without actually updating the state */
   [[nodiscard]] std::optional<Token> pollPrevToken(int flags=PALLAS_READ_FLAG_NONE) const;
   /** Updates the internal state */
-  void moveToPrevToken(int flags=PALLAS_READ_FLAG_NONE);
+  bool moveToPrevToken(int flags = PALLAS_READ_FLAG_NONE);
   /** Updates the internal state */
   void moveToPrevTokenInBlock();
   /** Gets the previous token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
-  std::optional<Token> getPrevToken(int flags=PALLAS_READ_FLAG_NONE);
+  std::optional<Token> getPrevToken(int flags = PALLAS_READ_FLAG_NONE);
 
   /** Enters a block */
   void enterBlock();
   /** Leaves the current block */
   void leaveBlock();
   /** Exits a block if at the end of it and flags allow it, returns a boolean representing if the rader actually exited a block */
-  bool exitIfEndOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
+  bool exitIfEndOfBlock(int flags = PALLAS_READ_FLAG_UNROLL_ALL);
   /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
-  bool enterIfStartOfBlock(int flags = PALLAS_READ_UNROLL_ALL);
+  bool enterIfStartOfBlock(int flags = PALLAS_READ_FLAG_UNROLL_ALL);
 
   ~ThreadReader();
 
@@ -274,7 +276,7 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id,
 /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
 AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
 
-void pallasLoadCheckpoint(ThreadReader *thread_reader, Checkpoint *checkpoint);
+void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
 
 //******************* EXPLORATION FUNCTIONS ********************
 
@@ -292,13 +294,13 @@ void pallasMoveToPrevToken(ThreadReader *thread_reader);
  * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
 Token* pallasGetNextToken(ThreadReader *thread_reader, int flags);
 /** Enters a block */
-void pallasEnterBlock(ThreadReader *thread_reader, Token new_block);
+void pallasEnterBlock(ThreadReader *thread_reader);
 /** Leaves the current block */
 void pallasLeaveBlock(ThreadReader *thread_reader);
 /** Exits a block if at the end of it and flags allow it, returns a boolean representing if the reader actually exited a block */
-bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
+bool pallasExitIfEndOfBlock(ThreadReader *thread_reader);
 
-Checkpoint pallasCreateCheckpoint(ThreadReader *thread_reader);
+Cursor pallasCreateCheckpoint(ThreadReader *thread_reader);
 
 #ifdef __cplusplus
 }; /* namespace pallas */

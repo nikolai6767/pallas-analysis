@@ -71,12 +71,11 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
 
 void printTrace(const pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
-  int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
       auto thread = trace.archive_list[i]->getThreadAt(j);
       if (thread != nullptr)
-        readers.emplace_back(trace.archive_list[i], thread->id, reader_options);
+        readers.emplace_back(trace.archive_list[i], thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
     }
   }
 
@@ -88,18 +87,18 @@ void printTrace(const pallas::GlobalArchive& trace) {
     pallas::ThreadReader* min_reader = &readers[0];
     pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
     for (auto & reader : readers) {
-      if (!reader.isEndOfTrace() && reader.referential_timestamp < min_timestamp) {
+      if (!reader.isEndOfTrace() && reader.currentState.referential_timestamp < min_timestamp) {
         min_reader = &reader;
-        min_timestamp = reader.referential_timestamp;
+        min_timestamp = reader.currentState.referential_timestamp;
       }
     }
 
     auto token = min_reader->pollCurToken();
     if (token.type == pallas::TypeEvent) {
-      printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->tokenCount[token]));
+      printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.tokenCount[token]));
     }
 
-    if (!min_reader->getNextToken(PALLAS_READ_UNROLL_ALL).has_value()) {
+    if (!min_reader->getNextToken().has_value()) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
@@ -107,14 +106,14 @@ void printTrace(const pallas::GlobalArchive& trace) {
 
 static std::string structure_indent[MAX_CALLSTACK_DEPTH];
 std::string getCurrentIndent(const pallas::ThreadReader& tr) {
-  if (tr.current_frame <= 1) {
+  if (tr.currentState.current_frame <= 1) {
     return "";
   }
   const auto t = tr.pollCurToken();
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
-  structure_indent[tr.current_frame - 2] = (isLastOfSeq ? "╰" : "├");
-    DOFOR(i, tr.current_frame - 1) {
+  structure_indent[tr.currentState.current_frame - 2] = (isLastOfSeq ? "╰" : "├");
+    DOFOR(i, tr.currentState.current_frame - 1) {
       current_indent += structure_indent[i];
     }
     if (t.type != pallas::TypeEvent) {
@@ -128,23 +127,23 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
     } else {
       current_indent += "─";
     }
-    structure_indent[tr.current_frame - 2] = isLastOfSeq ? " " : "│";
+    structure_indent[tr.currentState.current_frame - 2] = isLastOfSeq ? " " : "│";
     return current_indent;
 }
 
-void printThreadStructure(const int flags, pallas::ThreadReader& tr) {
+void printThreadStructure(pallas::ThreadReader& tr) {
   std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
   auto current_token = tr.pollCurToken();
   while (true) {
-    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.current_frame <= 1) ? 0 : tr.current_frame))
+    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame <= 1) ? 0 : tr.currentState.current_frame))
               << tr.thread_trace->getTokenString(current_token) << "";
     if (current_token.type == pallas::TypeEvent) {
-      auto occ = tr.getEventOccurence(current_token, tr.tokenCount[current_token]);
+      auto occ = tr.getEventOccurence(current_token, tr.currentState.tokenCount[current_token]);
       printEvent(tr.thread_trace, current_token, occ);
     }
     else if (current_token.type == pallas::TypeSequence) {
       if (show_durations) {
-        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.tokenCount[current_token]);
+        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.currentState.tokenCount[current_token]);
         std::cout << std::setw(21) << "";
         std::cout.precision(9);
         std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
@@ -157,7 +156,7 @@ void printThreadStructure(const int flags, pallas::ThreadReader& tr) {
       std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
     } std::cout << std::endl;
     }
-    auto next_token = tr.getNextToken(flags);
+    auto next_token = tr.getNextToken();
     if (!next_token.has_value())
       break;
     current_token = next_token.value();
@@ -165,7 +164,6 @@ void printThreadStructure(const int flags, pallas::ThreadReader& tr) {
 }
 
 void printStructure(const int flags, const pallas::GlobalArchive& trace) {
-  constexpr int reader_options = pallas::ThreadReaderOptions::None;
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
       auto thread = trace.archive_list[i]->getThreadAt(j);
@@ -174,9 +172,9 @@ void printStructure(const int flags, const pallas::GlobalArchive& trace) {
       pallas::ThreadReader tr = pallas::ThreadReader(
         trace.archive_list[i],
         thread->id,
-        reader_options
+        flags
         );
-      printThreadStructure(flags, tr);
+      printThreadStructure(tr);
     }
   }
 }
@@ -194,7 +192,7 @@ void usage(const char* prog_name) {
 }
 
 int main(const int argc, char* argv[]) {
-  int flags = PALLAS_READ_UNROLL_ALL;
+  int flags = PALLAS_READ_FLAG_UNROLL_ALL;
   bool show_structure = false;
   char* trace_name;
 
@@ -215,9 +213,9 @@ int main(const int argc, char* argv[]) {
     } else if (!strcmp(argv[nb_opts], "-S")) {
       show_structure = true;
     } else if (!strcmp(argv[nb_opts], "-s")) {
-      flags &= ~PALLAS_READ_UNROLL_SEQUENCE;
+      flags &= ~PALLAS_READ_FLAG_UNROLL_SEQUENCE;
     } else if (!strcmp(argv[nb_opts], "-l")) {
-      flags &= ~PALLAS_READ_UNROLL_LOOP;
+      flags &= ~PALLAS_READ_FLAG_UNROLL_LOOP;
     } else {
       /* Unknown parameter name. It's probably the trace's path name. We can stop
        * parsing the parameter list.
