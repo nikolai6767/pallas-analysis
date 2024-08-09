@@ -16,13 +16,13 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
   auto token = reader->pollCurToken();
   switch (token.type) {
   case pallas::TypeEvent: {
-    return reader->getEventOccurence(token, reader->tokenCount[token]).duration;
+    return reader->getEventOccurence(token, reader->currentState.tokenCount[token]).duration;
   }
 
   case pallas::TypeSequence: {
-    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->currentState.tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_sequence = 0;
-    reader->enterBlock(token);
+    reader->enterBlock();
 
     while (reader->pollNextToken().has_value()) {
       sum_of_durations_in_sequence += testCurrentTokenDuration(reader);
@@ -39,9 +39,9 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
   }
 
   case pallas::TypeLoop: {
-    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->currentState.tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_loop = 0;
-    reader->enterBlock(token);
+    reader->enterBlock();
 
     while (reader->pollNextToken().has_value()) {
       sum_of_durations_in_loop += testCurrentTokenDuration(reader);
