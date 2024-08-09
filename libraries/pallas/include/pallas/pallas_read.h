@@ -191,23 +191,22 @@ typedef struct ThreadReader {
 
   /** Gets the current Token. */
   [[nodiscard]] const Token& pollCurToken() const;
-
   /** Peeks at and return the next token without actually updating the state */
   [[nodiscard]] std::optional<Token> pollNextToken(int flags=PALLAS_READ_FLAG_NONE) const;
-  /** Updates the internal state */
+  /** Updates the internal state, returns true if internal state was actually changed */
   bool moveToNextToken(int flags = PALLAS_READ_FLAG_NONE);
   /** Equivalent to moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
-  void moveToNextTokenInBlock();
+  bool moveToNextTokenInBlock();
   /** Gets the next token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToNextToken()` then `pollCurToken()` */
   std::optional<Token> getNextToken(int flags = PALLAS_READ_FLAG_NONE);
 
   /** Peeks at and return the previous token without actually updating the state */
   [[nodiscard]] std::optional<Token> pollPrevToken(int flags=PALLAS_READ_FLAG_NONE) const;
-  /** Updates the internal state */
+  /** Updates the internal state, returns true if internal state was actually changed */
   bool moveToPrevToken(int flags = PALLAS_READ_FLAG_NONE);
-  /** Updates the internal state */
-  void moveToPrevTokenInBlock();
+  /** Equivalent to moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL) */
+  bool moveToPrevTokenInBlock();
   /** Gets the previous token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
   std::optional<Token> getPrevToken(int flags = PALLAS_READ_FLAG_NONE);
@@ -253,6 +252,8 @@ pallas_timestamp_t pallasGetEventTimestamp(ThreadReader *thread_reader, Token ev
 bool pallasIsEndOfSequence(ThreadReader *thread_reader, int current_index, Token sequence_id);
 /** Returns whether the given loop still has more Tokens after the given current_index. */
 bool pallasIsEndOfLoop(ThreadReader *thread_reader, int current_index, Token loop_id);
+/** Returns whether the given iterable token still has more Tokens after the given current_index. */
+bool pallasIsEndOfBlock(ThreadReader *thread_reader, int index, Token iterable_token);
 /** Returns whether the cursor is at the end of the current block. */
 bool pallasIsEndOfCurrentBlock(ThreadReader *thread_reader);
 /** Returns whether the cursor is at the end of the trace. */
@@ -276,31 +277,40 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id,
 /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
 AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
 
-void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
+void pallasLoadCursor(ThreadReader *thread_reader, Cursor *checkpoint);
 
 //******************* EXPLORATION FUNCTIONS ********************
 
 /** Gets the current Token. */
 const Token* pallasPollCurToken(ThreadReader *thread_reader);
 /** Peeks at and return the next token without actually updating the state */
-const Token* pallasPollNextToken(ThreadReader *thread_reader);
+const Token* pallasPollNextToken(ThreadReader *thread_reader, int flags);
 /** Peeks at and return the previous token without actually updating the state */
-const Token* pallasPollPrevToken(ThreadReader *thread_reader);
-/** Updates the internal state */
-void pallasMoveToNextToken(ThreadReader *thread_reader);
-/** Updates the internal state */
-void pallasMoveToPrevToken(ThreadReader *thread_reader);
+const Token* pallasPollPrevToken(ThreadReader *thread_reader, int flags);
+/** Updates the internal state, returns true if internal state was actually changed */
+bool pallasMoveToNextToken(ThreadReader *thread_reader, int flags);
+/** Equivalent to pallasMoveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
+bool pallasMoveToNextTokenInBlock(ThreadReader *thread_reader);
+/** Updates the internal state, returns true if internal state was actually changed */
+bool pallasMoveToPrevToken(ThreadReader *thread_reader, int flags);
+/** Equivalent to pallasMoveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL) */
+bool pallasMoveToPrevTokenInBlock(ThreadReader *thread_reader);
 /** Gets the next token and updates the reader's state if it returns a value.
  * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
 Token* pallasGetNextToken(ThreadReader *thread_reader, int flags);
+/** Gets the previous token and updates the reader's state if it returns a value.
+ * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
+Token *pallasGetPrevToken(ThreadReader *thread_reader, int flags);
 /** Enters a block */
 void pallasEnterBlock(ThreadReader *thread_reader);
 /** Leaves the current block */
 void pallasLeaveBlock(ThreadReader *thread_reader);
 /** Exits a block if at the end of it and flags allow it, returns a boolean representing if the reader actually exited a block */
-bool pallasExitIfEndOfBlock(ThreadReader *thread_reader);
+bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
+/** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
+bool pallasEnterIfStartOfBlock(ThreadReader *thread_reader, int flags);
 
-Cursor pallasCreateCheckpoint(ThreadReader *thread_reader);
+Cursor pallasCreateCursor(ThreadReader *thread_reader);
 
 #ifdef __cplusplus
 }; /* namespace pallas */

@@ -395,8 +395,8 @@ bool ThreadReader::moveToNextToken(int flags) {
 
   return true;
 }
-void ThreadReader::moveToNextTokenInBlock() {
-  moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL);
+bool ThreadReader::moveToNextTokenInBlock() {
+  return moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL);
 }
 
 bool ThreadReader::moveToPrevToken(int flags) {
@@ -413,7 +413,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   pallas_assert(current_iterable_token.isIterable());
 
   if (currentState.callstack_index[currentState.current_frame] == 0) {
-    if (currentState.current_frame == 0)
+    if (currentState.current_frame == 1)
       return false;
     leaveBlock();
     return true;
@@ -424,7 +424,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   currentState.tokenCount[previous_token]--;
   currentState.callstack_index[currentState.current_frame]--;
 
-  while(previous_token.isIterable()) {
+  while (previous_token.isIterable()) {
     if (previous_token.type == TypeSequence && !(flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE)) {
       break;
     }
@@ -464,8 +464,8 @@ bool ThreadReader::moveToPrevToken(int flags) {
   }
   return true;
 }
-void ThreadReader::moveToPrevTokenInBlock() {
-  moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
+bool ThreadReader::moveToPrevTokenInBlock() {
+  return moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
 }
 
 std::optional<Token> ThreadReader::getNextToken(int flags) {
@@ -574,7 +574,7 @@ ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
   other.pallas_read_flag = 0;
 }
 
-/*
+
 ThreadReader pallasCreateThreadReader(Archive* archive, ThreadId threadId, int options) {
   return {archive, threadId, options};
 }
@@ -623,33 +623,45 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader* thread_reader, Token loop_id,
 AttributeList* pallasGetEventAttributeList(ThreadReader* thread_reader, Token event_id, size_t occurence_id) {
   return thread_reader->getEventAttributeList(event_id, occurence_id);
 }
-void pallasLoadCheckpoint(ThreadReader* thread_reader, Cursor* checkpoint) {
+void pallasLoadCursor(ThreadReader* thread_reader, Cursor* checkpoint) {
   thread_reader->loadCheckpoint(checkpoint);
 }
 const Token* pallasPollCurToken(ThreadReader* thread_reader) {
   return &thread_reader->pollCurToken();
 }
-const Token* pallasPollNextToken(ThreadReader* thread_reader) {
-  if (auto next_token = thread_reader->pollNextToken(); next_token.has_value()) {
+const Token* pallasPollNextToken(ThreadReader* thread_reader, int flags) {
+  if (auto next_token = thread_reader->pollNextToken(flags); next_token.has_value()) {
     return &next_token.value();
   }
   return nullptr;
 }
-const Token* pallasPollPrevToken(ThreadReader* thread_reader) {
-  if (auto next_token = thread_reader->pollPrevToken(); next_token.has_value()) {
+const Token* pallasPollPrevToken(ThreadReader* thread_reader, int flags) {
+  if (auto next_token = thread_reader->pollPrevToken(flags); next_token.has_value()) {
     return &next_token.value();
   }
   return nullptr;
 }
-void pallasMoveToNextToken(ThreadReader* thread_reader) {
-  thread_reader->moveToNextToken();
+bool pallasMoveToNextToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->moveToNextToken(flags);
 }
-void pallasMoveToPrevToken(ThreadReader* thread_reader) {
-  thread_reader->moveToPrevToken();
+bool pallasMoveToNextTokenInBlock(ThreadReader* thread_reader) {
+  return pallasMoveToNextToken(thread_reader, PALLAS_READ_FLAG_NO_UNROLL);
+}
+bool pallasMoveToPrevToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->moveToPrevToken(flags);
+}
+bool pallasMoveToPrevTokenInBlock(ThreadReader* thread_reader) {
+  return pallasMoveToPrevToken(thread_reader, PALLAS_READ_FLAG_NO_UNROLL);
 }
 Token* pallasGetNextToken(ThreadReader* thread_reader, int flags) {
   if (auto next_token = thread_reader->getNextToken(flags); next_token.has_value()) {
     return &next_token.value();
+  }
+  return nullptr;
+}
+Token* pallasGetPrevToken(ThreadReader* thread_reader, int flags) {
+  if (auto prev_token = thread_reader->getPrevToken(flags); prev_token.has_value()) {
+    return &prev_token.value();
   }
   return nullptr;
 }
@@ -659,10 +671,13 @@ void pallasEnterBlock(ThreadReader* thread_reader) {
 void pallasLeaveBlock(ThreadReader* thread_reader) {
   thread_reader->leaveBlock();
 }
-bool pallasExitIfEndOfBlock(ThreadReader* thread_reader) {
-  return thread_reader->exitIfEndOfBlock();
+bool pallasExitIfEndOfBlock(ThreadReader* thread_reader, int flags) {
+  return thread_reader->exitIfEndOfBlock(flags);
 }
-Cursor pallasCreateCheckpoint(ThreadReader* thread_reader) {
+bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
+  return thread_reader->enterIfStartOfBlock(flags);
+}
+Cursor pallasCreateCursor(ThreadReader* thread_reader) {
   return {thread_reader};
 }
 
@@ -678,7 +693,7 @@ TokenOccurence::~TokenOccurence() {
   }
   delete occurence;
 }
-*/
+
 } /* namespace pallas */
 
 /* -*-
