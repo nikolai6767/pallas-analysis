@@ -186,7 +186,9 @@ bool ThreadReader::isEndOfCurrentBlock() const {
   return isEndOfBlock(current_index, current_iterable_token);
 }
 bool ThreadReader::isEndOfTrace() const {
-  return currentState.current_frame == 0;
+  if (currentState.current_frame == 0) return true;
+  if (currentState.current_frame == 1) return isEndOfCurrentBlock();
+  return false;
 }
 
 pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
