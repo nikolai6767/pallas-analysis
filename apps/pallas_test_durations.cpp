@@ -66,9 +66,8 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
 /* Print all the events of a thread */
 static void testThreadDuration(pallas::Archive& trace, const pallas::Thread& thread) {
   printf("Testing durations for Thread %u (%s):\n", thread.id, thread.getName());
-
-  constexpr int readerOptions = pallas::ThreadReaderOptions::None;
-  auto* reader = new pallas::ThreadReader(&trace, thread.id, readerOptions);
+;
+  auto* reader = new pallas::ThreadReader(&trace, thread.id, PALLAS_READ_FLAG_UNROLL_ALL);
 
   reader->leaveBlock();
   testCurrentTokenDuration(reader);

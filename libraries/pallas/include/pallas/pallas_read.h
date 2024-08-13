@@ -28,15 +28,6 @@ namespace pallas {
 #define PALLAS_READ_FLAG_UNROLL_ALL (PALLAS_READ_FLAG_UNROLL_SEQUENCE|PALLAS_READ_FLAG_UNROLL_LOOP)
 
 
-/**
- * Options for the ThreadReader. Values have to be powers of 2.
- */
-enum ThreadReaderOptions {
-  None = 0,          /**< No specific options. */
-  ShowStructure = 1, /**< Read and return the structure (Sequences and Loop). */
-  NoTimestamps = 2,  /**< Do not load the timestamps / durations. */
-};
-
 /** Represents one occurence of an Event. */
 typedef struct EventOccurence {
   struct Event* event;          /**< Pointer to the Event.*/
@@ -104,12 +95,19 @@ typedef struct Cursor {
    * You can view this as the "depth" of the callstack. */
   int current_frame;
 
+  /** Stack containing the checkpoint in the sequence or the loop iteration. */
+  std::shared_ptr<Cursor> previous_frame_cursor;
+
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
-  /** Creates a savestate of the given reader.
+
+  Cursor deepCopy();
+
+  /** Creates a cursor of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
-  Cursor(const struct ThreadReader* reader);
-  Cursor() = default;
+  explicit Cursor(const struct ThreadReader* reader);
+  explicit Cursor(const Cursor* other);
+  Cursor();
   ~Cursor();
 #endif
 } Cursor;
@@ -124,9 +122,6 @@ typedef struct ThreadReader {
   struct Thread* thread_trace;
 
   Cursor currentState;
-
-  /** Stack containing the checkpoint in the sequence or the loop iteration. */
-  Cursor callstack_cursors[MAX_CALLSTACK_DEPTH];
 
   /**
    * Options as defined in pallas::ThreadReaderOptions.
@@ -185,6 +180,12 @@ typedef struct ThreadReader {
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
 
+  /** Creates a checkpoint (a copy of the current state) to be loaded later
+   * Warning : this function is non trivial an may be an expansive computation */
+  [[nodiscard]] Cursor createCheckpoint() const;
+
+  /** Loads a checkpoint
+   * Warning : this function is non trivial an may be an expansive computation */
   void loadCheckpoint(Cursor *checkpoint);
 
   //******************* EXPLORATION FUNCTIONS ********************
@@ -277,7 +278,7 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id,
 /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
 AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
 
-void pallasLoadCursor(ThreadReader *thread_reader, Cursor *checkpoint);
+void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
 
 //******************* EXPLORATION FUNCTIONS ********************
 

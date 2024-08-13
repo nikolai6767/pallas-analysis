@@ -7,15 +7,24 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
 
 namespace pallas {
 
-Cursor::Cursor(const ThreadReader* reader) {
-  if ((reader->pallas_read_flag & ThreadReaderOptions::NoTimestamps) == 0) {
-    referential_timestamp = reader->currentState.referential_timestamp;
+Cursor Cursor::deepCopy() {
+  Cursor ret = Cursor(this);
+
+  if (ret.previous_frame_cursor != nullptr) {
+    ret.previous_frame_cursor = std::make_shared<Cursor>(this->previous_frame_cursor.get()->deepCopy());
   }
+
+  return ret;
+}
+
+Cursor::Cursor(const ThreadReader* reader) {
+  referential_timestamp = reader->currentState.referential_timestamp;
 
   memcpy(callstack_iterable, reader->currentState.callstack_iterable, sizeof(Token) * MAX_CALLSTACK_DEPTH);
 
@@ -24,7 +33,25 @@ Cursor::Cursor(const ThreadReader* reader) {
   current_frame = reader->currentState.current_frame;
 
   tokenCount = reader->currentState.tokenCount;
+
+  previous_frame_cursor = reader->currentState.previous_frame_cursor;
 }
+Cursor::Cursor(const Cursor* other) {
+  referential_timestamp = other->referential_timestamp;
+
+  memcpy(callstack_iterable, other->callstack_iterable, sizeof(Token) * MAX_CALLSTACK_DEPTH);
+
+  memcpy(callstack_index, other->callstack_index, sizeof(int) * MAX_CALLSTACK_DEPTH);
+
+  current_frame = other->current_frame;
+
+  tokenCount = other->tokenCount;
+
+  previous_frame_cursor = other->previous_frame_cursor;
+}
+
+Cursor::Cursor() = default;
+
 Cursor::~Cursor() = default;
 
 ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) {
@@ -46,9 +73,10 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) 
   currentState.referential_timestamp = 0;
   currentState.current_frame = 0;
   std::memset(currentState.callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
-  std::memset((void*)currentState.callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
+  std::memset(currentState.callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   currentState.callstack_iterable[0].type = TypeSequence;
   currentState.callstack_iterable[0].id = 0;
+  currentState.previous_frame_cursor = std::shared_ptr<Cursor>();
 
   // Enter sequence 0
   enterBlock();
@@ -130,6 +158,7 @@ bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
 bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   if (loop_id.type == TypeLoop) {
     auto* loop = thread_trace->getLoop(loop_id);
+    pallas_assert(current_index < loop->nb_iterations[currentState.tokenCount.get_value(loop_id)]);
     return current_index + 1 >= loop->nb_iterations[currentState.tokenCount.get_value(loop_id)];
     // We are in a loop and index is beyond the number of iterations
   }
@@ -236,8 +265,14 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, size_t occure
   }
   return nullptr;
 }
+Cursor ThreadReader::createCheckpoint() const {
+  Cursor ret = Cursor(this);
+  ret.previous_frame_cursor = std::make_shared<Cursor>(this->currentState.previous_frame_cursor->deepCopy());
+  return ret;
+}
+
 void ThreadReader::loadCheckpoint(Cursor* checkpoint) {
-  currentState = *checkpoint;
+  currentState = checkpoint->deepCopy();
 };
 
 //******************* EXPLORATION FUNCTIONS ********************
@@ -335,7 +370,6 @@ bool ThreadReader::moveToNextToken(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
 
-  int current_index = currentState.callstack_index[currentState.current_frame];
   auto current_iterable_token = currentState.callstack_iterable[currentState.current_frame];
   pallas_assert(current_iterable_token.isIterable());
 
@@ -354,7 +388,7 @@ bool ThreadReader::moveToNextToken(int flags) {
   // Exit every block we can
   while (exitIfEndOfBlock(flags)) {
   }
-  if (isEndOfTrace())
+  if (isEndOfCurrentBlock())
     return false;
   current_token = this->pollCurToken();
 
@@ -415,8 +449,15 @@ bool ThreadReader::moveToPrevToken(int flags) {
   pallas_assert(current_iterable_token.isIterable());
 
   if (currentState.callstack_index[currentState.current_frame] == 0) {
-    if (currentState.current_frame == 1)
+    if (currentState.current_frame <= 1)
       return false;
+    Token current_iterable_token = currentState.callstack_iterable[currentState.current_frame];
+    if (current_iterable_token.type == TypeSequence && !(flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE)) {
+      return false;
+    }
+    if (current_iterable_token.type == TypeLoop && !(flags & PALLAS_READ_FLAG_UNROLL_LOOP)) {
+      return false;
+    }
     leaveBlock();
     return true;
   }
@@ -430,13 +471,13 @@ bool ThreadReader::moveToPrevToken(int flags) {
     if (previous_token.type == TypeSequence && flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE) {
       ntokens = thread_trace->getSequence(previous_token)->size();
     } else if (previous_token.type == TypeLoop && flags & PALLAS_READ_FLAG_UNROLL_LOOP) {
-      ntokens = 1;
+      ntokens = thread_trace->getLoop(previous_token)->nb_iterations.at(currentState.tokenCount[previous_token]-1);
     } else {
       break;
     }
     // Save cursor before entering
     moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
-    callstack_cursors[currentState.current_frame] = Cursor(this);
+    currentState.previous_frame_cursor = std::make_shared<Cursor>(this);
     if (!moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL)) { // If we didn't come back, we come back manually
       Token current_token = pollCurToken();
       pallas_duration_t token_duration = 0;
@@ -468,6 +509,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
       currentState.tokenCount[current_token]++;
       currentState.callstack_index[currentState.current_frame]++;
     }
+    currentState.tokenCount[previous_token]--;
     // Enter block
     currentState.current_frame++;
     currentState.callstack_iterable[currentState.current_frame] = previous_token;
@@ -532,7 +574,7 @@ void ThreadReader::enterBlock() {
     printf("\n");
   }
 
-  callstack_cursors[currentState.current_frame] = Cursor(this);
+  currentState.previous_frame_cursor = std::make_shared<Cursor>(this);
   currentState.current_frame++;
   currentState.callstack_index[currentState.current_frame] = 0;
   currentState.callstack_iterable[currentState.current_frame] = new_block;
@@ -546,7 +588,8 @@ void ThreadReader::leaveBlock() {
   }
 
   pallas_assert(currentState.current_frame > 0);
-  loadCheckpoint(&callstack_cursors[currentState.current_frame-1]);
+
+  currentState = Cursor(currentState.previous_frame_cursor.get());
 
   if (debugLevel >= DebugLevel::Debug && currentState.current_frame >= 0) {
     auto current_sequence = getCurIterable();
@@ -663,7 +706,7 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader* thread_reader, Token loop_id,
 AttributeList* pallasGetEventAttributeList(ThreadReader* thread_reader, Token event_id, size_t occurence_id) {
   return thread_reader->getEventAttributeList(event_id, occurence_id);
 }
-void pallasLoadCursor(ThreadReader* thread_reader, Cursor* checkpoint) {
+void pallasLoadCheckpoint(ThreadReader* thread_reader, Cursor* checkpoint) {
   thread_reader->loadCheckpoint(checkpoint);
 }
 const Token* pallasPollCurToken(ThreadReader* thread_reader) {
@@ -718,7 +761,7 @@ bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
   return thread_reader->enterIfStartOfBlock(flags);
 }
 Cursor pallasCreateCursor(ThreadReader* thread_reader) {
-  return {thread_reader};
+  return Cursor(thread_reader);
 }
 
 TokenOccurence::~TokenOccurence() {
