@@ -601,7 +601,7 @@ bool ThreadReader::exitIfEndOfBlock(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
 
-  if (currentState.current_frame == 0)
+  if (currentState.current_frame == 1)
     return false;
   int current_index = currentState.callstack_index[currentState.current_frame];
   auto current_iterable_token = currentState.callstack_iterable[currentState.current_frame];
