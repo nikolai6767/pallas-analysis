@@ -89,7 +89,7 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) 
   currentState.referential_timestamp = 0;
   currentState.current_frame = 0;
   std::memset(currentState.callstack_index, 0, MAX_CALLSTACK_DEPTH * sizeof(int));
-  std::memset(currentState.callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
+  std::memset((void*)currentState.callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   currentState.callstack_iterable[0].type = TypeSequence;
   currentState.callstack_iterable[0].id = 0;
   currentState.previous_frame_cursor = nullptr;
