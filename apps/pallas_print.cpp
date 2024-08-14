@@ -98,7 +98,7 @@ void printTrace(const pallas::GlobalArchive& trace) {
       printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.tokenCount[token]));
     }
 
-    if (!min_reader->getNextToken().has_value()) {
+    if (! min_reader->getNextToken().isValid()) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
@@ -157,9 +157,9 @@ void printThreadStructure(pallas::ThreadReader& tr) {
     } std::cout << std::endl;
     }
     auto next_token = tr.getNextToken();
-    if (!next_token.has_value())
+    if (! next_token.isValid())
       break;
-    current_token = next_token.value();
+    current_token = next_token;
   }
 }
 

@@ -24,7 +24,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
     pallas_duration_t sum_of_durations_in_sequence = 0;
     reader->enterBlock();
 
-    while (reader->pollNextToken().has_value()) {
+    while (reader->pollNextToken().isValid()) {
       sum_of_durations_in_sequence += testCurrentTokenDuration(reader);
       reader->moveToNextToken();
     }
@@ -43,7 +43,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
     pallas_duration_t sum_of_durations_in_loop = 0;
     reader->enterBlock();
 
-    while (reader->pollNextToken().has_value()) {
+    while (reader->pollNextToken().isValid()) {
       sum_of_durations_in_loop += testCurrentTokenDuration(reader);
       reader->moveToNextToken();
     }

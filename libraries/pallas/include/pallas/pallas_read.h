@@ -196,24 +196,24 @@ typedef struct ThreadReader {
   /** Gets the current Token. */
   [[nodiscard]] const Token& pollCurToken() const;
   /** Peeks at and return the next token without actually updating the state */
-  [[nodiscard]] std::optional<Token> pollNextToken(int flags=PALLAS_READ_FLAG_NONE) const;
+  [[nodiscard]] Token pollNextToken(int flags=PALLAS_READ_FLAG_NONE) const;
   /** Updates the internal state, returns true if internal state was actually changed */
   bool moveToNextToken(int flags = PALLAS_READ_FLAG_NONE);
   /** Equivalent to moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
   bool moveToNextTokenInBlock();
   /** Gets the next token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToNextToken()` then `pollCurToken()` */
-  std::optional<Token> getNextToken(int flags = PALLAS_READ_FLAG_NONE);
+  Token getNextToken(int flags = PALLAS_READ_FLAG_NONE);
 
   /** Peeks at and return the previous token without actually updating the state */
-  [[nodiscard]] std::optional<Token> pollPrevToken(int flags=PALLAS_READ_FLAG_NONE) const;
+  [[nodiscard]] Token pollPrevToken(int flags=PALLAS_READ_FLAG_NONE) const;
   /** Updates the internal state, returns true if internal state was actually changed */
   bool moveToPrevToken(int flags = PALLAS_READ_FLAG_NONE);
   /** Equivalent to moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL) */
   bool moveToPrevTokenInBlock();
   /** Gets the previous token and updates the reader's state if it returns a value.
    * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
-  std::optional<Token> getPrevToken(int flags = PALLAS_READ_FLAG_NONE);
+  Token getPrevToken(int flags = PALLAS_READ_FLAG_NONE);
 
   /** Enters a block */
   void enterBlock();
@@ -243,7 +243,7 @@ ThreadReader pallasCreateThreadReader(Archive* archive, ThreadId threadId, int o
 /** Prints the current Token. */
 void pallasPrintCurToken(ThreadReader *thread_reader);
 /** Gets the current Iterable. */
-const Token* pallasGetCurIterable(ThreadReader *thread_reader);
+Token pallasGetCurIterable(ThreadReader *thread_reader);
 /** Prints the current Sequence. */
 void pallasPrintCurSequence(ThreadReader *thread_reader);
 /** Prints the whole current callstack. */
@@ -286,11 +286,11 @@ void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
 //******************* EXPLORATION FUNCTIONS ********************
 
 /** Gets the current Token. */
-const Token* pallasPollCurToken(ThreadReader *thread_reader);
+Token pallasPollCurToken(ThreadReader *thread_reader);
 /** Peeks at and return the next token without actually updating the state */
-const Token* pallasPollNextToken(ThreadReader *thread_reader, int flags);
+Token pallasPollNextToken(ThreadReader *thread_reader, int flags);
 /** Peeks at and return the previous token without actually updating the state */
-const Token* pallasPollPrevToken(ThreadReader *thread_reader, int flags);
+Token pallasPollPrevToken(ThreadReader *thread_reader, int flags);
 /** Updates the internal state, returns true if internal state was actually changed */
 bool pallasMoveToNextToken(ThreadReader *thread_reader, int flags);
 /** Equivalent to pallasMoveToNextToken(PALLAS_READ_FLAG_NO_UNROLL) */
@@ -301,10 +301,10 @@ bool pallasMoveToPrevToken(ThreadReader *thread_reader, int flags);
 bool pallasMoveToPrevTokenInBlock(ThreadReader *thread_reader);
 /** Gets the next token and updates the reader's state if it returns a value.
  * It is more or less equivalent to `moveToNextToken()` then `pollCurToken()` */
-Token* pallasGetNextToken(ThreadReader *thread_reader, int flags);
+Token pallasGetNextToken(ThreadReader *thread_reader, int flags);
 /** Gets the previous token and updates the reader's state if it returns a value.
  * It is exactly equivalent to `moveToPrevToken()` then `pollCurToken()` */
-Token *pallasGetPrevToken(ThreadReader *thread_reader, int flags);
+Token pallasGetPrevToken(ThreadReader *thread_reader, int flags);
 /** Enters a block */
 void pallasEnterBlock(ThreadReader *thread_reader);
 /** Leaves the current block */

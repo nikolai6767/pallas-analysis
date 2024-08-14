@@ -336,9 +336,10 @@ const Token& ThreadReader::pollCurToken() const {
   return getTokenInCallstack(currentState.current_frame);
 }
 
-std::optional<Token> ThreadReader::pollNextToken(int flags) const {
+Token ThreadReader::pollNextToken(int flags) const {
   if (currentState.current_frame < 0)
-    return std::nullopt;
+    // return an invalid token
+    return Token();
 
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
@@ -358,7 +359,7 @@ std::optional<Token> ThreadReader::pollNextToken(int flags) const {
   }
   while (isEndOfBlock(current_index, current_iterable_token)) {
     if (current_frame == 0)
-      return std::nullopt;
+      return Token();
     if (current_iterable_token.type == TypeSequence && flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE) {
       current_frame--;
       current_index = currentState.callstack_index[current_frame];
@@ -368,16 +369,16 @@ std::optional<Token> ThreadReader::pollNextToken(int flags) const {
       current_index = currentState.callstack_index[current_frame];
       current_iterable_token = currentState.callstack_iterable[current_frame];
     } else {
-      return std::nullopt;
+      return Token();
     }
   }
   return thread_trace->getToken(current_iterable_token, current_index + 1);
 
 }
 
-std::optional<Token> ThreadReader::pollPrevToken(int flags) const {
+Token ThreadReader::pollPrevToken(int flags) const {
   if (currentState.current_frame < 0)
-    return std::nullopt;
+    return Token();
 
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
@@ -389,7 +390,7 @@ std::optional<Token> ThreadReader::pollPrevToken(int flags) const {
 
   while (current_index == 0) {
     if (current_frame == 0)
-      return std::nullopt;
+      return Token();
     if (current_iterable_token.type == TypeSequence && flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE) {
       current_frame--;
       current_index = currentState.callstack_index[current_frame];
@@ -399,7 +400,7 @@ std::optional<Token> ThreadReader::pollPrevToken(int flags) const {
       current_index = currentState.callstack_index[current_frame];
       current_iterable_token = currentState.callstack_iterable[current_frame];
     } else {
-      return std::nullopt;
+      return Token();
     }
   }
   Token result = thread_trace->getToken(current_iterable_token, current_index - 1);
@@ -518,7 +519,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   }
 
   /* Move to the previous event in the Sequence */
-  auto previous_token = pollPrevToken(PALLAS_READ_FLAG_NO_UNROLL).value();
+  auto previous_token = pollPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
 
   while (previous_token.isIterable()) {
     size_t ntokens;
@@ -569,7 +570,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
     currentState.current_frame++;
     currentState.callstack_iterable[currentState.current_frame] = previous_token;
     currentState.callstack_index[currentState.current_frame] = ntokens;
-    previous_token = pollPrevToken(PALLAS_READ_FLAG_NO_UNROLL).value();
+    previous_token = pollPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
   }
 
   currentState.tokenCount[previous_token]--;
@@ -605,18 +606,18 @@ bool ThreadReader::moveToPrevTokenInBlock() {
   return moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
 }
 
-std::optional<Token> ThreadReader::getNextToken(int flags) {
+Token ThreadReader::getNextToken(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
   if (!moveToNextToken(flags))
-    return std::nullopt;
+    return Token();
   return pollCurToken();
 }
-std::optional<Token> ThreadReader::getPrevToken(int flags) {
+Token ThreadReader::getPrevToken(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
   if (!moveToPrevToken(flags))
-    return std::nullopt;
+    return Token();
   return pollCurToken();
 }
 
@@ -719,8 +720,8 @@ ThreadReader pallasCreateThreadReader(Archive* archive, ThreadId threadId, int o
 void pallasPrintCurToken(ThreadReader* thread_reader) {
   thread_reader->printCurToken();
 }
-const Token* pallasGetCurIterable(ThreadReader* thread_reader) {
-  return &thread_reader->getCurIterable();
+Token pallasGetCurIterable(ThreadReader* thread_reader) {
+  return thread_reader->getCurIterable();
 }
 void pallasPrintCurSequence(ThreadReader* thread_reader) {
   thread_reader->printCurSequence();
@@ -764,20 +765,14 @@ AttributeList* pallasGetEventAttributeList(ThreadReader* thread_reader, Token ev
 void pallasLoadCheckpoint(ThreadReader* thread_reader, Cursor* checkpoint) {
   thread_reader->loadCheckpoint(checkpoint);
 }
-const Token* pallasPollCurToken(ThreadReader* thread_reader) {
-  return &thread_reader->pollCurToken();
+Token pallasPollCurToken(ThreadReader* thread_reader) {
+  return thread_reader->pollCurToken();
 }
-const Token* pallasPollNextToken(ThreadReader* thread_reader, int flags) {
-  if (auto next_token = thread_reader->pollNextToken(flags); next_token.has_value()) {
-    return &next_token.value();
-  }
-  return nullptr;
+Token pallasPollNextToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->pollNextToken(flags);
 }
-const Token* pallasPollPrevToken(ThreadReader* thread_reader, int flags) {
-  if (auto next_token = thread_reader->pollPrevToken(flags); next_token.has_value()) {
-    return &next_token.value();
-  }
-  return nullptr;
+Token pallasPollPrevToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->pollPrevToken(flags);
 }
 bool pallasMoveToNextToken(ThreadReader* thread_reader, int flags) {
   return thread_reader->moveToNextToken(flags);
@@ -791,17 +786,11 @@ bool pallasMoveToPrevToken(ThreadReader* thread_reader, int flags) {
 bool pallasMoveToPrevTokenInBlock(ThreadReader* thread_reader) {
   return pallasMoveToPrevToken(thread_reader, PALLAS_READ_FLAG_NO_UNROLL);
 }
-Token* pallasGetNextToken(ThreadReader* thread_reader, int flags) {
-  if (auto next_token = thread_reader->getNextToken(flags); next_token.has_value()) {
-    return &next_token.value();
-  }
-  return nullptr;
+Token pallasGetNextToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->getNextToken(flags);
 }
-Token* pallasGetPrevToken(ThreadReader* thread_reader, int flags) {
-  if (auto prev_token = thread_reader->getPrevToken(flags); prev_token.has_value()) {
-    return &prev_token.value();
-  }
-  return nullptr;
+Token pallasGetPrevToken(ThreadReader* thread_reader, int flags) {
+  return thread_reader->getPrevToken(flags);
 }
 void pallasEnterBlock(ThreadReader* thread_reader) {
   thread_reader->enterBlock();

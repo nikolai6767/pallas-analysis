@@ -794,7 +794,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
 
   } // todo: else ? 
 
-  if (! thread_reader->getNextToken(PALLAS_READ_FLAG_UNROLL_ALL).has_value()) {
+  if (! thread_reader->getNextToken(PALLAS_READ_FLAG_UNROLL_ALL).isValid()) {
     pallas_assert(thread_reader->isEndOfTrace());
   }
 

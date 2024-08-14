@@ -108,6 +108,7 @@ typedef struct Token {
   bool operator<(const Token& other) const { return (type < other.type || (type == other.type && id < other.id)); }
   /** Returns true if the Token is a Sequence or a Loop. */
   [[nodiscard]] inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
+  [[nodiscard]] inline bool isValid() const { return type != TypeInvalid; }
 #endif
 } Token;
 /** Creates a Token for an Event. */
