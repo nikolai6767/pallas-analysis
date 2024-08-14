@@ -137,7 +137,6 @@ void printThreadStructure(pallas::ThreadReader& tr) {
   while (true) {
     std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame <= 1) ? 0 : tr.currentState.current_frame))
               << tr.thread_trace->getTokenString(current_token) << "";
-    std::cout << " " << tr.currentState.tokenCount[current_token];
     if (current_token.type == pallas::TypeEvent) {
       auto occ = tr.getEventOccurence(current_token, tr.currentState.tokenCount[current_token]);
       printEvent(tr.thread_trace, current_token, occ);

@@ -83,20 +83,22 @@ typedef struct TokenOccurence {
 
 typedef struct Cursor {
   /** The current referential timestamp. */
-  pallas_timestamp_t referential_timestamp;
+  pallas_timestamp_t referential_timestamp{};
 
   /** Stack containing the sequences/loops being read. */
   Token callstack_iterable[MAX_CALLSTACK_DEPTH];
 
   /** Stack containing the index in the sequence or the loop iteration. */
-  int callstack_index[MAX_CALLSTACK_DEPTH];
+  int callstack_index[MAX_CALLSTACK_DEPTH]{};
 
   /** Current frame = index of the event/loop being read in the callstacks.
    * You can view this as the "depth" of the callstack. */
-  int current_frame;
+  int current_frame{};
 
   /** Stack containing the checkpoint in the sequence or the loop iteration. */
-  std::shared_ptr<Cursor> previous_frame_cursor;
+  Cursor *previous_frame_cursor{};
+
+  int ref_counter{};
 
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
@@ -132,7 +134,7 @@ typedef struct ThreadReader {
    * Make a new ThreadReader from an Archive and a threadId.
    * @param archive Archive to read.
    * @param threadId Id of the thread to read.
-   * @param options Options as defined in ThreadReaderOptions.
+   * @param pallas_read_flag Default flag when reading
    */
   ThreadReader(Archive* archive, ThreadId threadId, int pallas_read_flag);
 
@@ -311,7 +313,10 @@ bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
 /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
 bool pallasEnterIfStartOfBlock(ThreadReader *thread_reader, int flags);
 
-Cursor pallasCreateCursor(ThreadReader *thread_reader);
+Cursor pallasCreateCursorFromThreadReader(ThreadReader *thread_reader);
+Cursor pallasCreateCursorFromCursor(Cursor *other);
+Cursor pallasDeepCopyCursor(Cursor *other);
+void destroyCursor(const Cursor *cursor);
 
 #ifdef __cplusplus
 }; /* namespace pallas */

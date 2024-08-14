@@ -17,7 +17,9 @@ Cursor Cursor::deepCopy() {
   Cursor ret = Cursor(this);
 
   if (ret.previous_frame_cursor != nullptr) {
-    ret.previous_frame_cursor = std::make_shared<Cursor>(this->previous_frame_cursor.get()->deepCopy());
+    ret.previous_frame_cursor = new Cursor();
+    *ret.previous_frame_cursor = this->previous_frame_cursor->deepCopy();
+    ret.previous_frame_cursor->ref_counter = 1;
   }
 
   return ret;
@@ -35,6 +37,10 @@ Cursor::Cursor(const ThreadReader* reader) {
   tokenCount = reader->currentState.tokenCount;
 
   previous_frame_cursor = reader->currentState.previous_frame_cursor;
+  if (previous_frame_cursor != nullptr)
+    previous_frame_cursor->ref_counter++;
+
+  ref_counter = 0;
 }
 Cursor::Cursor(const Cursor* other) {
   referential_timestamp = other->referential_timestamp;
@@ -48,11 +54,21 @@ Cursor::Cursor(const Cursor* other) {
   tokenCount = other->tokenCount;
 
   previous_frame_cursor = other->previous_frame_cursor;
+  if (previous_frame_cursor != nullptr)
+    previous_frame_cursor->ref_counter++;
+
+  ref_counter = 0;
 }
 
 Cursor::Cursor() = default;
 
-Cursor::~Cursor() = default;
+Cursor::~Cursor() {
+  if (this->previous_frame_cursor != nullptr) {
+    this->previous_frame_cursor->ref_counter--;
+    if (this->previous_frame_cursor->ref_counter == 0)
+      delete this->previous_frame_cursor;
+  }
+}
 
 ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) {
   // Setup the basic
@@ -76,7 +92,7 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) 
   std::memset(currentState.callstack_iterable, 0, MAX_CALLSTACK_DEPTH * sizeof(Token));
   currentState.callstack_iterable[0].type = TypeSequence;
   currentState.callstack_iterable[0].id = 0;
-  currentState.previous_frame_cursor = std::shared_ptr<Cursor>();
+  currentState.previous_frame_cursor = nullptr;
 
   // Enter sequence 0
   enterBlock();
@@ -269,7 +285,8 @@ AttributeList* ThreadReader::getEventAttributeList(Token event_id, size_t occure
 }
 Cursor ThreadReader::createCheckpoint() const {
   Cursor ret = Cursor(this);
-  ret.previous_frame_cursor = std::make_shared<Cursor>(this->currentState.previous_frame_cursor->deepCopy());
+  ret.previous_frame_cursor = new Cursor();
+  *ret.previous_frame_cursor = currentState.previous_frame_cursor->deepCopy();
   return ret;
 }
 
@@ -295,7 +312,7 @@ std::optional<Token> ThreadReader::pollNextToken(int flags) const {
   auto current_iterable_token = currentState.callstack_iterable[current_frame];
   pallas_assert(current_iterable_token.isIterable());
 
-  if (Token current_token = pollCurToken(); current_token.isIterable()) {
+  if (const Token current_token = pollCurToken(); current_token.isIterable()) {
     if (current_token.type == TypeSequence && flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE) {
       return thread_trace->getSequence(current_token)->tokens.at(0);
     }
@@ -479,7 +496,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
     }
     // Save cursor before entering
     moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
-    currentState.previous_frame_cursor = std::make_shared<Cursor>(this);
+    currentState.previous_frame_cursor = new Cursor(this);
     if (!moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL)) { // If we didn't come back, we come back manually
       Token current_token = pollCurToken();
       pallas_duration_t token_duration = 0;
@@ -576,7 +593,7 @@ void ThreadReader::enterBlock() {
     printf("\n");
   }
 
-  currentState.previous_frame_cursor = std::make_shared<Cursor>(this);
+  currentState.previous_frame_cursor = new Cursor(this);
   currentState.current_frame++;
   currentState.callstack_index[currentState.current_frame] = 0;
   currentState.callstack_iterable[currentState.current_frame] = new_block;
@@ -591,7 +608,7 @@ void ThreadReader::leaveBlock() {
 
   pallas_assert(currentState.current_frame > 0);
 
-  currentState = Cursor(currentState.previous_frame_cursor.get());
+  currentState = Cursor(currentState.previous_frame_cursor);
 
   if (debugLevel >= DebugLevel::Debug && currentState.current_frame >= 0) {
     auto current_sequence = getCurIterable();
@@ -762,8 +779,17 @@ bool pallasExitIfEndOfBlock(ThreadReader* thread_reader, int flags) {
 bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
   return thread_reader->enterIfStartOfBlock(flags);
 }
-Cursor pallasCreateCursor(ThreadReader* thread_reader) {
+Cursor pallasCreateCursorFromThreadReader(ThreadReader* thread_reader) {
   return Cursor(thread_reader);
+}
+Cursor pallasCreateCursorFromCursor(Cursor* other) {
+  return Cursor(other);
+}
+Cursor pallasDeepCopyCursor(Cursor* other) {
+  return other->deepCopy();
+}
+void destroyCursor(const Cursor* cursor) {
+  delete cursor;
 }
 
 TokenOccurence::~TokenOccurence() {
