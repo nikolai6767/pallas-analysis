@@ -170,8 +170,8 @@ pallas::ThreadReader* _get_next_global_event(OTF2_Reader* reader, OTF2_GlobalEvt
 
       if(tr->isEndOfTrace())
 	continue;
-      if(tr->referential_timestamp < min_timestamp) {
-	min_timestamp = tr->referential_timestamp;
+      if(tr->currentState.referential_timestamp < min_timestamp) {
+	min_timestamp = tr->currentState.referential_timestamp;
 	retval = tr;
       }
     }
@@ -185,7 +185,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
 
   auto token = thread_reader->pollCurToken();
   if (token.type == pallas::TypeEvent) {
-    const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->tokenCount[token]);
+    const pallas::EventOccurence e = thread_reader->getEventOccurence(token, thread_reader->currentState.tokenCount[token]);
 
     pallas::Record event_type = e.event->record;
     switch(event_type) {
@@ -794,7 +794,7 @@ OTF2_ErrorCode OTF2_Reader_ReadGlobalEvent(OTF2_Reader* reader, OTF2_GlobalEvtRe
 
   } // todo: else ? 
 
-  if (! thread_reader->getNextToken(PALLAS_READ_UNROLL_ALL).has_value()) {
+  if (! thread_reader->getNextToken(PALLAS_READ_FLAG_UNROLL_ALL).has_value()) {
     pallas_assert(thread_reader->isEndOfTrace());
   }
 
