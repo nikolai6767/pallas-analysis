@@ -10,7 +10,9 @@
  *  @return A newly allocated struct of type @eref{OTF2_GlobalDefReaderCallbacks}.
  */
 OTF2_GlobalDefReaderCallbacks* OTF2_GlobalDefReaderCallbacks_New(void) {
-  NOT_IMPLEMENTED;
+  OTF2_GlobalDefReaderCallbacks* ret = malloc(sizeof(OTF2_GlobalDefReaderCallbacks));
+  OTF2_GlobalDefReaderCallbacks_Clear(ret);
+  return ret;
 }
 
 /** @brief Deallocates a struct for the global definition callbacks.
@@ -19,7 +21,7 @@ OTF2_GlobalDefReaderCallbacks* OTF2_GlobalDefReaderCallbacks_New(void) {
  *                                  with @eref{OTF2_GlobalDefReaderCallbacks_New}.
  */
 void OTF2_GlobalDefReaderCallbacks_Delete(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks) {
-  NOT_IMPLEMENTED;
+  free(globalDefReaderCallbacks);
 }
 
 /** @brief Clears a struct for the global definition callbacks.
@@ -28,7 +30,7 @@ void OTF2_GlobalDefReaderCallbacks_Delete(OTF2_GlobalDefReaderCallbacks* globalD
  *                                  with @eref{OTF2_GlobalDefReaderCallbacks_New}.
  */
 void OTF2_GlobalDefReaderCallbacks_Clear(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks) {
-  NOT_IMPLEMENTED;
+  memset(globalDefReaderCallbacks, 0, sizeof(OTF2_GlobalDefReaderCallbacks));
 }
 
 /** @brief Registers the callback for an unknown definition.
@@ -44,7 +46,8 @@ void OTF2_GlobalDefReaderCallbacks_Clear(OTF2_GlobalDefReaderCallbacks* globalDe
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetUnknownCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                                 OTF2_GlobalDefReaderCallback_Unknown unknownCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Unknown_callback = unknownCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{ClockProperties} definition.
@@ -61,30 +64,10 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetUnknownCallback(OTF2_GlobalDefRe
  *             for an invalid @p defReaderCallbacks argument}
  *  @retend
  */
-OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetClockPropertiesCallback(
-  OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
-  OTF2_GlobalDefReaderCallback_ClockProperties clockPropertiesCallback) {
-  NOT_IMPLEMENTED;
-}
-
-/** @brief Registers the callback for the @eref{Paradigm} definition.
- *
- *  @param globalDefReaderCallbacks Struct for all callbacks.
- *  @param paradigmCallback         Function which should be called for all
- *                                  @eref{Paradigm} definitions.
- *
- *  @since Version 1.5
- *
- *  @retbegin
- *    @retcode{OTF2_SUCCESS, if successful}
- *    @retcode{OTF2_ERROR_INVALID_ARGUMENT,
- *             for an invalid @p defReaderCallbacks argument}
- *  @retend
- */
-OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParadigmCallback(
-  OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
-  OTF2_GlobalDefReaderCallback_Paradigm paradigmCallback) {
-  NOT_IMPLEMENTED;
+OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetClockPropertiesCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
+									OTF2_GlobalDefReaderCallback_ClockProperties clockPropertiesCallback) {
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_ClockProperties_callback = clockPropertiesCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{ParadigmProperty} definition.
@@ -104,7 +87,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParadigmCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParadigmPropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_ParadigmProperty paradigmPropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_ParadigmProperty_callback = paradigmPropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoParadigm} definition.
@@ -124,7 +108,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParadigmPropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoParadigmCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoParadigm ioParadigmCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoParadigm_callback = ioParadigmCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{String} definition.
@@ -143,7 +128,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoParadigmCallback(
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetStringCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                                OTF2_GlobalDefReaderCallback_String stringCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_String_callback = stringCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Attribute} definition.
@@ -163,7 +149,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetStringCallback(OTF2_GlobalDefRea
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetAttributeCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_Attribute attributeCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Attribute_callback = attributeCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{SystemTreeNode} definition.
@@ -183,7 +170,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetAttributeCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodeCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_SystemTreeNode systemTreeNodeCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_SystemTreeNode_callback = systemTreeNodeCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{LocationGroup} definition.
@@ -203,7 +191,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodeCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationGroupCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_LocationGroup locationGroupCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_LocationGroup_callback = locationGroupCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Location} definition.
@@ -223,7 +212,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationGroupCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_Location locationCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Location_callback = locationCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Region} definition.
@@ -242,7 +232,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationCallback(
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetRegionCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                                OTF2_GlobalDefReaderCallback_Region regionCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Region_callback = regionCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Callsite} definition.
@@ -264,7 +255,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetRegionCallback(OTF2_GlobalDefRea
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallsiteCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_Callsite callsiteCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Callsite_callback = callsiteCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Callpath} definition.
@@ -284,7 +276,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallsiteCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallpathCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_Callpath callpathCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Callpath_callback = callpathCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Group} definition.
@@ -303,7 +296,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallpathCallback(
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetGroupCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                               OTF2_GlobalDefReaderCallback_Group groupCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Group_callback = groupCallback;
+						 return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{MetricMember} definition.
@@ -323,7 +317,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetGroupCallback(OTF2_GlobalDefRead
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricMemberCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_MetricMember metricMemberCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_MetricMember_callback = metricMemberCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{MetricClass} definition.
@@ -343,7 +338,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricMemberCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricClassCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_MetricClass metricClassCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_MetricClass_callback = metricClassCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{MetricInstance} definition.
@@ -363,7 +359,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricClassCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricInstanceCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_MetricInstance metricInstanceCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_MetricInstance_callback = metricInstanceCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Comm} definition.
@@ -382,7 +379,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricInstanceCallback(
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCommCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                              OTF2_GlobalDefReaderCallback_Comm commCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Comm_callback = commCallback;
+						return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{Parameter} definition.
@@ -402,7 +400,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCommCallback(OTF2_GlobalDefReade
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParameterCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_Parameter parameterCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_Parameter_callback = parameterCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{RmaWin} definition.
@@ -421,7 +420,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetParameterCallback(
  */
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetRmaWinCallback(OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
                                                                OTF2_GlobalDefReaderCallback_RmaWin rmaWinCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_RmaWin_callback = rmaWinCallback;
+						  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{MetricClassRecorder} definition.
@@ -442,7 +442,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetRmaWinCallback(OTF2_GlobalDefRea
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricClassRecorderCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_MetricClassRecorder metricClassRecorderCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_MetricClassRecorder_callback = metricClassRecorderCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{SystemTreeNodeProperty} definition.
@@ -463,7 +464,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetMetricClassRecorderCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodePropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_SystemTreeNodeProperty systemTreeNodePropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_SystemTreeNodeProperty_callback = systemTreeNodePropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{SystemTreeNodeDomain} definition.
@@ -484,7 +486,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodePropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodeDomainCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_SystemTreeNodeDomain systemTreeNodeDomainCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_SystemTreeNodeDomain_callback = systemTreeNodeDomainCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{LocationGroupProperty} definition.
@@ -505,7 +508,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSystemTreeNodeDomainCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationGroupPropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_LocationGroupProperty locationGroupPropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_LocationGroupProperty_callback = locationGroupPropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{LocationProperty} definition.
@@ -525,7 +529,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationGroupPropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationPropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_LocationProperty locationPropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_LocationProperty_callback = locationPropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CartDimension} definition.
@@ -545,7 +550,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetLocationPropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartDimensionCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CartDimension cartDimensionCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CartDimension_callback = cartDimensionCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CartTopology} definition.
@@ -565,7 +571,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartDimensionCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartTopologyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CartTopology cartTopologyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CartTopology_callback = cartTopologyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CartCoordinate} definition.
@@ -585,7 +592,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartTopologyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartCoordinateCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CartCoordinate cartCoordinateCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CartCoordinate_callback = cartCoordinateCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{SourceCodeLocation} definition.
@@ -605,7 +613,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCartCoordinateCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSourceCodeLocationCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_SourceCodeLocation sourceCodeLocationCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_SourceCodeLocation_callback = sourceCodeLocationCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CallingContext} definition.
@@ -625,7 +634,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetSourceCodeLocationCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallingContextCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CallingContext callingContextCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CallingContext_callback = callingContextCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CallingContextProperty} definition.
@@ -646,7 +656,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallingContextCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallingContextPropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CallingContextProperty callingContextPropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CallingContextProperty_callback = callingContextPropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{InterruptGenerator} definition.
@@ -666,7 +677,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallingContextPropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetInterruptGeneratorCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_InterruptGenerator interruptGeneratorCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_InterruptGenerator_callback = interruptGeneratorCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoFileProperty} definition.
@@ -686,7 +698,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetInterruptGeneratorCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoFilePropertyCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoFileProperty ioFilePropertyCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoFileProperty_callback = ioFilePropertyCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoRegularFile} definition.
@@ -706,7 +719,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoFilePropertyCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoRegularFileCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoRegularFile ioRegularFileCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoRegularFile_callback = ioRegularFileCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoDirectory} definition.
@@ -726,7 +740,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoRegularFileCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoDirectoryCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoDirectory ioDirectoryCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoDirectory_callback = ioDirectoryCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoHandle} definition.
@@ -746,7 +761,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoDirectoryCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoHandleCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoHandle ioHandleCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoHandle_callback = ioHandleCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{IoPreCreatedHandleState} definition.
@@ -767,7 +783,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoHandleCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoPreCreatedHandleStateCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_IoPreCreatedHandleState ioPreCreatedHandleStateCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_IoPreCreatedHandleState_callback = ioPreCreatedHandleStateCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{CallpathParameter} definition.
@@ -787,7 +804,8 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetIoPreCreatedHandleStateCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallpathParameterCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_CallpathParameter callpathParameterCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_CallpathParameter_callback = callpathParameterCallback;
+  return OTF2_SUCCESS;
 }
 
 /** @brief Registers the callback for the @eref{InterComm} definition.
@@ -807,5 +825,6 @@ OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetCallpathParameterCallback(
 OTF2_ErrorCode OTF2_GlobalDefReaderCallbacks_SetInterCommCallback(
   OTF2_GlobalDefReaderCallbacks* globalDefReaderCallbacks,
   OTF2_GlobalDefReaderCallback_InterComm interCommCallback) {
-  NOT_IMPLEMENTED;
+  globalDefReaderCallbacks->OTF2_GlobalDefReaderCallback_InterComm_callback = interCommCallback;
+  return OTF2_SUCCESS;
 }

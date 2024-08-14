@@ -7,13 +7,12 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include "pallas.h"
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
 
 #ifdef __cplusplus
-#include <optional>
-
 namespace pallas {
 #endif
 
@@ -78,27 +77,29 @@ typedef struct TokenOccurence {
   /** Occurence corresponding to the Token. */
   Occurence* occurence;
 
+#ifdef __cplusplus
   ~TokenOccurence();
+#endif
 } TokenOccurence;
 
 typedef struct Cursor {
   /** The current referential timestamp. */
-  pallas_timestamp_t referential_timestamp{};
+  pallas_timestamp_t referential_timestamp;
 
   /** Stack containing the sequences/loops being read. */
   Token callstack_iterable[MAX_CALLSTACK_DEPTH];
 
   /** Stack containing the index in the sequence or the loop iteration. */
-  int callstack_index[MAX_CALLSTACK_DEPTH]{};
+  int callstack_index[MAX_CALLSTACK_DEPTH];
 
   /** Current frame = index of the event/loop being read in the callstacks.
    * You can view this as the "depth" of the callstack. */
-  int current_frame{};
+  int current_frame;
 
   /** Stack containing the checkpoint in the sequence or the loop iteration. */
-  Cursor *previous_frame_cursor{};
+  struct Cursor* previous_frame_cursor;
 
-  int ref_counter{};
+  int ref_counter;
 
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
@@ -272,7 +273,7 @@ EventOccurence pallasGetEventOccurence(ThreadReader *thread_reader, Token event_
 SequenceOccurence pallasGetSequenceOccurence(ThreadReader *thread_reader,
                                              Token sequence_id,
                                              size_t occurence_id,
-                                             bool create_checkpoint = false);
+                                             bool create_checkpoint);
 /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
  * Timestamp is set to Reader's referential timestamp.*/
 LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id, size_t occurence_id);
@@ -321,6 +322,7 @@ void destroyCursor(const Cursor *cursor);
 #ifdef __cplusplus
 }; /* namespace pallas */
 #endif
+
 /* -*-
    mode: c;
    c-file-style: "k&r";

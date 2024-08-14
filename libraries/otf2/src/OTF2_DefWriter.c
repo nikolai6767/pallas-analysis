@@ -71,14 +71,12 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocation(OTF2_DefWriter* writer,
                                             OTF2_LocationGroupRef locationGroup) {
   ThreadId thread_id = _otf_register_location(self);
   LocationGroupId parent_id = _otf_get_location_group_id(locationGroup);
-
   static int first_call = 1;
   if (first_call) {
     if (writer->archive->id == 0)
       writer->archive->id = parent_id;
   }
   pallas_write_define_location(writer->archive->global_archive, thread_id, name, parent_id);
-
   return OTF2_SUCCESS;
 }
 
