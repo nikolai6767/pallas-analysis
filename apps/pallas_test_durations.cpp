@@ -8,11 +8,11 @@
 #include <string>
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
-#include "pallas/pallas_log.h"
 
-static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) {
+static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) {
   auto token = reader->pollCurToken();
   switch (token.type) {
   case pallas::TypeEvent: {
@@ -32,8 +32,11 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
 
     reader->leaveBlock();
 
-    reader->printCurToken();
-    std::cout << " Expected : " << sequence_duration << ", got : " << sum_of_durations_in_sequence << std::endl;
+    if (sequence_duration != sum_of_durations_in_sequence) {
+      std::cout << "S" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->tokenCount[token]
+                << "Expected : " << sequence_duration
+                << ", got : " << sum_of_durations_in_sequence << std::endl;
+    }
 
     return sequence_duration;
   }
@@ -50,10 +53,11 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader *reader) 
     sum_of_durations_in_loop += testCurrentTokenDuration(reader);
 
     reader->leaveBlock();
-
-    reader->printCurToken();
-    std::cout << " Expected : " << loop_duration << ", got : " << sum_of_durations_in_loop << std::endl;
-
+    if (loop_duration != sum_of_durations_in_loop) {
+      std::cout << "L" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->tokenCount[token]
+                << "Expected : " << loop_duration
+                << ", got : " << sum_of_durations_in_loop << std::endl;
+    }
     return loop_duration;
   }
 
@@ -111,12 +115,11 @@ int main(const int argc, char* argv[]) {
   pallasReadGlobalArchive(&trace, trace_name);
 
   for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j ++) {
-
+    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
       printf("\n");
       auto thread = trace.archive_list[i]->getThreadAt(j);
       if (thread != nullptr)
-      testThreadDuration(*trace.archive_list[i], *thread);
+        testThreadDuration(*trace.archive_list[i], *thread);
     }
   }
 
