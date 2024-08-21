@@ -19,6 +19,7 @@
 #include <map>
 #include <unordered_map>
 #else
+#include <stdbool.h>
 #include <string.h>
 #endif
 
@@ -281,11 +282,12 @@ typedef struct Sequence {
   TokenId id CXX({PALLAS_TOKEN_ID_INVALID});         /**< ID of that sequence. */
   LinkedVector* durations CXX({new LinkedVector()}); /**< Vector of durations for these type of sequences. */
   uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
+  bool contains_loops CXX({false});
   DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
   CXX(private:)
   /**
    * A TokenCountMap counting each token in this Sequence (recursively).
-   * It might not be initialized, which is why ::getTokenCount exists.*/
+   * It might not be initialized, which is why ::getTokenCountWriting exists.*/
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
  public:
@@ -296,11 +298,18 @@ typedef struct Sequence {
    * (ie begins with Enter and ends with End) or a detected sequence.
    */
   bool isFunctionSequence(const struct Thread* thread) const;
-  /** Getter for #tokenCount.
+  /** Getter for #tokenCount during the writting process.
    * If need be, counts the number of Token in that Sequence to initialize it.
-   * alreadyReadTokens is used when you read the trace, it's supposed to be threadReader.tokenCount.
+   * When counting these tokens, it does so backwards. offsetMap allows you to start the count with an offset.
    * @returns Reference to #tokenCount.*/
-  const TokenCountMap& getTokenCount(const struct Thread* thread, const TokenCountMap* alreadyReadTokens = nullptr);
+  TokenCountMap getTokenCountWriting(const Thread* thread, const TokenCountMap* offset = nullptr);
+  /** Getter for #tokenCount during the reading process.
+   * If need be, counts the number of Token in that Sequence to initialize it.
+   * When counting these tokens, it does so forward. offsetMap allows you to start the count with an offset.
+   * @returns Reference to #tokenCount.*/
+  TokenCountMap getTokenCountReading(const pallas::Thread* thread,
+                              const TokenCountMap& threadReaderTokenCountMap,
+                              bool isReversedOrder = false);
   ~Sequence() { delete durations; };
 #endif
 } Sequence;

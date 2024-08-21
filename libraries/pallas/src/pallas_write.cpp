@@ -71,6 +71,21 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   s->id = sid.id;
   sequencesWithSameHash.push_back(index);
 
+  // Detect if there's a Loop anywhere in the sequence
+  for (const auto& token: s->tokens) {
+    if (token.type == TypeLoop) {
+      s->contains_loops = true;
+      break;
+    }
+    if (token.type == TypeSequence) {
+      const auto temp = getSequence(token);
+      if (temp->contains_loops) {
+        s->contains_loops = true;
+        break;
+      }
+    }
+  }
+
   return sid;
 }
 
@@ -466,9 +481,7 @@ void ThreadWriter::recordExitFunction() {
   const Token seq_id = thread_trace.getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
   auto* seq = thread_trace.sequences[seq_id.id];
 
-  const pallas_timestamp_t sequence_duration = thread_trace.getLastSequenceDuration(seq, 0);
-//  last_timestamp - sequence_start_timestamp[cur_depth];
-  // I feel like it's a bad idea to simply... ignore the duration of the "Close" event
+  const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
   addDurationToComplete(seq->durations->add(sequence_duration));
 
   pallas_log(DebugLevel::Debug, "Exiting a function, closing sequence %d\n", seq_id.id);
@@ -478,7 +491,7 @@ void ThreadWriter::recordExitFunction() {
   auto& upperTokenSeq = getCurrentTokenSequence();
 
   storeToken(upperTokenSeq, seq_id);
-  curTokenSeq.resize(0);
+  curTokenSeq.clear();
   // We need to reset the token vector
   // Calling vector::clear() might be a better way to do that,
   // but depending on the implementation it might force a bunch of realloc, which isn't great.
@@ -665,7 +678,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
     for (const auto eid : eventWithSameHash) {
       if (memcmp(e, &events[eid].event, e->event_size) == 0) {
         pallas_log(DebugLevel::Debug, "getEventId: \t found with id=%u\n", eid);
-        return eid;
+          return eid;
       }
     }
   }
@@ -685,16 +698,16 @@ TokenId Thread::getEventId(pallas::Event* e) {
 }
 pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t offset) const {
   pallas_duration_t sum = 0;
-  auto& tokenCount = sequence->getTokenCount(this);
-  for (const auto& [token, count] : tokenCount) {
-    if (token.type == TokenType::TypeEvent) {
-      auto* event = getEventSummary(token);
-      DOFOR(i, count) {
-        sum += event->durations->at(event->durations->size - i - offset * count - 1);
+  auto tokenCount = sequence->getTokenCountWriting(this);
+  if (offset == 0) {
+    for (const auto& [token, count] : tokenCount) {
+      if (token.type == TokenType::TypeEvent) {
+        auto* event = getEventSummary(token);
+        DOFOR(i, count) {
+          sum += event->durations->at(event->durations->size - i - offset * count - 1);
+        }
       }
     }
-  }
-  if (offset == 0) {
     // We need to remove the duration of the last token, because it hasn't been calculated yet
     auto token = sequence->tokens.back();
     while (token.type != TokenType::TypeEvent) {
@@ -711,6 +724,16 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
     }
     auto* event = getEventSummary(token);
     sum -= event->durations->back();
+  } else {
+    auto secondTokenCount = sequence->getTokenCountWriting(this, &tokenCount);
+    for (const auto& [token, count] : secondTokenCount) {
+      if (token.type == TokenType::TypeEvent) {
+        auto* event = getEventSummary(token);
+        DOFOR(i, count) {
+          sum += event->durations->at(event->durations->size - i - tokenCount[token] - 1);
+        }
+      }
+    }
   }
   return sum;
 }

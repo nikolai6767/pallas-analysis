@@ -3,8 +3,9 @@
  * See LICENSE in top-level directory.
  */
 
-
 #include <cinttypes>
+#include <ranges>
+#include <set>
 #include <sstream>
 
 #include "pallas/pallas.h"
@@ -439,32 +440,122 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
   return false;
 };
 
-const TokenCountMap& Sequence::getTokenCount(const Thread* thread, const TokenCountMap* alreadyReadTokens) {
+void _sequenceGetTokenCountReading(Sequence* seq,
+                                   const Thread* thread,
+                                   TokenCountMap& readerTokenCountMap,
+                                   TokenCountMap& sequenceTokenCountMap,
+                                   bool isReversedOrder);
+
+
+TokenCountMap tempSeen;
+void _loopGetTokenCountReading(const Loop* loop,
+                               const Thread* thread,
+                               TokenCountMap& readerTokenCountMap,
+                               TokenCountMap& sequenceTokenCountMap,
+                               bool isReversedOrder) {
+  size_t cur_index = readerTokenCountMap.get_value(loop->self_id);
+  size_t loop_nb_iterations = loop->nb_iterations[cur_index];
+  auto* loop_sequence = thread->getSequence(loop->repeated_token);
+  if (loop_sequence->contains_loops) {
+    for (size_t temp_loop_index = 0; temp_loop_index < loop_nb_iterations; temp_loop_index++) {
+      _sequenceGetTokenCountReading(loop_sequence, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
+      readerTokenCountMap[loop->repeated_token]++;
+      sequenceTokenCountMap[loop->repeated_token]++;
+    }
+  } else {
+    // This creates bug idk why ?????
+    TokenCountMap temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
+    temp *= loop_nb_iterations;
+    readerTokenCountMap += temp;
+    sequenceTokenCountMap += temp;
+    readerTokenCountMap[loop->repeated_token]+= loop_nb_iterations;
+    sequenceTokenCountMap[loop->repeated_token]+= loop_nb_iterations;
+  }
+}
+
+void _sequenceGetTokenCountReading(Sequence* seq,
+                                            const Thread* thread,
+                                            TokenCountMap& readerTokenCountMap,
+                                            TokenCountMap& sequenceTokenCountMap,
+                                            bool isReversedOrder) {
+  for (auto& token : seq->tokens) {
+    if (token.type == TypeSequence) {
+      auto* s = thread->getSequence(token);
+      _sequenceGetTokenCountReading(s, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
+      seq->contains_loops = seq->contains_loops || s->contains_loops;
+    }
+    if (token.type == TypeLoop) {
+      seq->contains_loops = true;
+      auto* loop = thread->getLoop(token);
+      _loopGetTokenCountReading(loop, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
+    }
+    readerTokenCountMap[token]++;
+    sequenceTokenCountMap[token]++;
+  }
+}
+
+TokenCountMap Sequence::getTokenCountReading(const Thread* thread,
+                                      const TokenCountMap& threadReaderTokenCountMap,
+                                      bool isReversedOrder) {
   if (tokenCount.empty()) {
-    // We need to count the tokens
-    for (auto t = tokens.rbegin(); t != tokens.rend(); ++t) {
-      tokenCount[*t]++;
-      switch (t->type) {
-      case TypeSequence: {
-        auto* s = thread->getSequence(*t);
-        tokenCount += s->getTokenCount(thread);
-        break;
+    auto tokenCountMapCopy = TokenCountMap(threadReaderTokenCountMap);
+    auto tempTokenCount = TokenCountMap();
+    _sequenceGetTokenCountReading(this, thread, tokenCountMapCopy, tempTokenCount, isReversedOrder);
+    if (contains_loops) {
+      return tempTokenCount;
+    } else {
+      tokenCount = tempTokenCount;
+    }
+  }
+  return tokenCount;
+}
+
+inline static void updateTokenCountMapWithLoopContentWriting(const Loop* loop, const Thread* thread, TokenCountMap& offset) {
+  size_t cur_index = loop->nb_iterations.size() - offset[loop->self_id] - 1;
+  size_t loop_nb_iterations = loop->nb_iterations[cur_index];
+  auto* loop_sequence = thread->getSequence(loop->repeated_token);
+  if (loop_sequence->contains_loops) {
+    for (size_t temp_loop_index = 0; temp_loop_index < loop_nb_iterations; temp_loop_index++) {
+      auto temp = loop_sequence->getTokenCountWriting(thread, &offset);
+      offset += temp;
+      offset[loop->repeated_token]++;
+    }
+  } else {
+    auto temp = loop_sequence->getTokenCountWriting(thread);
+    offset += temp * loop_nb_iterations;
+    offset[loop->repeated_token] += loop_nb_iterations;
+  }
+}
+
+TokenCountMap Sequence::getTokenCountWriting(const Thread* thread, const TokenCountMap* offset) {
+  bool canStoreTokenCount = true;
+  if (tokenCount.empty()) {
+    TokenCountMap updatingOffset;
+    if (offset)
+      updatingOffset = TokenCountMap(*offset);
+    else
+      updatingOffset = TokenCountMap();
+    for (auto& token : std::ranges::reverse_view(tokens)) {
+      updatingOffset[token]++;
+      if (token.type == TypeSequence) {
+        auto* s = thread->getSequence(token);
+        auto tempTC = s->getTokenCountWriting(thread, offset);
+        updatingOffset += tempTC;
+        canStoreTokenCount = canStoreTokenCount && s->contains_loops;
       }
-      case TypeLoop: {
-        auto* l = thread->getLoop(*t);
-        auto loopTokenCount = thread->getSequence(l->repeated_token)->getTokenCount(thread);
-        // Vrai à l'écriture, pas à la lecture
-        if (alreadyReadTokens) {
-          tokenCount += loopTokenCount * l->nb_iterations[alreadyReadTokens->get_value(*t) + tokenCount[*t]];
-        } else {
-          tokenCount += loopTokenCount * l->nb_iterations[l->nb_iterations.size() - tokenCount[*t]];
-        }
-        break;
-      }
-      default:
-        break;
+      if (token.type == TypeLoop) {
+        canStoreTokenCount = false;
+        auto* loop = thread->getLoop(token);
+        updateTokenCountMapWithLoopContentWriting(loop, thread, updatingOffset);
       }
     }
+
+    if (offset)
+      updatingOffset -= *offset;
+    if (!canStoreTokenCount) {
+      return updatingOffset;
+    }
+    tokenCount = updatingOffset;
   }
   return tokenCount;
 }

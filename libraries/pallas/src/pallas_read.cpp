@@ -212,7 +212,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
   if (save_checkpoint)
     sequenceOccurence.checkpoint = new Checkpoint(this);
 
-  //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, &this->tokenCount);
+  //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, true, &this->tokenCount);
   return sequenceOccurence;
 };
 
@@ -321,78 +321,82 @@ void ThreadReader::moveToNextToken() {
   if (current_iterable_token.type == TypeSequence) {
     if (isEndOfSequence(current_index, current_iterable_token)) {
       pallas_error("End of sequence");
-    } else {
-      /* Move to the next event in the Sequence */
-      auto current_token = this->pollCurToken();
-      pallas_duration_t token_duration = 0;
-      switch (current_token.type) {
-      case TypeEvent: {
-        token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
-        break;
-      }
-
-      case TypeLoop: {
-        token_duration = getLoopDuration(current_token);
-        auto loop = thread_trace->getLoop(current_token);
-        auto loopCount = loop->nb_iterations[tokenCount[current_token]];
-        tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCount(thread_trace) * loopCount;
-        tokenCount[loop->repeated_token] += loopCount;
-        break;
-      }
-
-      case TypeSequence: {
-        auto seq = thread_trace->getSequence(current_token);
-        token_duration = seq->durations->at(tokenCount[current_token]);
-        tokenCount += seq->getTokenCount(thread_trace);
-        break;
-      }
-
-      case TypeInvalid:
-        pallas_error("Token is Invalid");
-      }
-#ifdef DEBUG
-      if (referential_timestamp + token_duration < referential_timestamp) {
-        pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id,
-                     token_duration);
-      }
-#endif
-      referential_timestamp+=token_duration;
-      tokenCount[current_token]++;
-      callstack_index[current_frame]++;
     }
-  } else {
+    /* Move to the next event in the Sequence */
+    auto current_token = this->pollCurToken();
+    pallas_duration_t token_duration = 0;
+    switch (current_token.type) {
+    case TypeEvent: {
+      token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      break;
+    }
+
+    case TypeLoop: {
+      token_duration = getLoopDuration(current_token);
+      auto loop = thread_trace->getLoop(current_token);
+      auto loopCount = loop->nb_iterations[tokenCount[current_token]];
+      for (size_t i = 0; i < loopCount; i ++) {
+        tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCountReading(thread_trace, tokenCount);
+        tokenCount[loop->repeated_token] += 1;
+      }
+      break;
+    }
+
+    case TypeSequence: {
+      auto seq = thread_trace->getSequence(current_token);
+      token_duration = seq->durations->at(tokenCount[current_token]);
+      tokenCount += seq->getTokenCountReading(thread_trace, tokenCount);
+      break;
+    }
+
+    case TypeInvalid:
+      pallas_error("Token is Invalid");
+    }
+#ifdef DEBUG
+    if (referential_timestamp + token_duration < referential_timestamp) {
+      pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id,
+                   token_duration);
+    }
+#endif
+    referential_timestamp += token_duration;
+    tokenCount[current_token]++;
+    callstack_index[current_frame]++;
+
+  }
+  else {
     if (isEndOfLoop(current_index, current_iterable_token)) {
       pallas_error("End of loop");
-    } else {
-      /* just move to the next iteration in the loop */
-      auto current_token = this->pollCurToken();
-      pallas_duration_t token_duration = 0;
-      switch (current_token.type) {
-      case TypeEvent:
-        token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
-        break;
-
-      case TypeLoop:
-        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[tokenCount[current_token]]; i++)
-          tokenCount += thread_trace->getSequence(
-            thread_trace->getLoop(current_token)->repeated_token
-            )->getTokenCount(thread_trace);
-        token_duration = getLoopDuration(current_token);
-        break;
-
-      case TypeSequence:
-        tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
-        token_duration = thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
-        break;
-
-      case TypeInvalid:
-        pallas_error("Token is Invalid");
-      }
-      pallas_assert(referential_timestamp + token_duration > referential_timestamp);
-      referential_timestamp+=token_duration;
-      tokenCount[current_token]++;
-      callstack_index[current_frame]++;
     }
+    /* just move to the next iteration in the loop */
+    auto current_token = this->pollCurToken();
+    pallas_duration_t token_duration = 0;
+    switch (current_token.type) {
+    case TypeEvent:
+      token_duration = getEventSummary(current_token)->durations->at(tokenCount[current_token]);
+      break;
+
+    case TypeLoop: {
+      auto loop = thread_trace->getLoop(current_token);
+      auto n_iter = loop->nb_iterations[tokenCount[current_token]];
+      for (int i = 0; i < n_iter; i++) {
+        tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCountReading(thread_trace, tokenCount);
+      }
+      token_duration = getLoopDuration(current_token);
+      break;
+    }
+
+    case TypeSequence:
+      tokenCount += thread_trace->getSequence(current_token)->getTokenCountReading(thread_trace, tokenCount);
+      token_duration = thread_trace->getSequence(current_token)->durations->at(tokenCount[current_token]);
+      break;
+
+    case TypeInvalid:
+      pallas_error("Token is Invalid");
+    }
+    pallas_assert(referential_timestamp + token_duration > referential_timestamp);
+    referential_timestamp += token_duration;
+    tokenCount[current_token]++;
+    callstack_index[current_frame]++;
   }
 }
 
@@ -423,7 +427,7 @@ void ThreadReader::moveToPrevToken() {
     case TypeLoop: {
       auto prev_loop = thread_trace->getLoop(previous_token);
       for (int i = 0; i < prev_loop->nb_iterations[tokenCount[previous_token]]; i++) {
-        tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCount(thread_trace);
+        tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCountReading(thread_trace, tokenCount, true);
         tokenCount[prev_loop->repeated_token]--;
       }
       referential_timestamp -= getLoopDuration(previous_token);
@@ -431,7 +435,7 @@ void ThreadReader::moveToPrevToken() {
     }
     case TypeSequence: {
       auto prev_sequence = thread_trace->getSequence(previous_token);
-      tokenCount -= prev_sequence->getTokenCount(thread_trace);
+      tokenCount -= prev_sequence->getTokenCountReading(thread_trace, tokenCount, true);
       referential_timestamp -= prev_sequence->durations->at(tokenCount[previous_token]);
       break;
     }
