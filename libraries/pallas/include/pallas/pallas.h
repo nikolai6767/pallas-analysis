@@ -472,6 +472,23 @@ typedef struct Thread {
   [[nodiscard]] Token& getToken(Token, int) const;
 
   /**
+   * Return the duration of the thread
+   */
+  pallas_duration_t getDuration() const;
+  /**
+   * Return the first timestamp of the thread
+   */
+  pallas_timestamp_t getFirstTimestamp() const;
+  /**
+   * Return the last timestamp of the thread
+   */
+  pallas_timestamp_t getLastTimestamp() const;
+  /**
+   * Return the number of events of the thread
+   */
+  size_t getEventCount() const;
+
+  /**
    * Prints the given Token, along with its id.
    * E_E, E_L, E_S indicates an Enter, Leave or Singleton Event.
    * S and L indicates a Sequence or a Loop.
@@ -528,6 +545,27 @@ extern "C" {
    * Return the thread name of thread thread
    */
   extern const char* pallas_thread_get_name(PALLAS(Thread) * thread);
+
+  /**
+   * Return the duration of the thread
+   */
+  pallas_duration_t get_duration(PALLAS(Thread) *t);
+
+  /**
+   * Return the first timestamp of the thread
+   */
+  pallas_timestamp_t get_first_timestamp(PALLAS(Thread) *t);
+
+  /**
+   * Return the last timestamp of the thread
+   */
+  pallas_timestamp_t get_last_timestamp(PALLAS(Thread) *t);
+
+  /**
+   * Return the number of events of the thread
+   */
+  size_t get_event_count(PALLAS(Thread) *t);
+
 
   /**
    * Print the content of sequence seq_id

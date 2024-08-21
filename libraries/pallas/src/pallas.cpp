@@ -93,6 +93,30 @@ std::string Thread::getTokenString(Token token) const {
   return tempString.str();
 }
 
+pallas_duration_t Thread::getDuration() const {
+  return sequences[0]->durations->at(0);
+}
+pallas_duration_t get_duration(PALLAS(Thread) *t) { return t->getDuration(); }
+
+pallas_timestamp_t Thread::getFirstTimestamp() const {
+  return 0; 			// TODO: find the first timestamp
+}
+pallas_timestamp_t get_first_timestamp(PALLAS(Thread) *t) { return t->getFirstTimestamp(); }
+
+pallas_timestamp_t Thread::getLastTimestamp() const {
+  return getFirstTimestamp() + getDuration();
+}
+pallas_timestamp_t get_last_timestamp(PALLAS(Thread) *t) { return t->getLastTimestamp(); }
+
+size_t Thread::getEventCount() const {
+  size_t ret = 0;
+  for(unsigned i=0; i<this->nb_events; i++) {
+    ret += this->events[i].nb_occurences;
+  }
+  return ret;
+}
+size_t get_event_count(PALLAS(Thread) *t) { return t->getEventCount(); }
+
 void Thread::printToken(Token token) const {
   std::cout << getTokenString(token);
 }
