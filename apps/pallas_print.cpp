@@ -18,7 +18,7 @@ bool verbose = false;
 bool per_thread = false;
 bool show_durations = false;
 bool show_timestamps = true;
-
+std::string unique_thread_name;
 static void _print_timestamp(pallas_timestamp_t ts) {
   if (show_timestamps) {
     std::cout.precision(9);
@@ -110,6 +110,8 @@ void printTrace(const pallas::GlobalArchive& trace) {
       for (int tid = 0; tid < trace.archive_list[aid]->nb_threads; tid++) {
         auto thread = trace.archive_list[aid]->getThreadAt(tid);
         if (thread == nullptr)
+          continue;
+        if (!unique_thread_name.empty() && thread->getName() != unique_thread_name)
           continue;
         auto reader = pallas::ThreadReader (trace.archive_list[aid], thread->id, reader_options);
         std::cout << "---------- Process " << aid << " Thread " << tid  << "----------" << std::endl;
@@ -215,6 +217,7 @@ void usage(const char* prog_name) {
   std::cout << "\t" << "-S" << "\t" << "Enable structure mode (per thread mode only)" << std::endl;
   std::cout << "\t" << "-s" << "\t" << "Do not unroll sequences (structure mode only)" << std::endl;
   std::cout << "\t" << "-l" << "\t" << "Do not unroll loops (structure mode only)" << std::endl;
+  std::cout << "\t" << "-n" << "\t" << "Give a thread's name and only print that thread" << std::endl;
 }
 
 int main(const int argc, char* argv[]) {
@@ -238,6 +241,10 @@ int main(const int argc, char* argv[]) {
       show_timestamps = false;
     } else if (!strcmp(argv[nb_opts], "-S")) {
       show_structure = true;
+    } else if (!strcmp(argv[nb_opts], "-n")) {
+      per_thread = true;
+      nb_opts ++;
+      unique_thread_name = argv[nb_opts];
     } else if (!strcmp(argv[nb_opts], "-s")) {
       flags &= ~PALLAS_READ_UNROLL_SEQUENCE;
     } else if (!strcmp(argv[nb_opts], "-l")) {
