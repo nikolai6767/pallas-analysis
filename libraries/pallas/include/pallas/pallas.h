@@ -226,9 +226,11 @@ struct TokenCountMap : public std::map<Token, size_t> {
   }
   /** Substracts each (key, value) pair of the other map to this one. */
   void operator-=(const TokenCountMap& other) {
-    for (auto keyValue : other) {
-      if (this->count(keyValue.first) != 0) {
-        this->at(keyValue.first) -= keyValue.second;
+    for (const auto& [key, value] : other) {
+      if (count(key) == 0) {
+        insert({key, -value});
+      } else {
+        at(key) -= value;
       }
     }
   }
@@ -238,10 +240,16 @@ struct TokenCountMap : public std::map<Token, size_t> {
    */
   TokenCountMap operator*(size_t multiplier) const {
     auto otherMap = TokenCountMap();
-    for (const auto [key, value] : *this) {
+    for (const auto& [key, value] : *this) {
       otherMap[key] = value * multiplier;
     }
     return otherMap;
+  }
+
+  void operator*=(size_t multiplier)  {
+    for (const auto& [key, value] : *this) {
+      this->at(key) = value * multiplier;
+    }
   }
 
   /** Return the value associated with t, or 0 if t was not found.
