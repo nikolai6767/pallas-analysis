@@ -166,6 +166,32 @@ static inline void pop_data(Event* e, void* data, size_t data_size, byte*& curso
   cursor += data_size;
 }
 
+const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
+  const Region* region = NULL;
+  byte* cursor = nullptr;
+  switch (e->record)
+    {
+    case PALLAS_EVENT_ENTER:
+      {
+	RegionRef region_ref;
+	pop_data(e, &region_ref, sizeof(region_ref), cursor);
+	region = archive->global_archive->getRegion(region_ref);
+	break;
+      }
+    case PALLAS_EVENT_LEAVE:
+      {
+	RegionRef region_ref;
+	pop_data(e, &region_ref, sizeof(region_ref), cursor);
+	region = archive->global_archive->getRegion(region_ref);
+	break;
+      }
+    default:
+      region = NULL;
+    }
+
+  return region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+}
+
 void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const {
   byte* cursor = nullptr;
   switch (e->record) {

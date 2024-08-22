@@ -507,6 +507,7 @@ typedef struct Thread {
   void printGroupRef(GroupRef) const; /**< Prints an GroupRef (checks for validity first). */
   void printLocation(Ref) const;              /**< Prints a Ref for a Location (checks for validity first). */
   void printRegion(RegionRef) const;          /**< Prints an RegionRef (checks for validity first). */
+  const char* getRegionStringFromEvent(pallas::Event* e) const;
   void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const; /**< Prints an AttributeValue.*/
   void printAttribute(const struct AttributeData* attr) const;                          /**< Prints an AttributeData. */
   void printAttributeList(const struct AttributeList* attribute_list) const;            /**< Prints an AttributeList. */
