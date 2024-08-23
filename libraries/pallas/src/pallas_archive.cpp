@@ -321,6 +321,10 @@ Archive::~Archive() {
   delete[] threads;
 }
 
+const char* Archive::getName() const {
+  return global_archive->getString(global_archive->getLocation(id)->name)->str;
+}
+
 } /* namespace pallas*/
 
 /********************** C Bindings **********************/

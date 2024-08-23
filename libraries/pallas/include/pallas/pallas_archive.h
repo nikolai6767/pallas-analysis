@@ -173,6 +173,8 @@ typedef struct Archive {
 #ifdef __cplusplus
   [[nodiscard]] Thread* getThread(ThreadId);
   [[nodiscard]] Thread* getThreadAt(size_t i);
+  const char* getName() const;
+
   void freeThread(ThreadId);
   /**
    * Open a trace file and loads it it that Archive.

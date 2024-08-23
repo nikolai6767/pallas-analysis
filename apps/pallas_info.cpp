@@ -18,6 +18,10 @@
 #define DURATION_WIDTH 15
 
 using namespace pallas;
+
+bool show_definitions = false;
+bool show_details = false;
+
 void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "{";
   for (unsigned i = 0; i < s->size(); i++) {
@@ -83,59 +87,73 @@ void info_thread(Thread* t) {
 
 void info_global_archive(GlobalArchive* archive) {
   printf("Main archive:\n");
-  printf("\tdir_name:   %s\n", archive->dir_name);
-  printf("\ttrace_name: %s\n", archive->trace_name);
+  if (show_details) {
+    printf("\tdir_name:   %s\n", archive->dir_name);
+    printf("\ttrace_name: %s\n", archive->trace_name);
+  }
   printf("\tfullpath:   %s\n", archive->fullpath);
-  if (!archive->definitions.strings.empty())
-    printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
+  if(show_definitions) {
+    if (!archive->definitions.strings.empty()) {
+      printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
-  for (auto& [stringRef, string] : archive->definitions.strings) {
-    printf("\t\t%d: '%s'\n", string.string_ref, string.str);
-  }
-  if (!archive->definitions.regions.empty())
-    printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
-  for (auto& [regionRef, region] : archive->definitions.regions) {
-    printf("\t\t%d: %s\n", region.region_ref, archive->getString(region.string_ref)->str);
-  }
-  if (!archive->definitions.groups.empty())
-    printf("\tGroups {.nb_groups: %zu } :\n", archive->definitions.groups.size());
-  for (auto& [groupRef, group] : archive->definitions.groups) {
-    printf("\t\t%d: '%s' [", group.group_ref, archive->getString(group.name)->str);
-    for(uint32_t i = 0; i<group.numberOfMembers; i++) {
-      printf("%s%lu", i>0?", ":"", group.members[i]);
+      for (auto& [stringRef, string] : archive->definitions.strings) {
+	printf("\t\t%d: '%s'\n", string.string_ref, string.str);
+      }
     }
-    printf("]\n");
-  }
-  if (!archive->definitions.comms.empty())
-    printf("\tComms {.nb_comms: %zu } :\n", archive->definitions.comms.size());
-  for (auto& [commRef, comm] : archive->definitions.comms) {
-    printf("\t\t%d: '%s' (group, %d, parent: %d) \n", comm.comm_ref, archive->getString(comm.name)->str, comm.group, comm.parent);
-  }
 
-  if (!archive->location_groups.empty())
-    printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
-  for (auto& locationGroup : archive->location_groups) {
-    printf("\t\t%d: %s", locationGroup.id, archive->getString(locationGroup.name)->str);
-    if (locationGroup.parent != PALLAS_LOCATION_GROUP_ID_INVALID)
-      printf(", parent: %d", locationGroup.parent);
-    if (locationGroup.mainLoc != PALLAS_THREAD_ID_INVALID)
-      printf(", mainLocation: %d", locationGroup.mainLoc);
-    printf("\n");
-  }
+    if (!archive->definitions.regions.empty()) {
+      printf("\tRegions {.nb_regions: %zu } :\n", archive->definitions.regions.size());
+      for (auto& [regionRef, region] : archive->definitions.regions) {
+	printf("\t\t%d: %s\n", region.region_ref, archive->getString(region.string_ref)->str);
+      }
+    }
 
-  if (!archive->locations.empty())
-    printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
-  for (auto location : archive->locations) {
-    printf("\t\t%d: %s, parent: %d\n", location.id, archive->getString(location.name)->str, location.parent);
+    if (!archive->definitions.groups.empty()) {
+      printf("\tGroups {.nb_groups: %zu } :\n", archive->definitions.groups.size());
+      for (auto& [groupRef, group] : archive->definitions.groups) {
+	printf("\t\t%d: '%s' [", group.group_ref, archive->getString(group.name)->str);
+	for(uint32_t i = 0; i<group.numberOfMembers; i++) {
+	  printf("%s%lu", i>0?", ":"", group.members[i]);
+	}
+	printf("]\n");
+      }
+    }
+
+    if (!archive->definitions.comms.empty()) {
+      printf("\tComms {.nb_comms: %zu } :\n", archive->definitions.comms.size());
+      for (auto& [commRef, comm] : archive->definitions.comms) {
+	printf("\t\t%d: '%s' (group, %d, parent: %d) \n", comm.comm_ref, archive->getString(comm.name)->str, comm.group, comm.parent);
+      }
+    }
+
+    if (!archive->location_groups.empty()) {
+      printf("\tLocation_groups {.nb_lg: %zu }:\n", archive->location_groups.size());
+      for (auto& locationGroup : archive->location_groups) {
+	printf("\t\t%d: %s", locationGroup.id, archive->getString(locationGroup.name)->str);
+	if (locationGroup.parent != PALLAS_LOCATION_GROUP_ID_INVALID)
+	  printf(", parent: %d", locationGroup.parent);
+	if (locationGroup.mainLoc != PALLAS_THREAD_ID_INVALID)
+	  printf(", mainLocation: %d", locationGroup.mainLoc);
+	printf("\n");
+      }
+    }
+
+    if (!archive->locations.empty()) {
+      printf("\tLocations {.nb_loc: %zu }:\n", archive->locations.size());
+      for (auto location : archive->locations) {
+	printf("\t\t%d: %s, parent: %d\n", location.id, archive->getString(location.name)->str, location.parent);
+      }
+    }
+
+    if (archive->nb_archives)
+      printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
   }
-  if (archive->nb_archives)
-    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
 
   printf("\n");
 }
 
 void info_archive(Archive* archive) {
-  printf("Archive %d:\n", archive->id);
+  printf("Archive %d (%s):\n", archive->id, archive->getName());
 
   if (archive->nb_threads)
     printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
@@ -143,8 +161,9 @@ void info_archive(Archive* archive) {
     for (int i = 0; i < archive->nb_threads; i++) {
       auto thread = archive->getThreadAt(i);
       if (thread) {
-        printf("\t\t%d: {.archive=%d, .nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", thread->id,
-               thread->archive->id, thread->nb_events, thread->nb_sequences, thread->nb_loops);
+        printf("\t\t%s (%d): {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d, .first_ts=%lu, .last_ts=%lu, .duration=%lf s, .event_count=%lu }\n",
+	       thread->getName(), thread->id, thread->nb_events, thread->nb_sequences, thread->nb_loops,
+	       thread->getFirstTimestamp(), thread->getLastTimestamp(), thread->getDuration() / 1e9, thread->getEventCount());
       }
     }
   }
@@ -169,6 +188,7 @@ void info_trace(GlobalArchive* trace) {
 void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
   printf("\t-v          Verbose mode\n");
+  printf("\t-D          Show definitions\n");
   printf("\t-?  -h --help     Display this help and exit\n");
 }
 
@@ -179,6 +199,10 @@ int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
       pallas_debug_level_set(DebugLevel::Debug);
+      show_details = true;
+      nb_opts++;
+    } else if (!strcmp(argv[i], "-D")) {
+      show_definitions = true;
       nb_opts++;
     } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
       usage(argv[0]);
