@@ -19,13 +19,21 @@
 
 using namespace pallas;
 
-bool show_definitions = false;
-bool show_details     = false;
 int thread_to_print   = -1;
 int archive_to_print  = -1;
 
-bool show_archives    = false;
-bool show_threads     = false;
+enum command {
+  none                    = 0,
+  show_thread_content     = 1<<0,
+  show_definitions        = 1<<1,
+  show_sequence_content   = 1<<2,
+  show_sequence_durations = 1<<3,
+  list_archives           = 1<<4,
+  show_archive_details    = 1<<5,
+  list_threads            = 1<<6,
+};
+
+int cmd = none;
 
 static bool _should_print_thread(int thread_id) {
   return thread_to_print <0 || thread_to_print == thread_id;
@@ -45,6 +53,9 @@ void info_archive(Archive* archive);
 void info_thread_header();
 void info_thread_summary(Thread* thread);
 
+std::string guess_sequence_name(Thread *t, Sequence*s);
+std::string guess_loop_name(Thread *t, Loop*l);
+
 void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "{";
   for (unsigned i = 0; i < s->size(); i++) {
@@ -54,6 +65,36 @@ void print_sequence(const Sequence* s, const Thread* t) {
       printf(", ");
   }
   std::cout << "}" << std::endl;
+}
+
+std::string getTokenString(Thread* thread, Token t) {
+  switch(t.type) {
+  case TypeEvent:
+    {
+      Event* e = thread->getEvent(t);
+      size_t buffer_size = 1024;
+      char * event_name = new char[buffer_size];  
+      thread->printEventToString(e, event_name, buffer_size);
+      std::string ret(event_name);
+      delete[] event_name;
+      return ret;
+      break;
+    }
+  case TypeSequence:
+    {
+      Sequence* s = thread->getSequence(t);
+      return guess_sequence_name(thread, s);
+      break;
+    }
+  case TypeLoop:
+    {
+      Loop* l = thread->getLoop(t);
+      return guess_loop_name(thread, l);
+      break;
+    }
+  default:
+    return std::string("Unknown token");
+  }
 }
 
 void info_event_header() {
@@ -98,7 +139,6 @@ void info_sequence_header() {
 }
 
 std::string guess_sequence_name(Thread *t, Sequence*s) {
-
   if(s->size() < 4) {
     Token t_start = s->tokens[0];
     if(t_start.type == TypeEvent) {
@@ -124,8 +164,13 @@ std::string guess_sequence_name(Thread *t, Sequence*s) {
   return std::string(buff);
 }
 
-void info_sequence(Thread*t, int index) {
+void info_sequence(Thread*t, int index, bool details=false) {
   Sequence* s = t->sequences[index];
+
+
+  if(details) {
+    info_sequence_header();
+  }
 
   std::string sequence_name = guess_sequence_name(t, s);
   
@@ -138,6 +183,27 @@ void info_sequence(Thread*t, int index) {
   std::cout << std::setw(18) << std::right << s->size();
   std::cout << std::setw(18) << std::right << s->getEventCount(t);
   std::cout << std::endl;
+
+  if(details) {
+    if(cmd & show_sequence_content) {
+      std::cout<<std::endl<<"------------------- Sequence" << s->id << " contains:" << std::endl;
+      for(auto token: s->tokens) {
+	std::cout << "\t" << std::left << getTokenString(t, token) <<std::endl;
+      }
+      std::cout<<"------------------- End of sequence"<< s->id << std::endl;
+      std::cout<<std::endl;
+    }
+
+    if(cmd & show_sequence_durations) {
+      std::cout<<std::endl<<"------------------- Sequence" << s->id << " duration:" << std::endl;
+      for(int i=0; i<s->durations->size; i++) {
+	uint64_t duration = s->durations->at(i);
+	std::cout<<"\t"<<duration<<std::endl;
+      }
+      std::cout<<std::endl<<"------------------- End of sequence" << s->id << " durations." << std::endl;
+    }
+    
+  }
 }
 
 void info_loop_header() {
@@ -181,8 +247,10 @@ void info_loop(Thread* t, int index) {
 }
 
 void info_thread(Thread* t) {
-
   if(! _should_print_thread(t->id))
+    return;
+
+  if((cmd & show_thread_content) == 0)
     return;
 
   info_thread_header();
@@ -199,17 +267,27 @@ void info_thread(Thread* t) {
   for (unsigned i = 0; i < t->nb_sequences; i++) {
     info_sequence(t, i);
   }
-
+  
   printf("\nLoops {.nb_loops: %d}\n", t->nb_loops);
   info_loop_header();
   for (unsigned i = 0; i < t->nb_loops; i++) {
     info_loop(t, i);
   }
+
+  if((cmd & show_sequence_content) ||
+     (cmd & show_sequence_durations)) {
+    info_sequence_header();
+    for (unsigned i = 0; i < t->nb_sequences; i++) {
+      info_sequence(t, i, true);
+    }
+
+  }
 }
 
 void info_global_archive(GlobalArchive* archive) {
   printf("Main archive:\n");
-  if (show_details) {
+
+  if(cmd & show_archive_details) {
     printf("\tdir_name:   %s\n", archive->dir_name);
     printf("\ttrace_name: %s\n", archive->trace_name);
   }
@@ -219,7 +297,7 @@ void info_global_archive(GlobalArchive* archive) {
   printf("\tnb_process: %lu\n", archive->location_groups.size());
   printf("\tnb_threads: %lu\n", archive->locations.size());
 
-  if(show_definitions) {
+  if(cmd & show_definitions) {
     if (!archive->definitions.strings.empty()) {
       printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
 
@@ -339,6 +417,7 @@ void info_thread_summary(Thread* thread) {
 }
 
 void info_threads(Archive* archive) {
+  if(! (cmd & list_threads)) return ;
   if(thread_to_print >= 0 && ! _archiveContainsThread(archive, thread_to_print)) {
     return;
   }
@@ -354,25 +433,27 @@ void info_threads(Archive* archive) {
 void info_trace(GlobalArchive* trace) {
   info_global_archive(trace);
 
-  if(show_archives) {
+  if(cmd & list_archives) {
     info_archive_header();
     for (int i = 0; i < trace->nb_archives; i++) {
       info_archive(trace->archive_list[i]);
     }
   }
 
-  if(show_threads) {
+  if(cmd & list_threads) {
     info_thread_header();
     for (int i = 0; i < trace->nb_archives; i++) {
       info_threads(trace->archive_list[i]);
     }
   }
 
-  for (int i = 0; i < trace->nb_archives; i++) {
-    for (int j = 0; j < trace->archive_list[i]->nb_threads; j++) {
-      auto thread = trace->archive_list[i]->getThreadAt(j);
-      if (thread)
-        info_thread(thread);
+  if(cmd & show_thread_content) {
+    for (int i = 0; i < trace->nb_archives; i++) {
+      for (int j = 0; j < trace->archive_list[i]->nb_threads; j++) {
+	auto thread = trace->archive_list[i]->getThreadAt(j);
+	if (thread)
+	  info_thread(thread);
+      }
     }
   }
 }
@@ -380,12 +461,21 @@ void info_trace(GlobalArchive* trace) {
 void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
   printf("\t-v             Verbose mode\n");
-  printf("\t-D             Show definitions\n");
-  printf("\t-t             Show threads\n");
-  printf("\t--thread id   Only print thread <id>\n");
-  printf("\t-a             Show archvies\n");
+  printf("\t-D             show definitions\n");
+  printf("\n");
+  printf("\t-la            list archives\n");
+  printf("\t-lt            list threads\n");
+  printf("\n");
+  printf("\t-t             show thread details\n");
+  printf("\t--content      show sequence content\n");
+  printf("\t--durations    show sequence durations\n");
+  printf("\n");
+  printf("\t-da            show archive details\n");
+  printf("\n");
   printf("\t--archive id   Only print archive <id>\n");
-  printf("\t-?  -h --help     Display this help and exit\n");
+  printf("\t--thread id    Only print thread <id>\n");
+
+  printf("\t-?  -h --help  Display this help and exit\n");
 }
 
 int main(int argc, char** argv) {
@@ -395,16 +485,23 @@ int main(int argc, char** argv) {
   for (nb_opts = 1; nb_opts < argc; nb_opts++) {
     if (!strcmp(argv[nb_opts], "-v")) {
       pallas_debug_level_set(DebugLevel::Debug);
-      show_details = true;
     } else if (!strcmp(argv[nb_opts], "-D")) {
-      show_definitions = true;
-    } else if (!strcmp(argv[nb_opts], "-a")) {
-      show_archives = true;
+      cmd |= show_definitions;
+    } else if (!strcmp(argv[nb_opts], "-t")) {
+      cmd |= show_thread_content;
+    } else if (!strcmp(argv[nb_opts], "-la")) {
+      cmd |= list_archives;
+    } else if (!strcmp(argv[nb_opts], "-lt")) {
+      cmd |= list_threads;
+    } else if (!strcmp(argv[nb_opts], "--content")) {
+      cmd |= show_sequence_content;
+    } else if (!strcmp(argv[nb_opts], "--durations")) {
+      cmd |= show_sequence_durations;
+    } else if (!strcmp(argv[nb_opts], "-da")) {
+      cmd |= show_archive_details;
     } else if (!strcmp(argv[nb_opts], "--archive")) {
       archive_to_print = atoi(argv[nb_opts+1]);
       nb_opts++;
-    } else if (!strcmp(argv[nb_opts], "-t")) {
-      show_threads = true;
     } else if (!strcmp(argv[nb_opts], "--thread")) {
       thread_to_print = atoi(argv[nb_opts+1]);
       nb_opts++;
