@@ -91,7 +91,12 @@ void info_global_archive(GlobalArchive* archive) {
     printf("\tdir_name:   %s\n", archive->dir_name);
     printf("\ttrace_name: %s\n", archive->trace_name);
   }
-  printf("\tfullpath:   %s\n", archive->fullpath);
+
+  printf("\tfullpath:    %s\n", archive->fullpath);
+  printf("\tnb_archives: %d\n", archive->nb_archives);
+  printf("\tnb_process: %d\n", archive->location_groups.size());
+  printf("\tnb_threads: %d\n", archive->locations.size());
+
   if(show_definitions) {
     if (!archive->definitions.strings.empty()) {
       printf("\tStrings {.nb_strings: %zu } :\n", archive->definitions.strings.size());
