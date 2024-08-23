@@ -20,7 +20,19 @@
 using namespace pallas;
 
 bool show_definitions = false;
-bool show_details = false;
+bool show_details     = false;
+int thread_to_print   = -1;
+
+bool show_archives    = true;
+bool show_threads     = true;
+
+static bool _should_print_thread(int thread_id) {
+  return thread_to_print <0 || thread_to_print == thread_id;
+}
+
+static double ns2s(uint64_t ns) {
+  return ns*1.0/1e9;
+}
 
 void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "{";
@@ -55,6 +67,10 @@ void info_loop(Loop* l, Thread* t) {
 }
 
 void info_thread(Thread* t) {
+
+  if(! _should_print_thread(t->id))
+    return;
+
   printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
   printf("\tEvents {.nb_events: %d}\n", t->nb_events);
   for (unsigned i = 0; i < t->nb_events; i++) {
@@ -94,8 +110,8 @@ void info_global_archive(GlobalArchive* archive) {
 
   printf("\tfullpath:    %s\n", archive->fullpath);
   printf("\tnb_archives: %d\n", archive->nb_archives);
-  printf("\tnb_process: %d\n", archive->location_groups.size());
-  printf("\tnb_threads: %d\n", archive->locations.size());
+  printf("\tnb_process: %lu\n", archive->location_groups.size());
+  printf("\tnb_threads: %lu\n", archive->locations.size());
 
   if(show_definitions) {
     if (!archive->definitions.strings.empty()) {
@@ -157,28 +173,88 @@ void info_global_archive(GlobalArchive* archive) {
   printf("\n");
 }
 
-void info_archive(Archive* archive) {
-  printf("Archive %d (%s):\n", archive->id, archive->getName());
+static bool _archiveContainsThread(Archive* archive, int thread_id) {
+  for(int i=0; i< archive->nb_threads; i++) {
+    auto thread = archive->getThreadAt(i);
+    if(thread->id == thread_id)
+      return true;
+  }
+  return false;
+}
 
-  if (archive->nb_threads)
-    printf("\tThreads {.nb_threads: %d}:\n", archive->nb_threads);
+void info_archive_header() {
+  std::cout<< std::endl;
+  std::cout<< "#";
+  std::cout << std::setw(14) <<"Archive_id";
+  std::cout << std::setw(20) <<"Archive_name";
+  std::cout << std::setw(15) <<"Nb_threads";
+  std::cout << std::endl;
+}
+
+void info_archive(Archive* archive) {
+  std::cout << std::setw(15) << archive->id;
+  std::cout << std::setw(20) << archive->getName();
+  std::cout << std::setw(15) << archive->nb_threads;
+  std::cout << std::endl;
+}
+
+void info_threads_header() {
+  std::cout<< std::endl;
+  std::cout<< "#";
+  std::cout << std::setw(19) <<"Thread_name";
+  std::cout << std::setw(15) <<"Thread_id";
+  std::cout << std::setw(15) <<"First_ts";
+  std::cout << std::setw(15) <<"Last_ts";
+  std::cout << std::setw(15) <<"Duration(s)";
+  std::cout << std::setw(15) <<"Event_count";
+  std::cout << std::setw(15) <<"Nb_events";
+  std::cout << std::setw(15) <<"Nb_sequences";
+  std::cout << std::setw(15) <<"Nb_loops";
+  std::cout << std::setw(15) <<"Archive_id";
+  std::cout << std::endl;
+}
+
+void info_threads(Archive* archive) {
+  if(thread_to_print >= 0 && ! _archiveContainsThread(archive, thread_to_print)) {
+    return;
+  }
+
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {
       auto thread = archive->getThreadAt(i);
-      if (thread) {
-        printf("\t\t%s (%d): {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d, .first_ts=%lu, .last_ts=%lu, .duration=%lf s, .event_count=%lu }\n",
-	       thread->getName(), thread->id, thread->nb_events, thread->nb_sequences, thread->nb_loops,
-	       thread->getFirstTimestamp(), thread->getLastTimestamp(), thread->getDuration() / 1e9, thread->getEventCount());
+      if (thread && _should_print_thread(thread->id)) {
+	std::cout << std::setw(20) << thread->getName();
+	std::cout << std::setw(15) << thread->id;
+	std::cout << std::setw(15) << thread->getFirstTimestamp();
+	std::cout << std::setw(15) << thread->getLastTimestamp();
+	std::cout << std::setw(15) << ns2s(thread->getDuration());
+	std::cout << std::setw(15) << thread->getEventCount();
+	std::cout << std::setw(15) << thread->nb_events;
+	std::cout << std::setw(15) << thread->nb_sequences;
+	std::cout << std::setw(15) << thread->nb_loops;
+	std::cout << std::setw(15) << archive->id;
+	std::cout << std::endl;
       }
     }
   }
-  printf("\n");
+
 }
 
 void info_trace(GlobalArchive* trace) {
   info_global_archive(trace);
-  for (int i = 0; i < trace->nb_archives; i++) {
-    info_archive(trace->archive_list[i]);
+
+  if(show_archives) {
+    info_archive_header();
+    for (int i = 0; i < trace->nb_archives; i++) {
+      info_archive(trace->archive_list[i]);
+    }
+  }
+
+  if(show_threads) {
+    info_threads_header();
+    for (int i = 0; i < trace->nb_archives; i++) {
+      info_threads(trace->archive_list[i]);
+    }
   }
 
   for (int i = 0; i < trace->nb_archives; i++) {
@@ -192,8 +268,9 @@ void info_trace(GlobalArchive* trace) {
 
 void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
-  printf("\t-v          Verbose mode\n");
-  printf("\t-D          Show definitions\n");
+  printf("\t-v             Verbose mode\n");
+  printf("\t-D             Show definitions\n");
+  printf("\t--thread tid   Only print thread <tid>\n");
   printf("\t-?  -h --help     Display this help and exit\n");
 }
 
@@ -201,27 +278,31 @@ int main(int argc, char** argv) {
   int nb_opts = 0;
   char* trace_name = nullptr;
 
-  for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-v")) {
+  for (nb_opts = 1; nb_opts < argc; nb_opts++) {
+    if (!strcmp(argv[nb_opts], "-v")) {
       pallas_debug_level_set(DebugLevel::Debug);
       show_details = true;
-      nb_opts++;
-    } else if (!strcmp(argv[i], "-D")) {
+    } else if (!strcmp(argv[nb_opts], "-D")) {
       show_definitions = true;
+    } else if (!strcmp(argv[nb_opts], "--thread")) {
+      thread_to_print = atoi(argv[nb_opts+1]);
+      printf("thread_to_print=%d\n", thread_to_print);
       nb_opts++;
-    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
+    } else if (!strcmp(argv[nb_opts], "-h") || !strcmp(argv[nb_opts], "-?") || !strcmp(argv[nb_opts], "--help")) {
+      printf("invalid option '%s'\n", argv[nb_opts]);
       usage(argv[0]);
       return EXIT_SUCCESS;
     } else {
       /* Unknown parameter name. It's probably the program name. We can stop
        * parsing the parameter list.
        */
+      trace_name = argv[nb_opts];
       break;
     }
   }
 
-  trace_name = argv[nb_opts + 1];
   if (trace_name == nullptr) {
+    printf("Missing trace file\n");
     usage(argv[0]);
     return EXIT_SUCCESS;
   }
