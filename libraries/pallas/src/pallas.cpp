@@ -489,6 +489,11 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
   return false;
 };
 
+size_t Sequence::getEventCount(const struct Thread* thread) {
+  TokenCountMap tokenCount = getTokenCount(thread);
+  return tokenCount.getEventCount();
+}
+
 const TokenCountMap& Sequence::getTokenCount(const Thread* thread, const TokenCountMap* alreadyReadTokens) {
   if (tokenCount.empty()) {
     // We need to count the tokens

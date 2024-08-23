@@ -259,6 +259,17 @@ struct TokenCountMap : public std::map<Token, size_t> {
       return 0;
     return res->second;
   }
+  /** Count the number of Events in the tokenCountMap. */
+  [[nodiscard]] size_t getEventCount() const {
+    size_t sum = 0;
+    for (auto keyValue : *this) {
+      Token t = keyValue.first;
+      if(t.type == TypeEvent)
+	sum+=keyValue.second;
+    }
+    return sum;
+  }
+
 };
 #endif
 
@@ -294,6 +305,8 @@ typedef struct Sequence {
    * alreadyReadTokens is used when you read the trace, it's supposed to be threadReader.tokenCount.
    * @returns Reference to #tokenCount.*/
   const TokenCountMap& getTokenCount(const struct Thread* thread, const TokenCountMap* alreadyReadTokens = nullptr);
+
+  size_t getEventCount(const struct Thread* thread);
   ~Sequence() { delete durations; };
 #endif
 } Sequence;

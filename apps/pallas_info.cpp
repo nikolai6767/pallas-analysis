@@ -22,17 +22,28 @@ using namespace pallas;
 bool show_definitions = false;
 bool show_details     = false;
 int thread_to_print   = -1;
+int archive_to_print  = -1;
 
-bool show_archives    = true;
-bool show_threads     = true;
+bool show_archives    = false;
+bool show_threads     = false;
 
 static bool _should_print_thread(int thread_id) {
   return thread_to_print <0 || thread_to_print == thread_id;
 }
 
+static bool _should_print_archive(int archive_id) {
+  return archive_to_print <0 || archive_to_print == archive_id;
+}
+
 static double ns2s(uint64_t ns) {
   return ns*1.0/1e9;
 }
+
+
+void info_archive_header();
+void info_archive(Archive* archive);
+void info_thread_header();
+void info_thread_summary(Thread* thread);
 
 void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "{";
@@ -45,25 +56,128 @@ void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "}" << std::endl;
 }
 
-void info_event(Thread* t, EventSummary* e) {
-  pallas_print_event(t, &e->event);
-  std::cout << "\t{.nb_events: " << e->durations->size << "}" << std::endl;
+void info_event_header() {
+  std::cout << std::left << "#";
+  std::cout << std::setw(14) << std::left << "Event_id";
+  std::cout << std::setw(35) << std::left << "Event_name";
+  std::cout << std::setw(20) << std::right << "Nb_occurence";
+  std::cout << std::setw(20) << std::right << "Min_duration(ns)";
+  std::cout << std::setw(20) << std::right << "Max_duration(ns)";
+  std::cout << std::setw(20) << std::right << "Mean_duration(ns)";
+  std::cout << std::endl;
 }
 
-void info_sequence(Sequence* s) {
-  std::cout << "\t{.size: " << s->size() << "}" << std::endl;
+void info_event(Thread* t, int index) {
+  EventSummary* e = &t->events[index];
+  size_t buffer_size = 1024;
+  char * event_name = new char[buffer_size];  
+  t->printEventToString(&e->event, event_name, buffer_size);
+
+  std::cout << std::left<< "E"<<std::setw(14) <<std::left <<index;
+  std::cout << std::setw(35) << std::left<< event_name;
+  std::cout << std::setw(20) << std::right << e->durations->size;
+  std::cout << std::setw(20) << std::right << (e->durations->min == UINT64_MAX? 0 : e->durations->min);
+  std::cout << std::setw(20) << std::right << (e->durations->max == UINT64_MAX? 0 : e->durations->max);
+  std::cout << std::setw(20) << std::right << (e->durations->mean == UINT64_MAX? 0 : e->durations->mean);
+  std::cout << std::endl;
+
+  delete[](event_name);
 }
 
-void info_loop(Loop* l, Thread* t) {
-  std::cout << "{.nb_loops: " << l->nb_iterations.size()
-            << ", .repeated_token: " << t->getTokenString(l->repeated_token) << ", .nb_iterations: [";
-  for (const auto& i : l->nb_iterations) {
-    std::cout << i;
-    if (&i != &l->nb_iterations.back()) {
-      std::cout << ", ";
+void info_sequence_header() {
+  std::cout << std::left << "#";
+  std::cout << std::setw(14) << std::left << "Sequence_id";
+  std::cout << std::setw(35) << std::left << "Sequence_name";
+  std::cout << std::setw(18) << std::right << "Nb_occurence";
+  std::cout << std::setw(18) << std::right << "Min_duration(s)";
+  std::cout << std::setw(18) << std::right << "Max_duration(s)";
+  std::cout << std::setw(18) << std::right << "Mean_duration(s)";
+  std::cout << std::setw(18) << std::right << "Nb_token";
+  std::cout << std::setw(18) << std::right << "Event_count";
+  std::cout << std::endl;
+}
+
+std::string guess_sequence_name(Thread *t, Sequence*s) {
+
+  if(s->size() < 4) {
+    Token t_start = s->tokens[0];
+    if(t_start.type == TypeEvent) {
+      Event* event = t->getEvent(t_start);
+      const char* event_name = t->getRegionStringFromEvent(event);
+      std::string prefix(event_name);
+
+      if(s->size() == 3) {
+	// that's probably an MPI call. To differentiate calls (eg
+	// MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the 
+	// the second token to the name
+	Token t_second = s->tokens[1];
+
+	std::string res = prefix + "_" + t->getTokenString(t_second);
+	return res;
+      }
+      return prefix;
     }
   }
-  std::cout << "]}" << std::endl;
+  char buff[128];
+  snprintf(buff, sizeof(buff), "Sequence_%d", s->id);
+  
+  return std::string(buff);
+}
+
+void info_sequence(Thread*t, int index) {
+  Sequence* s = t->sequences[index];
+
+  std::string sequence_name = guess_sequence_name(t, s);
+  
+  std::cout << std::left<< "S"<<std::setw(14) <<std::left <<index;
+  std::cout << std::setw(35) << std::left<< sequence_name;
+  std::cout << std::setw(18) << std::right << s->durations->size;
+  std::cout << std::setw(18) << std::right << ns2s(s->durations->min == UINT64_MAX? 0 : s->durations->min);
+  std::cout << std::setw(18) << std::right << ns2s(s->durations->max == UINT64_MAX? 0 : s->durations->max);
+  std::cout << std::setw(18) << std::right << ns2s(s->durations->mean == UINT64_MAX? 0 : s->durations->mean);
+  std::cout << std::setw(18) << std::right << s->size();
+  std::cout << std::setw(18) << std::right << s->getEventCount(t);
+  std::cout << std::endl;
+}
+
+void info_loop_header() {
+  std::cout << std::left << "#";
+  std::cout << std::setw(14) << std::left << "Loop_id";
+  std::cout << std::setw(35) << std::left << "Loop_name";
+  std::cout << std::setw(18) << std::right << "Nb_occurence";
+  std::cout << std::setw(18) << std::right << "Min_nb_iterations";
+  std::cout << std::setw(18) << std::right << "Max_nb_iterations";
+  std::cout << std::setw(18) << std::right << "Mean_nb_iterations";
+  std::cout << std::endl;
+}
+
+std::string guess_loop_name(Thread *t, Loop* l) {
+  Sequence *s = t->getSequence(l->repeated_token);
+  return guess_sequence_name(t, s);
+}
+
+void info_loop(Thread* t, int index) {
+  Loop* l = &t->loops[index];
+
+  std::string loop_name = guess_loop_name(t, l);
+  
+  uint64_t min_iteration = INT_MAX;
+  uint64_t max_iteration = 0;
+  uint64_t mean_iteration = 0;
+  for(auto iter: l->nb_iterations) {
+    mean_iteration += iter;
+    min_iteration = iter < min_iteration ? iter: min_iteration;
+    max_iteration = iter > max_iteration ? iter: max_iteration;
+  }
+  mean_iteration = mean_iteration/l->nb_iterations.size();
+
+  std::cout << std::left<< "L"<<std::setw(14) <<std::left <<index;
+  std::cout << std::setw(35) << std::left<< loop_name;
+  std::cout << std::setw(18) << std::right << l->nb_iterations.size();
+  std::cout << std::setw(18) << std::right << min_iteration;
+  std::cout << std::setw(18) << std::right << max_iteration;
+  std::cout << std::setw(18) << std::right << mean_iteration;
+  std::cout << std::endl;
 }
 
 void info_thread(Thread* t) {
@@ -71,33 +185,25 @@ void info_thread(Thread* t) {
   if(! _should_print_thread(t->id))
     return;
 
-  printf("Thread %d {.archive: %d}\n", t->id, t->archive->id);
-  printf("\tEvents {.nb_events: %d}\n", t->nb_events);
+  info_thread_header();
+  info_thread_summary(t);
+
+  printf("\nEvents {.nb_events: %d}\n", t->nb_events);
+  info_event_header();
   for (unsigned i = 0; i < t->nb_events; i++) {
-    printf("\t\tE%d\t", i);
-    info_event(t, &t->events[i]);
+    info_event(t, i);
   }
 
-  printf("\tSequences {.nb_sequences: %d}\n", t->nb_sequences);
+  printf("\nSequences {.nb_sequences: %d}\n", t->nb_sequences);
+  info_sequence_header();
   for (unsigned i = 0; i < t->nb_sequences; i++) {
-    std::cout << "\t\tS" << i << "\t" << t->sequences[i]->durations->size << " x ";
-    print_sequence(t->sequences[i], t);
-    if (t->sequences[i]->durations->size > 1) {
-      std::cout.precision(9);
-      std::cout << "\t\t\tMin:  " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->min / 1e9
-                << "\n\t\t\tMax:  " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->max / 1e9
-                << "\n\t\t\tMean: " << std::fixed << std::setw(DURATION_WIDTH) << t->sequences[i]->durations->mean / 1e9
-                << std::endl;
-    } else {
-      std::cout << "\t\t\tDuration: " << std::fixed << std::setw(DURATION_WIDTH)
-                << t->sequences[i]->durations->front() / 1e9 << std::endl;
-    }
+    info_sequence(t, i);
   }
 
-  printf("\tLoops {.nb_loops: %d}\n", t->nb_loops);
+  printf("\nLoops {.nb_loops: %d}\n", t->nb_loops);
+  info_loop_header();
   for (unsigned i = 0; i < t->nb_loops; i++) {
-    printf("\t\tL%d\t", i);
-    info_loop(&t->loops[i], t);
+    info_loop(t, i);
   }
 }
 
@@ -183,35 +289,53 @@ static bool _archiveContainsThread(Archive* archive, int thread_id) {
 }
 
 void info_archive_header() {
-  std::cout<< std::endl;
-  std::cout<< "#";
-  std::cout << std::setw(14) <<"Archive_id";
-  std::cout << std::setw(20) <<"Archive_name";
-  std::cout << std::setw(15) <<"Nb_threads";
+  std::cout << std::left << "#";
+  std::cout << std::setw(14) << std::left  << "Archive_id";
+  std::cout << std::setw(20) << std::left  << "Archive_name";
+  std::cout << std::setw(15) << std::right << "Nb_threads";
   std::cout << std::endl;
 }
 
 void info_archive(Archive* archive) {
-  std::cout << std::setw(15) << archive->id;
-  std::cout << std::setw(20) << archive->getName();
-  std::cout << std::setw(15) << archive->nb_threads;
+  if(! _should_print_archive(archive->id)) {
+    return;
+  }
+
+  std::cout << std::setw(15) << std::left  << archive->id;
+  std::cout << std::setw(20) << std::left  << archive->getName();
+  std::cout << std::setw(15) << std::right << archive->nb_threads;
   std::cout << std::endl;
 }
 
-void info_threads_header() {
-  std::cout<< std::endl;
-  std::cout<< "#";
-  std::cout << std::setw(19) <<"Thread_name";
-  std::cout << std::setw(15) <<"Thread_id";
-  std::cout << std::setw(15) <<"First_ts";
-  std::cout << std::setw(15) <<"Last_ts";
-  std::cout << std::setw(15) <<"Duration(s)";
-  std::cout << std::setw(15) <<"Event_count";
-  std::cout << std::setw(15) <<"Nb_events";
-  std::cout << std::setw(15) <<"Nb_sequences";
-  std::cout << std::setw(15) <<"Nb_loops";
-  std::cout << std::setw(15) <<"Archive_id";
+void info_thread_header() {
+  std::cout<< std::left << "#";
+  std::cout << std::setw(19) << std::left  << "Thread_name";
+  std::cout << std::setw(15) << std::left  << "Thread_id";
+  std::cout << std::setw(15) << std::right <<"First_ts";
+  std::cout << std::setw(15) << std::right <<"Last_ts";
+  std::cout << std::setw(15) << std::right <<"Duration(s)";
+  std::cout << std::setw(15) << std::right <<"Event_count";
+  std::cout << std::setw(15) << std::right <<"Nb_events";
+  std::cout << std::setw(15) << std::right <<"Nb_sequences";
+  std::cout << std::setw(15) << std::right <<"Nb_loops";
+  std::cout << std::setw(15) << std::right <<"Archive_id";
   std::cout << std::endl;
+}
+
+void info_thread_summary(Thread* thread) {
+  if (thread && _should_print_thread(thread->id)) {
+    std::cout << std::setw(20) << std::left  << thread->getName();
+    std::cout << std::setw(15) << std::left  << thread->id;
+    std::cout << std::setw(15) << std::right << thread->getFirstTimestamp();
+    std::cout << std::setw(15) << std::right << thread->getLastTimestamp();
+    std::cout << std::setw(15) << std::right << ns2s(thread->getDuration());
+    std::cout << std::setw(15) << std::right << thread->getEventCount();
+    std::cout << std::setw(15) << std::right << thread->nb_events;
+    std::cout << std::setw(15) << std::right << thread->nb_sequences;
+    std::cout << std::setw(15) << std::right << thread->nb_loops;
+    std::cout << std::setw(15) << std::right << thread->archive->id;
+    std::cout << std::endl;
+  }
 }
 
 void info_threads(Archive* archive) {
@@ -222,22 +346,9 @@ void info_threads(Archive* archive) {
   if (archive->threads) {
     for (int i = 0; i < archive->nb_threads; i++) {
       auto thread = archive->getThreadAt(i);
-      if (thread && _should_print_thread(thread->id)) {
-	std::cout << std::setw(20) << thread->getName();
-	std::cout << std::setw(15) << thread->id;
-	std::cout << std::setw(15) << thread->getFirstTimestamp();
-	std::cout << std::setw(15) << thread->getLastTimestamp();
-	std::cout << std::setw(15) << ns2s(thread->getDuration());
-	std::cout << std::setw(15) << thread->getEventCount();
-	std::cout << std::setw(15) << thread->nb_events;
-	std::cout << std::setw(15) << thread->nb_sequences;
-	std::cout << std::setw(15) << thread->nb_loops;
-	std::cout << std::setw(15) << archive->id;
-	std::cout << std::endl;
-      }
+      info_thread_summary(thread);
     }
   }
-
 }
 
 void info_trace(GlobalArchive* trace) {
@@ -251,7 +362,7 @@ void info_trace(GlobalArchive* trace) {
   }
 
   if(show_threads) {
-    info_threads_header();
+    info_thread_header();
     for (int i = 0; i < trace->nb_archives; i++) {
       info_threads(trace->archive_list[i]);
     }
@@ -270,7 +381,10 @@ void usage(const char* prog_name) {
   printf("Usage: %s [OPTION] trace_file\n", prog_name);
   printf("\t-v             Verbose mode\n");
   printf("\t-D             Show definitions\n");
-  printf("\t--thread tid   Only print thread <tid>\n");
+  printf("\t-t             Show threads\n");
+  printf("\t--thread id   Only print thread <id>\n");
+  printf("\t-a             Show archvies\n");
+  printf("\t--archive id   Only print archive <id>\n");
   printf("\t-?  -h --help     Display this help and exit\n");
 }
 
@@ -284,9 +398,15 @@ int main(int argc, char** argv) {
       show_details = true;
     } else if (!strcmp(argv[nb_opts], "-D")) {
       show_definitions = true;
+    } else if (!strcmp(argv[nb_opts], "-a")) {
+      show_archives = true;
+    } else if (!strcmp(argv[nb_opts], "--archive")) {
+      archive_to_print = atoi(argv[nb_opts+1]);
+      nb_opts++;
+    } else if (!strcmp(argv[nb_opts], "-t")) {
+      show_threads = true;
     } else if (!strcmp(argv[nb_opts], "--thread")) {
       thread_to_print = atoi(argv[nb_opts+1]);
-      printf("thread_to_print=%d\n", thread_to_print);
       nb_opts++;
     } else if (!strcmp(argv[nb_opts], "-h") || !strcmp(argv[nb_opts], "-?") || !strcmp(argv[nb_opts], "--help")) {
       printf("invalid option '%s'\n", argv[nb_opts]);
