@@ -12,6 +12,12 @@
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
 
+static void printHeader() {
+  std::cout << std::setw(4+1+ 6 + 1) << " "
+            << std::right << std::setw(16) << "Stored" << " / "
+    << std::right << std::setw(16) << "Computed" << std::endl;
+}
+
 static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) {
   auto token = reader->pollCurToken();
   switch (token.type) {
@@ -33,9 +39,9 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
     reader->leaveBlock();
 
     if (sequence_duration != sum_of_durations_in_sequence) {
-      std::cout << "S" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->tokenCount[token]
-                << "Expected : " << sequence_duration
-                << ", got : " << sum_of_durations_in_sequence << std::endl;
+      std::cout << "S" << std::left << std::setw(4) << token.id << "#" << std::left << std::setw(6) << reader->currentState.tokenCount[token]
+                << std::right << std::setw(16) << sequence_duration
+                << " / " << std::right << std::setw(16) << sum_of_durations_in_sequence << std::endl;
     }
 
     return sequence_duration;
@@ -54,9 +60,9 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
 
     reader->leaveBlock();
     if (loop_duration != sum_of_durations_in_loop) {
-      std::cout << "L" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->tokenCount[token]
-                << "Expected : " << loop_duration
-                << ", got : " << sum_of_durations_in_loop << std::endl;
+      std::cout << "L" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->currentState.tokenCount[token]
+                << std::right << std::setw(16) << loop_duration
+                << " / " << std::right << std::setw(16) << sum_of_durations_in_loop << std::endl;
     }
     return loop_duration;
   }
@@ -74,6 +80,7 @@ static void testThreadDuration(pallas::Archive& trace, const pallas::Thread& thr
   auto* reader = new pallas::ThreadReader(&trace, thread.id, PALLAS_READ_FLAG_UNROLL_ALL);
 
   reader->leaveBlock();
+  printHeader();
   testCurrentTokenDuration(reader);
 
   delete reader;
@@ -103,6 +110,15 @@ int main(const int argc, char* argv[]) {
       break;
     }
   }
+
+  struct separate_thousands : std::numpunct<char> {
+    char_type do_thousands_sep() const override { return ','; }  // separate with commas
+    string_type do_grouping() const override { return "\3"; } // groups of 3 digit
+  };
+
+
+  auto thousands = std::make_unique<separate_thousands>();
+  std::cout.imbue(std::locale(std::cout.getloc(), thousands.release()));
 
   trace_name = argv[nb_opts + 1];
   if (trace_name == nullptr) {
