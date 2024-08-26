@@ -71,8 +71,66 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
   return true;
 }
 
+struct thread_data {
+  std::vector<std::string> callstack{};
+  std::vector<pallas_duration_t> callstack_duration{};
+};
+
+void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
+		pallas::ThreadReader* min_reader,
+		pallas::EventOccurence& e) {
+  
+  // This lambda prints the callstack in the flamegraph format
+  auto  _print_callstack = [&]() {
+    auto duration = 0;
+    if(! threads_data[min_reader].callstack_duration.empty()) {
+      duration = threads_data[min_reader].callstack_duration.back();
+    }
+    for(auto str: threads_data[min_reader].callstack) {
+      std::cout<<";"<<str;
+    }
+    if(threads_data[min_reader].callstack.empty()) std::cout<<";";
+
+    std::cout<<" "<<duration<<std::endl;
+  };
+
+  if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
+    // Start a new frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+
+    // Print the previous frame
+    _print_callstack();
+
+    // Start a new callstack duration
+    threads_data[min_reader].callstack.emplace_back(std::string(function_name));
+    threads_data[min_reader].callstack_duration.emplace_back(e.duration);
+	  
+  } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
+    // End a frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+    // Print the current frame
+    _print_callstack();
+
+    // Start a new frame
+
+    threads_data[min_reader].callstack.pop_back();
+    threads_data[min_reader].callstack_duration.pop_back();
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() = e.duration; // reset the counter
+
+  } else {
+    // Accumulate duration in the current frame
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() += e.duration;
+  }
+
+
+}
+
 void printTrace(const pallas::GlobalArchive& trace) {
-  auto callstack = std::vector<std::string>();
+
+  std::map<pallas::ThreadReader*, struct thread_data> threads_data;
+
   auto readers = std::vector<pallas::ThreadReader>();
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
@@ -81,8 +139,10 @@ void printTrace(const pallas::GlobalArchive& trace) {
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
 
       readers.emplace_back(trace.archive_list[i], thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
+      threads_data[&readers.back()] = {};
     }
   }
+
 
   _print_timestamp_header();
   _print_duration_header();
@@ -102,17 +162,7 @@ void printTrace(const pallas::GlobalArchive& trace) {
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.tokenCount[token]);
-	if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
-
-	  const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
-	  callstack.emplace_back(std::string(function_name));
-	  for(auto str: callstack) {
-	    std::cout<<";"<<str;
-	  }
-	  std::cout<<" "<<e.duration<<std::endl;
-	} else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
-	  callstack.pop_back();	  
-	}
+	printFlame(threads_data, min_reader, e);
       } else {
 	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.tokenCount[token]));
       }
