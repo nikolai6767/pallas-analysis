@@ -491,7 +491,9 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
 };
 
 size_t Sequence::getEventCount(const struct Thread* thread) {
-  TokenCountMap tokenCount = getTokenCount(thread);
+  // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops inside of it.
+  return 0;
+  // TokenCountMap tokenCount = getTokenCount(thread);
   return tokenCount.getEventCount();
 }
 

@@ -183,7 +183,7 @@ void info_sequence(Thread*t, int index, bool details=false) {
   std::cout << std::setw(18) << std::right << ns2s(s->durations->mean == UINT64_MAX? 0 : s->durations->mean);
   std::cout << std::setw(18) << std::right << ns2s(s->durations->mean == UINT64_MAX? 0 : s->durations->mean * s->durations->size);
   std::cout << std::setw(18) << std::right << s->size();
-  std::cout << std::setw(18) << std::right << s->getEventCount(t);
+  // std::cout << std::setw(18) << std::right << s->getEventCount(t);
   std::cout << std::endl;
 
   if(details) {
