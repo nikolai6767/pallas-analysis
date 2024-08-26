@@ -568,20 +568,37 @@ TokenCountMap Sequence::getTokenCountReading(const Thread* thread,
   return tokenCount;
 }
 
-inline static void updateTokenCountMapWithLoopContentWriting(const Loop* loop, const Thread* thread, TokenCountMap& offset) {
-  size_t cur_index = loop->nb_iterations.size() - offset[loop->self_id] - 1;
+void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount);
+
+inline static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& reverseTokenCount) {
+  size_t cur_index = loop->nb_iterations.size() - reverseTokenCount[loop->self_id] - 1;
   size_t loop_nb_iterations = loop->nb_iterations[cur_index];
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
   if (loop_sequence->contains_loops) {
     for (size_t temp_loop_index = 0; temp_loop_index < loop_nb_iterations; temp_loop_index++) {
-      auto temp = loop_sequence->getTokenCountWriting(thread, &offset);
-      offset += temp;
-      offset[loop->repeated_token]++;
+      _sequenceGetTokenCountWriting(loop_sequence, thread, reverseTokenCount);
+      reverseTokenCount[loop->repeated_token]++;
     }
   } else {
     auto temp = loop_sequence->getTokenCountWriting(thread);
-    offset += temp * loop_nb_iterations;
-    offset[loop->repeated_token] += loop_nb_iterations;
+    reverseTokenCount += temp * loop_nb_iterations;
+    reverseTokenCount[loop->repeated_token] += loop_nb_iterations;
+  }
+}
+
+void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount) {
+  for (auto& token : seq->tokens) {
+    if (token.type == TypeSequence) {
+      auto* s = thread->getSequence(token);
+      _sequenceGetTokenCountWriting(s, thread, reverseTokenCount);
+      seq->contains_loops = seq->contains_loops || s->contains_loops;
+    }
+    if (token.type == TypeLoop) {
+      seq->contains_loops = true;
+      auto* loop = thread->getLoop(token);
+      _loopGetTokenCountWriting(loop, thread, reverseTokenCount);
+    }
+    reverseTokenCount[token]++;
   }
 }
 
@@ -597,14 +614,13 @@ TokenCountMap Sequence::getTokenCountWriting(const Thread* thread, const TokenCo
       updatingOffset[token]++;
       if (token.type == TypeSequence) {
         auto* s = thread->getSequence(token);
-        auto tempTC = s->getTokenCountWriting(thread, offset);
-        updatingOffset += tempTC;
-        canStoreTokenCount = canStoreTokenCount && s->contains_loops;
+        _sequenceGetTokenCountWriting(s, thread, updatingOffset);
+        contains_loops = contains_loops || s->contains_loops;
       }
       if (token.type == TypeLoop) {
         canStoreTokenCount = false;
         auto* loop = thread->getLoop(token);
-        updateTokenCountMapWithLoopContentWriting(loop, thread, updatingOffset);
+        _loopGetTokenCountWriting(loop, thread, updatingOffset);
       }
     }
 

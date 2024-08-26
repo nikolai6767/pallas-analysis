@@ -460,7 +460,7 @@ bool ThreadReader::moveToNextToken(int flags) {
       auto loop = thread_trace->getLoop(current_token);
       auto loopCount = loop->nb_iterations[currentState.tokenCount[current_token]];
       for (size_t i = 0; i < loopCount; i ++) {
-        currentState.tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCountReading(thread_trace, tokenCount);
+        currentState.tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCountReading(thread_trace, currentState.tokenCount);
         currentState.tokenCount[loop->repeated_token] += 1;
       }
       break;
@@ -469,7 +469,7 @@ bool ThreadReader::moveToNextToken(int flags) {
     case TypeSequence: {
       auto seq = thread_trace->getSequence(current_token);
       token_duration = seq->durations->at(currentState.tokenCount[current_token]);
-      currentState.tokenCount += seq->getTokenCountReading(thread_trace, tokenCount);
+      currentState.tokenCount += seq->getTokenCountReading(thread_trace, currentState.tokenCount);
       break;
     }
 
@@ -550,14 +550,14 @@ bool ThreadReader::moveToPrevToken(int flags) {
         for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[currentState.tokenCount[current_token]];
              i++) {
           currentState.tokenCount +=
-            thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCount(thread_trace);
+            thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCountReading(thread_trace, currentState.tokenCount, true);
           currentState.tokenCount[thread_trace->getLoop(current_token)->repeated_token]++;
              }
         break;
 
       case TypeSequence:
         token_duration = thread_trace->getSequence(current_token)->durations->at(currentState.tokenCount[current_token]);
-        currentState.tokenCount += thread_trace->getSequence(current_token)->getTokenCount(thread_trace);
+        currentState.tokenCount += thread_trace->getSequence(current_token)->getTokenCountReading(thread_trace, currentState.tokenCount, true);
         break;
 
       case TypeInvalid:
@@ -588,7 +588,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   case TypeLoop: {
     auto prev_loop = thread_trace->getLoop(previous_token);
     for (int i = 0; i < prev_loop->nb_iterations[currentState.tokenCount[previous_token]]; i++) {
-      currentState.tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCountReading(thread_trace, tokenCount, true);
+      currentState.tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCountReading(thread_trace, currentState.tokenCount, true);
       currentState.tokenCount[prev_loop->repeated_token]--;
     }
     currentState.referential_timestamp -= getLoopDuration(previous_token);
@@ -596,7 +596,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   }
   case TypeSequence: {
     auto prev_sequence = thread_trace->getSequence(previous_token);
-    currentState.tokenCount -= prev_sequence->getTokenCountReading(thread_trace, tokenCount, true);
+    currentState.tokenCount -= prev_sequence->getTokenCountReading(thread_trace, currentState.tokenCount, true);
     currentState.referential_timestamp -= prev_sequence->durations->at(currentState.tokenCount[previous_token]);
     break;
   }

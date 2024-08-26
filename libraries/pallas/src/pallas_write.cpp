@@ -320,7 +320,7 @@ void ThreadWriter::findLoopFilter() {
       loop->addIteration();
       // The current sequence last_timestamp does not need to be updated
 
-      pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(sequence, true);
+      pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(sequence, 0);
       addDurationToComplete(sequence->durations->add(ts));
       curTokenSeq.resize(loopIndex + 1);
       return;
@@ -704,7 +704,7 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
       if (token.type == TokenType::TypeEvent) {
         auto* event = getEventSummary(token);
         DOFOR(i, count) {
-          sum += event->durations->at(event->durations->size - i - offset * count - 1);
+          sum += event->durations->at(event->durations->size - i - 1);
         }
       }
     }
