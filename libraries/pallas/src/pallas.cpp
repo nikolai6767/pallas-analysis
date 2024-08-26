@@ -94,6 +94,30 @@ std::string Thread::getTokenString(Token token) const {
   return tempString.str();
 }
 
+pallas_duration_t Thread::getDuration() const {
+  return sequences[0]->durations->at(0);
+}
+pallas_duration_t get_duration(PALLAS(Thread) *t) { return t->getDuration(); }
+
+pallas_timestamp_t Thread::getFirstTimestamp() const {
+  return 0; 			// TODO: find the first timestamp
+}
+pallas_timestamp_t get_first_timestamp(PALLAS(Thread) *t) { return t->getFirstTimestamp(); }
+
+pallas_timestamp_t Thread::getLastTimestamp() const {
+  return getFirstTimestamp() + getDuration();
+}
+pallas_timestamp_t get_last_timestamp(PALLAS(Thread) *t) { return t->getLastTimestamp(); }
+
+size_t Thread::getEventCount() const {
+  size_t ret = 0;
+  for(unsigned i=0; i<this->nb_events; i++) {
+    ret += this->events[i].nb_occurences;
+  }
+  return ret;
+}
+size_t get_event_count(PALLAS(Thread) *t) { return t->getEventCount(); }
+
 void Thread::printToken(Token token) const {
   std::cout << getTokenString(token);
 }
@@ -141,6 +165,32 @@ static inline void pop_data(Event* e, void* data, size_t data_size, byte*& curso
 
   memcpy(data, cursor, data_size);
   cursor += data_size;
+}
+
+const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
+  const Region* region = NULL;
+  byte* cursor = nullptr;
+  switch (e->record)
+    {
+    case PALLAS_EVENT_ENTER:
+      {
+	RegionRef region_ref;
+	pop_data(e, &region_ref, sizeof(region_ref), cursor);
+	region = archive->global_archive->getRegion(region_ref);
+	break;
+      }
+    case PALLAS_EVENT_LEAVE:
+      {
+	RegionRef region_ref;
+	pop_data(e, &region_ref, sizeof(region_ref), cursor);
+	region = archive->global_archive->getRegion(region_ref);
+	break;
+      }
+    default:
+      region = NULL;
+    }
+
+  return region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
 }
 
 void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const {
@@ -439,6 +489,12 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
   }
   return false;
 };
+
+size_t Sequence::getEventCount(const struct Thread* thread) {
+  TokenCountMap tokenCount = getTokenCount(thread);
+  return tokenCount.getEventCount();
+}
+
 
 void _sequenceGetTokenCountReading(Sequence* seq,
                                    const Thread* thread,

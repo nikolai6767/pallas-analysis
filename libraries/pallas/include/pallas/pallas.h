@@ -109,6 +109,7 @@ typedef struct Token {
   bool operator<(const Token& other) const { return (type < other.type || (type == other.type && id < other.id)); }
   /** Returns true if the Token is a Sequence or a Loop. */
   [[nodiscard]] inline bool isIterable() const { return type == TypeSequence || type == TypeLoop; }
+  [[nodiscard]] inline bool isValid() const { return type != TypeInvalid; }
 #endif
 } Token;
 /** Creates a Token for an Event. */
@@ -267,6 +268,16 @@ struct TokenCountMap : public std::map<Token, size_t> {
       return 0;
     return res->second;
   }
+  /** Count the number of Events in the tokenCountMap. */
+  [[nodiscard]] size_t getEventCount() const {
+    size_t sum = 0;
+    for (auto keyValue : *this) {
+      Token t = keyValue.first;
+      if(t.type == TypeEvent)
+	      sum += keyValue.second;
+    }
+    return sum;
+  }
 };
 #endif
 
@@ -287,7 +298,7 @@ typedef struct Sequence {
   CXX(private:)
   /**
    * A TokenCountMap counting each token in this Sequence (recursively).
-   * It might not be initialized, which is why ::getTokenCountWriting exists.*/
+   * It might not be initialized, which is why ::getTokenCount (writing or reading) exists.*/
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
  public:
@@ -310,6 +321,8 @@ typedef struct Sequence {
   TokenCountMap getTokenCountReading(const pallas::Thread* thread,
                               const TokenCountMap& threadReaderTokenCountMap,
                               bool isReversedOrder = false);
+
+  size_t getEventCount(const struct Thread* thread);
   ~Sequence() { delete durations; };
 #endif
 } Sequence;
@@ -414,6 +427,36 @@ typedef struct Attribute {
   pallas_type_t type;         /**< Type of that Attribute. */
 } Attribute;
 
+/** Reference for a pallas::Group */
+typedef Ref GroupRef;
+/** Invalid GroupRef */
+#define PALLAS_GROUPREF_INVALID ((PALLAS(StringRef))PALLAS_UNDEFINED_UINT32)
+/**
+ * Define a Group reference structure used by PALLAS format.
+ *
+ */
+typedef struct Group {
+  GroupRef group_ref;    /**< Id of that Group.*/
+  StringRef name;
+  uint32_t numberOfMembers;
+  uint64_t* members;
+} Group;
+
+/** Reference for a pallas::Comm */
+typedef Ref CommRef;
+/** Invalid CommRef */
+#define PALLAS_COMMREF_INVALID ((PALLAS(StringRef))PALLAS_UNDEFINED_UINT32)
+/**
+ * Define a Comm reference structure used by PALLAS format.
+ *
+ */
+typedef struct Comm {
+  CommRef comm_ref;     /**< Id of that Comm.*/
+  StringRef name;
+  GroupRef group;
+  CommRef parent;
+} Comm;
+
 /**
  * A thread contains streams of events.
  *
@@ -458,6 +501,23 @@ typedef struct Thread {
   [[nodiscard]] Token& getToken(Token, int) const;
 
   /**
+   * Return the duration of the thread
+   */
+  pallas_duration_t getDuration() const;
+  /**
+   * Return the first timestamp of the thread
+   */
+  pallas_timestamp_t getFirstTimestamp() const;
+  /**
+   * Return the last timestamp of the thread
+   */
+  pallas_timestamp_t getLastTimestamp() const;
+  /**
+   * Return the number of events of the thread
+   */
+  size_t getEventCount() const;
+
+  /**
    * Prints the given Token, along with its id.
    * E_E, E_L, E_S indicates an Enter, Leave or Singleton Event.
    * S and L indicates a Sequence or a Loop.
@@ -472,8 +532,11 @@ typedef struct Thread {
   void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
   void printString(StringRef) const;          /**< Prints a String (checks for validity first). */
   void printAttributeRef(AttributeRef) const; /**< Prints an AttributeRef (checks for validity first). */
+  void printCommRef(CommRef) const; /**< Prints an CommRef (checks for validity first). */
+  void printGroupRef(GroupRef) const; /**< Prints an GroupRef (checks for validity first). */
   void printLocation(Ref) const;              /**< Prints a Ref for a Location (checks for validity first). */
   void printRegion(RegionRef) const;          /**< Prints an RegionRef (checks for validity first). */
+  const char* getRegionStringFromEvent(pallas::Event* e) const;
   void printAttributeValue(const struct AttributeData* attr, pallas_type_t type) const; /**< Prints an AttributeValue.*/
   void printAttribute(const struct AttributeData* attr) const;                          /**< Prints an AttributeData. */
   void printAttributeList(const struct AttributeList* attribute_list) const;            /**< Prints an AttributeList. */
@@ -509,9 +572,30 @@ extern "C" {
   /** Allocates a new thread */
   extern PALLAS(Thread) * pallas_thread_new(void);
   /**
-   * Return the thread name of thread thread
+   * Return the thread name of the thread.
    */
   extern const char* pallas_thread_get_name(PALLAS(Thread) * thread);
+
+  /**
+   * Return the duration of the thread
+   */
+  pallas_duration_t get_duration(PALLAS(Thread) *t);
+
+  /**
+   * Return the first timestamp of the thread
+   */
+  pallas_timestamp_t get_first_timestamp(PALLAS(Thread) *t);
+
+  /**
+   * Return the last timestamp of the thread
+   */
+  pallas_timestamp_t get_last_timestamp(PALLAS(Thread) *t);
+
+  /**
+   * Return the number of events of the thread
+   */
+  size_t get_event_count(PALLAS(Thread) *t);
+
 
   /**
    * Print the content of sequence seq_id

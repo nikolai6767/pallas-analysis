@@ -52,18 +52,35 @@ typedef struct Definition {
 #else
   byte strings[MAP_SIZE];
 #endif
+
   /** List of Region stored in that Definition. */
 #ifdef __cplusplus
   std::map<RegionRef, Region> regions;
 #else
   byte regions[MAP_SIZE];
 #endif
+
   /** List of Attribute stored in that Definition. */
 #ifdef __cplusplus
   std::map<AttributeRef, Attribute> attributes;
 #else
   byte attributes[MAP_SIZE];
 #endif
+
+  /** List of Group stored in that Definition. */
+#ifdef __cplusplus
+  std::map<GroupRef, Group> groups;
+#else
+  byte groups[MAP_SIZE];
+#endif
+
+  /** List of Comm stored in that Definition. */
+#ifdef __cplusplus
+  std::map<CommRef, Comm> comms;
+#else
+  byte comms[MAP_SIZE];
+#endif
+
 #ifdef __cplusplus
   [[nodiscard]] const String* getString(StringRef) const;
   void addString(StringRef, const char*);
@@ -71,6 +88,10 @@ typedef struct Definition {
   void addRegion(RegionRef, StringRef);
   [[nodiscard]] const Attribute* getAttribute(AttributeRef) const;
   void addAttribute(AttributeRef, StringRef, StringRef, pallas_type_t);
+  [[nodiscard]] const Group* getGroup(GroupRef) const;
+  void addGroup(GroupRef, StringRef, uint32_t, const uint64_t*);
+  [[nodiscard]] const Comm* getComm(CommRef) const;
+  void addComm(CommRef, StringRef, GroupRef, CommRef);
 #endif
 } Definition;
 /**
@@ -100,9 +121,14 @@ typedef struct GlobalArchive {
   [[nodiscard]] const struct String* getString(StringRef string_ref);
   [[nodiscard]] const struct Region* getRegion(RegionRef region_ref);
   [[nodiscard]] const struct Attribute* getAttribute(AttributeRef attribute_ref);
+  [[nodiscard]] const struct Group* getGroup(GroupRef group_ref);
+  [[nodiscard]] const struct Comm* getComm(CommRef comm_ref);
   void addString(StringRef, const char*);
   void addRegion(RegionRef, StringRef);
   void addAttribute(AttributeRef, StringRef, StringRef, pallas_type_t);
+  void addGroup(GroupRef, StringRef, uint32_t, const uint64_t*);
+  void addComm(CommRef, StringRef, GroupRef, CommRef);
+
   /**
    * Open the Global Archive.
    * @param dirname Path to the file.
@@ -117,6 +143,7 @@ typedef struct GlobalArchive {
   [[nodiscard]] const Location* getLocation(ThreadId) const;
   Archive* getArchive(LocationGroupId archiveId, bool print_warning = true);
   void freeArchive(LocationGroupId archiveId);
+  [[nodiscard]] struct Archive* getArchiveFromLocation(ThreadId) const;
 #endif
 } GlobalArchive;
 
@@ -146,6 +173,8 @@ typedef struct Archive {
 #ifdef __cplusplus
   [[nodiscard]] Thread* getThread(ThreadId);
   [[nodiscard]] Thread* getThreadAt(size_t i);
+  const char* getName() const;
+
   void freeThread(ThreadId);
   /**
    * Open a trace file and loads it it that Archive.
@@ -192,6 +221,12 @@ extern const struct PALLAS(Location) *
   pallas_archive_get_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id);
 
 /**
+ * @returns The archive that contains a pallas::ThreadId, or nullptr if not found.
+ */
+extern const PALLAS(Archive)*
+  pallas_archive_get_archive_from_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) thread_id);
+
+/**
  * Creates a new String and adds it to that Archive.
  * Error if the given pallas::StringRef is already in use.
  * Locks and unlocks the mutex for that operation.
@@ -219,6 +254,28 @@ extern void pallas_archive_register_attribute(PALLAS(GlobalArchive) * archive,
                                               PALLAS(pallas_type_t) type);
 
 /**
+ * Creates a new Group and adds it to that Archive.
+ * Error if the given pallas::GroupRef is already in use.
+ * Locks and unlocks the mutex for that operation.
+ */
+extern void pallas_archive_register_group(PALLAS(GlobalArchive) * archive,
+					  PALLAS(GroupRef) group_ref,
+					  PALLAS(StringRef) name_ref,
+					  uint32_t number_of_members,
+					  const uint64_t* members);
+
+/**
+ * Creates a new Comm and adds it to that Archive.
+ * Error if the given pallas::CommRef is already in use.
+ * Locks and unlocks the mutex for that operation.
+ */
+extern void pallas_archive_register_comm(PALLAS(GlobalArchive) * archive,
+					 PALLAS(CommRef) comm_ref,
+					 PALLAS(StringRef) name_ref,
+					 PALLAS(GroupRef) group_ref,
+					 PALLAS(CommRef) parent_ref);
+
+/**
  * Getter for a String from its id.
  * @returns First String matching the given pallas::StringRef in this archive, or in the global_archive if it doesn't
  * have a match, or nullptr if it doesn't have a match in the global_archive.
@@ -239,6 +296,23 @@ extern const struct PALLAS(Region) * pallas_archive_get_region(PALLAS(GlobalArch
  */
 extern const struct PALLAS(Attribute) *
   pallas_archive_get_attribute(PALLAS(GlobalArchive) * archive, PALLAS(AttributeRef) attribute_ref);
+
+/**
+ * Getter for a Group from its id.
+ * @returns First Group matching the given pallas::GroupRef in this archive, or in the global_archive if it
+ * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
+ */
+extern const struct PALLAS(Group) *
+  pallas_archive_get_group(PALLAS(GlobalArchive) * archive, PALLAS(GroupRef) group_ref);
+
+/**
+ * Getter for a Comm from its id.
+ * @returns First Comm matching the given pallas::CommRef in this archive, or in the global_archive if it
+ * doesn't have a match, or nullptr if it doesn't have a match in the global_archive.
+ */
+extern const struct PALLAS(Comm) *
+  pallas_archive_get_comm(PALLAS(GlobalArchive) * archive, PALLAS(CommRef) comm_ref);
+
 #ifdef __cplusplus
 };
 #endif /* __cplusplus */

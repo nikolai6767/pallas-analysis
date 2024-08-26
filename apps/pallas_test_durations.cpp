@@ -16,15 +16,15 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
   auto token = reader->pollCurToken();
   switch (token.type) {
   case pallas::TypeEvent: {
-    return reader->getEventOccurence(token, reader->tokenCount[token]).duration;
+    return reader->getEventOccurence(token, reader->currentState.tokenCount[token]).duration;
   }
 
   case pallas::TypeSequence: {
-    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->currentState.tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_sequence = 0;
-    reader->enterBlock(token);
+    reader->enterBlock();
 
-    while (reader->pollNextToken().has_value()) {
+    while (reader->pollNextToken().isValid()) {
       sum_of_durations_in_sequence += testCurrentTokenDuration(reader);
       reader->moveToNextToken();
     }
@@ -42,11 +42,11 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
   }
 
   case pallas::TypeLoop: {
-    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->tokenCount[token]).duration;
+    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->currentState.tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_loop = 0;
-    reader->enterBlock(token);
+    reader->enterBlock();
 
-    while (reader->pollNextToken().has_value()) {
+    while (reader->pollNextToken().isValid()) {
       sum_of_durations_in_loop += testCurrentTokenDuration(reader);
       reader->moveToNextToken();
     }
@@ -70,9 +70,8 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
 /* Print all the events of a thread */
 static void testThreadDuration(pallas::Archive& trace, const pallas::Thread& thread) {
   printf("Testing durations for Thread %u (%s):\n", thread.id, thread.getName());
-
-  constexpr int readerOptions = pallas::ThreadReaderOptions::None;
-  auto* reader = new pallas::ThreadReader(&trace, thread.id, readerOptions);
+;
+  auto* reader = new pallas::ThreadReader(&trace, thread.id, PALLAS_READ_FLAG_UNROLL_ALL);
 
   reader->leaveBlock();
   testCurrentTokenDuration(reader);

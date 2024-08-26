@@ -1877,6 +1877,49 @@ typedef OTF2_CallbackCode (*OTF2_DefReaderCallback_InterComm)(void* userData,
 OTF2_ErrorCode OTF2_DefReaderCallbacks_SetInterCommCallback(OTF2_DefReaderCallbacks* defReaderCallbacks,
                                                             OTF2_DefReaderCallback_InterComm interCommCallback);
 
+
+
+  struct OTF2_DefReaderCallbacks_struct {
+    OTF2_DefReaderCallback_Unknown OTF2_DefReaderCallback_Unknown_callback;
+    OTF2_DefReaderCallback_MappingTable OTF2_DefReaderCallback_MappingTable_callback;
+    OTF2_DefReaderCallback_ClockOffset OTF2_DefReaderCallback_ClockOffset_callback;
+    OTF2_DefReaderCallback_String OTF2_DefReaderCallback_String_callback;
+    OTF2_DefReaderCallback_Attribute OTF2_DefReaderCallback_Attribute_callback;
+    OTF2_DefReaderCallback_SystemTreeNode OTF2_DefReaderCallback_SystemTreeNode_callback;
+    OTF2_DefReaderCallback_LocationGroup OTF2_DefReaderCallback_LocationGroup_callback;
+    OTF2_DefReaderCallback_Location OTF2_DefReaderCallback_Location_callback;
+    OTF2_DefReaderCallback_Region OTF2_DefReaderCallback_Region_callback;
+    OTF2_DefReaderCallback_Callsite OTF2_DefReaderCallback_Callsite_callback;
+    OTF2_DefReaderCallback_Callpath OTF2_DefReaderCallback_Callpath_callback;
+    OTF2_DefReaderCallback_Group OTF2_DefReaderCallback_Group_callback;
+    OTF2_DefReaderCallback_MetricMember OTF2_DefReaderCallback_MetricMember_callback;
+    OTF2_DefReaderCallback_MetricClass OTF2_DefReaderCallback_MetricClass_callback;
+    OTF2_DefReaderCallback_MetricInstance OTF2_DefReaderCallback_MetricInstance_callback;
+    OTF2_DefReaderCallback_Comm OTF2_DefReaderCallback_Comm_callback;
+    OTF2_DefReaderCallback_Parameter OTF2_DefReaderCallback_Parameter_callback;
+    OTF2_DefReaderCallback_RmaWin OTF2_DefReaderCallback_RmaWin_callback;
+    OTF2_DefReaderCallback_MetricClassRecorder OTF2_DefReaderCallback_MetricClassRecorder_callback;
+    OTF2_DefReaderCallback_SystemTreeNodeProperty OTF2_DefReaderCallback_SystemTreeNodeProperty_callback;
+    OTF2_DefReaderCallback_SystemTreeNodeDomain OTF2_DefReaderCallback_SystemTreeNodeDomain_callback;
+    OTF2_DefReaderCallback_LocationGroupProperty OTF2_DefReaderCallback_LocationGroupProperty_callback;
+    OTF2_DefReaderCallback_LocationProperty OTF2_DefReaderCallback_LocationProperty_callback;
+    OTF2_DefReaderCallback_CartDimension OTF2_DefReaderCallback_CartDimension_callback;
+    OTF2_DefReaderCallback_CartTopology OTF2_DefReaderCallback_CartTopology_callback;
+    OTF2_DefReaderCallback_CartCoordinate OTF2_DefReaderCallback_CartCoordinate_callback;
+    OTF2_DefReaderCallback_SourceCodeLocation OTF2_DefReaderCallback_SourceCodeLocation_callback;
+    OTF2_DefReaderCallback_CallingContext OTF2_DefReaderCallback_CallingContext_callback;
+    OTF2_DefReaderCallback_CallingContextProperty OTF2_DefReaderCallback_CallingContextProperty_callback;
+    OTF2_DefReaderCallback_InterruptGenerator OTF2_DefReaderCallback_InterruptGenerator_callback;
+    OTF2_DefReaderCallback_IoFileProperty OTF2_DefReaderCallback_IoFileProperty_callback;
+    OTF2_DefReaderCallback_IoRegularFile OTF2_DefReaderCallback_IoRegularFile_callback;
+    OTF2_DefReaderCallback_IoDirectory OTF2_DefReaderCallback_IoDirectory_callback;
+    OTF2_DefReaderCallback_IoHandle OTF2_DefReaderCallback_IoHandle_callback;
+    OTF2_DefReaderCallback_IoPreCreatedHandleState OTF2_DefReaderCallback_IoPreCreatedHandleState_callback;
+    OTF2_DefReaderCallback_CallpathParameter OTF2_DefReaderCallback_CallpathParameter_callback;
+    OTF2_DefReaderCallback_InterComm OTF2_DefReaderCallback_InterComm_callback;
+    
+
+  };
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

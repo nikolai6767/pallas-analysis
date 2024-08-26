@@ -46,8 +46,8 @@ OTF2_ErrorCode OTF2_EvtWriter_Enter(OTF2_EvtWriter* writer,
                                     OTF2_RegionRef region) {
   pallas_log(Debug, "enter(%p {.locationRef=%lu, .writer=%p}, %d)\n", writer, writer->locationRef, writer->thread_writer, region);
   pallas_record_enter(writer->thread_writer,
-                   attributeList,
-                   time, region);
+		      attributeList,
+		      time, region);
 
   return OTF2_SUCCESS;
 }
