@@ -6,8 +6,9 @@
  * Everything needed to read a trace.
  */
 #pragma once
-
+#ifndef __cplusplus
 #include <stdbool.h>
+#endif
 #include "pallas.h"
 #include "pallas_attribute.h"
 #include "pallas_timestamp.h"
