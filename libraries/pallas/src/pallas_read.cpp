@@ -7,17 +7,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
 
 namespace pallas {
-
-CallstackFrame::CallstackFrame(const ThreadReader* reader) {
-  referential_timestamp = reader->currentState->referential_timestamp;
-  tokenCount = reader->currentState->tokenCount;
-  frame_index = 0;
-}
 
 CallstackFrame::CallstackFrame() {
   this->referential_timestamp = 0;
@@ -187,8 +182,7 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
 }
 
 SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
-                                                     size_t occurence_id,
-                                                     bool save_checkpoint) const {
+                                                     size_t occurence_id) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -196,10 +190,6 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
   sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
   sequenceOccurence.full_sequence = nullptr;
 
-  if (save_checkpoint)
-    sequenceOccurence.checkpoint = new CallstackFrame(this);
-
-  //  auto localTokenCount = sequenceOccurence.sequence->getTokenCount(thread_trace, true, &this->tokenCount);
   return sequenceOccurence;
 };
 
@@ -410,7 +400,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   auto current_iterable_token = currentState->callstack_iterable;
   pallas_assert(current_iterable_token.isIterable());
 
-  if (currentState->frame_index == 0) {
+  if (currentState->frame_index == 1) {
     if (current_frame_index <= 1)
       return false;
     Token current_iterable_token = currentState->callstack_iterable;
@@ -644,6 +634,44 @@ ThreadReader::ThreadReader(ThreadReader&& other) noexcept {
   other.pallas_read_flag = 0;
 }
 
+ThreadReader& ThreadReader::operator=(const ThreadReader& other) {
+  archive = other.archive;
+  thread_trace = other.thread_trace;
+  current_frame_index = other.current_frame_index;
+  DOFOR(i, MAX_CALLSTACK_DEPTH) {
+    callstack[i].tokenCount = other.callstack[i].tokenCount;
+    callstack[i].frame_index = other.callstack[i].frame_index;
+    callstack[i].callstack_iterable = other.callstack[i].callstack_iterable;
+    callstack[i].referential_timestamp = other.callstack[i].referential_timestamp;
+  }
+  currentState = &callstack[current_frame_index];
+  pallas_read_flag = other.pallas_read_flag;
+  return *this;
+}
+
+ThreadReader& ThreadReader::operator=(ThreadReader&& other) noexcept {
+  archive = other.archive;
+  thread_trace = other.thread_trace;
+  current_frame_index = other.current_frame_index;
+  DOFOR(i, MAX_CALLSTACK_DEPTH) {
+    callstack[i].tokenCount = other.callstack[i].tokenCount;
+    callstack[i].frame_index = other.callstack[i].frame_index;
+    callstack[i].callstack_iterable = other.callstack[i].callstack_iterable;
+    callstack[i].referential_timestamp = other.callstack[i].referential_timestamp;
+  }
+  currentState = &callstack[current_frame_index];
+  pallas_read_flag = other.pallas_read_flag;
+  // Set other to 0 for everything
+  other.archive = nullptr;
+  other.thread_trace = nullptr;
+  other.currentState = nullptr;
+  other.pallas_read_flag = 0;
+  return *this;
+}
+
+ThreadReader ThreadReader::copy() const {
+  return ThreadReader(*this);
+}
 
 ThreadReader pallasCreateThreadReader(Archive* archive, ThreadId threadId, int options) {
   return {archive, threadId, options};
@@ -683,18 +711,14 @@ EventOccurence pallasGetEventOccurence(ThreadReader* thread_reader, Token event_
 }
 SequenceOccurence pallasGetSequenceOccurence(ThreadReader* thread_reader,
                                              Token sequence_id,
-                                             size_t occurence_id,
-                                             bool create_checkpoint) {
-  return thread_reader->getSequenceOccurence(sequence_id, occurence_id, create_checkpoint);
+                                             size_t occurence_id) {
+  return thread_reader->getSequenceOccurence(sequence_id, occurence_id);
 }
 LoopOccurence pallasGetLoopOccurence(ThreadReader* thread_reader, Token loop_id, size_t occurence_id) {
   return thread_reader->getLoopOccurence(loop_id, occurence_id);
 }
 AttributeList* pallasGetEventAttributeList(ThreadReader* thread_reader, Token event_id, size_t occurence_id) {
   return thread_reader->getEventAttributeList(event_id, occurence_id);
-}
-void pallasLoadCheckpoint(ThreadReader* thread_reader, CallstackFrame* checkpoint) {
-//  thread_reader->loadCheckpoint(checkpoint);
 }
 Token pallasPollCurToken(ThreadReader* thread_reader) {
   return thread_reader->pollCurToken();
@@ -735,11 +759,11 @@ bool pallasExitIfEndOfBlock(ThreadReader* thread_reader, int flags) {
 bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
   return thread_reader->enterIfStartOfBlock(flags);
 }
-CallstackFrame pallasCreateCursorFromThreadReader(ThreadReader* thread_reader) {
-  return CallstackFrame(thread_reader);
+ThreadReader pallasCreateCheckpoint(ThreadReader *thread_reader) {
+  return thread_reader->copy();
 }
-void destroyCursor(const CallstackFrame* cursor) {
-  delete cursor;
+void pallasLoadCheckpoint(ThreadReader *dest, ThreadReader *src) {
+  *dest = src->copy();
 }
 
 TokenOccurence::~TokenOccurence() {

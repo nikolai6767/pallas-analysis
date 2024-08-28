@@ -154,6 +154,8 @@ void printThreadStructure(pallas::ThreadReader& tr) {
       std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
     } std::cout << std::endl;
     }
+    pallas::ThreadReader checkpoint = tr.copy();
+    tr = checkpoint.copy();
     auto next_token = tr.getNextToken();
     if (! next_token.isValid())
       break;
