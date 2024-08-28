@@ -43,7 +43,7 @@ typedef struct SequenceOccurence {
   pallas_timestamp_t timestamp;         /**< Timestamp for that occurence.*/
   pallas_duration_t duration;           /**< Duration of that occurence.*/
   struct TokenOccurence* full_sequence; /** Array of the occurrences in this sequence. */
-  struct Cursor *checkpoint;
+  struct CallstackFrame *checkpoint;
 } SequenceOccurence;
 
 /**
@@ -82,38 +82,26 @@ typedef struct TokenOccurence {
 #endif
 } TokenOccurence;
 
-typedef struct Cursor {
+typedef struct CallstackFrame {
   /** The current referential timestamp. */
   pallas_timestamp_t referential_timestamp;
 
   /** Stack containing the sequences/loops being read. */
-  Token callstack_iterable[MAX_CALLSTACK_DEPTH];
+  Token callstack_iterable;
 
   /** Stack containing the index in the sequence or the loop iteration. */
-  int callstack_index[MAX_CALLSTACK_DEPTH];
+  int frame_index;
 
-  /** Current frame = index of the event/loop being read in the callstacks.
-   * You can view this as the "depth" of the callstack. */
-  int current_frame;
-
-  /** Stack containing the checkpoint in the sequence or the loop iteration. */
-  struct Cursor* previous_frame_cursor;
-
-  int ref_counter;
 
   DEFINE_TokenCountMap(tokenCount);
 #ifdef __cplusplus
-
-  Cursor deepCopy();
-
   /** Creates a cursor of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
-  explicit Cursor(const struct ThreadReader* reader);
-  explicit Cursor(const Cursor* other);
-  Cursor();
-  ~Cursor();
+  explicit CallstackFrame(const struct ThreadReader* reader);
+  CallstackFrame();
+  ~CallstackFrame();
 #endif
-} Cursor;
+} CallstackFrame;
 
 /**
  * Reads one thread from an Pallas trace.
@@ -124,7 +112,13 @@ typedef struct ThreadReader {
   /** Thread being read. */
   struct Thread* thread_trace;
 
-  Cursor currentState;
+  /** Current frame = index of the event/loop being read in the callstacks.
+   * You can view this as the "depth" of the callstack. */
+  int current_frame_index;
+
+  CallstackFrame *currentState;
+
+  CallstackFrame callstack[MAX_CALLSTACK_DEPTH];
 
   /**
    * Options as defined in pallas::ThreadReaderOptions.
@@ -185,11 +179,11 @@ typedef struct ThreadReader {
 
   /** Creates a checkpoint (a copy of the current state) to be loaded later
    * Warning : this function is non trivial an may be an expansive computation */
-  [[nodiscard]] Cursor createCheckpoint() const;
+  [[nodiscard]] CallstackFrame createCheckpoint() const;
 
   /** Loads a checkpoint
    * Warning : this function is non trivial an may be an expansive computation */
-  void loadCheckpoint(Cursor *checkpoint);
+//  void loadCheckpoint(CallstackFrame *checkpoint);
 
   //******************* EXPLORATION FUNCTIONS ********************
 
@@ -226,7 +220,7 @@ typedef struct ThreadReader {
 
   ~ThreadReader();
 
-  ThreadReader(const ThreadReader &) = default;
+  ThreadReader(const ThreadReader &);
   ThreadReader(ThreadReader&& other) noexcept ;
 #endif
 } ThreadReader;
@@ -281,7 +275,7 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id,
 /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
 AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
 
-void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
+void pallasLoadCheckpoint(ThreadReader *thread_reader, CallstackFrame *checkpoint);
 
 //******************* EXPLORATION FUNCTIONS ********************
 
@@ -314,10 +308,10 @@ bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
 /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
 bool pallasEnterIfStartOfBlock(ThreadReader *thread_reader, int flags);
 
-Cursor pallasCreateCursorFromThreadReader(ThreadReader *thread_reader);
-Cursor pallasCreateCursorFromCursor(Cursor *other);
-Cursor pallasDeepCopyCursor(Cursor *other);
-void destroyCursor(const Cursor *cursor);
+CallstackFrame pallasCreateCursorFromThreadReader(ThreadReader *thread_reader);
+CallstackFrame pallasCreateCursorFromCursor(CallstackFrame *other);
+CallstackFrame pallasDeepCopyCursor(CallstackFrame *other);
+void destroyCursor(const CallstackFrame *cursor);
 
 #ifdef __cplusplus
 }; /* namespace pallas */
