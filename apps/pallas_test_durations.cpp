@@ -22,11 +22,11 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
   auto token = reader->pollCurToken();
   switch (token.type) {
   case pallas::TypeEvent: {
-    return reader->getEventOccurence(token, reader->currentState.tokenCount[token]).duration;
+    return reader->getEventOccurence(token, reader->currentState.currentFrame->tokenCount[token]).duration;
   }
 
   case pallas::TypeSequence: {
-    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->currentState.tokenCount[token]).duration;
+    pallas_duration_t sequence_duration = reader->getSequenceOccurence(token, reader->currentState.currentFrame->tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_sequence = 0;
     reader->enterBlock();
 
@@ -39,7 +39,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
     reader->leaveBlock();
 
     if (sequence_duration != sum_of_durations_in_sequence) {
-      std::cout << "S" << std::left << std::setw(4) << token.id << "#" << std::left << std::setw(6) << reader->currentState.tokenCount[token]
+      std::cout << "S" << std::left << std::setw(4) << token.id << "#" << std::left << std::setw(6) << reader->currentState.currentFrame->tokenCount[token]
                 << std::right << std::setw(16) << sequence_duration
                 << " / " << std::right << std::setw(16) << sum_of_durations_in_sequence << std::endl;
     }
@@ -48,7 +48,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
   }
 
   case pallas::TypeLoop: {
-    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->currentState.tokenCount[token]).duration;
+    pallas_duration_t loop_duration = reader->getLoopOccurence(token, reader->currentState.currentFrame->tokenCount[token]).duration;
     pallas_duration_t sum_of_durations_in_loop = 0;
     reader->enterBlock();
 
@@ -60,7 +60,7 @@ static pallas_duration_t testCurrentTokenDuration(pallas::ThreadReader* reader) 
 
     reader->leaveBlock();
     if (loop_duration != sum_of_durations_in_loop) {
-      std::cout << "L" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->currentState.tokenCount[token]
+      std::cout << "L" << std::left << std::setw(3) << token.id << "#" << std::left << std::setw(6) << reader->currentState.currentFrame->tokenCount[token]
                 << std::right << std::setw(16) << loop_duration
                 << " / " << std::right << std::setw(16) << sum_of_durations_in_loop << std::endl;
     }
