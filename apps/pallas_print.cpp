@@ -2,8 +2,10 @@
  * Copyright (C) Telecom SudParis
  * See LICENSE in top-level directory.
  */
+#include <algorithm>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <string>
 #include <iomanip>
 #include "pallas/pallas.h"
@@ -16,6 +18,8 @@ bool verbose = false;
 bool per_thread = false;
 bool show_durations = false;
 bool show_timestamps = true;
+int thread_to_print = -1;
+bool flamegraph = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
   if (show_timestamps) {
@@ -24,7 +28,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
   }
 }
 static void _print_timestamp_header() {
-  if (show_timestamps) {
+  if (show_timestamps && !flamegraph) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
 }
@@ -37,7 +41,7 @@ static void _print_duration(pallas_timestamp_t d) {
 }
 
 static void _print_duration_header() {
-  if (show_durations) {
+  if (show_durations && !flamegraph) {
     std::cout << std::right << std::setw(21) << "Duration";
   }
 }
@@ -67,15 +71,78 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
   return true;
 }
 
+struct thread_data {
+  std::vector<std::string> callstack{};
+  std::vector<pallas_duration_t> callstack_duration{};
+};
+
+void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
+		pallas::ThreadReader* min_reader,
+		pallas::EventOccurence& e) {
+
+  // This lambda prints the callstack in the flamegraph format
+  auto  _print_callstack = [&]() {
+    auto duration = 0;
+    if(! threads_data[min_reader].callstack_duration.empty()) {
+      duration = threads_data[min_reader].callstack_duration.back();
+    }
+    for(auto str: threads_data[min_reader].callstack) {
+      std::cout<<";"<<str;
+    }
+    if(threads_data[min_reader].callstack.empty()) std::cout<<";";
+
+    std::cout<<" "<<duration<<std::endl;
+  };
+
+  if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
+    // Start a new frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+
+    // Print the previous frame
+    _print_callstack();
+
+    // Start a new callstack duration
+    threads_data[min_reader].callstack.emplace_back(std::string(function_name));
+    threads_data[min_reader].callstack_duration.emplace_back(e.duration);
+
+  } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
+    // End a frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+    // Print the current frame
+    _print_callstack();
+
+    // Start a new frame
+
+    threads_data[min_reader].callstack.pop_back();
+    threads_data[min_reader].callstack_duration.pop_back();
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() = e.duration; // reset the counter
+
+  } else {
+    // Accumulate duration in the current frame
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() += e.duration;
+  }
+
+
+}
+
 void printTrace(const pallas::GlobalArchive& trace) {
+
+  std::map<pallas::ThreadReader*, struct thread_data> threads_data;
+
   auto readers = std::vector<pallas::ThreadReader>();
   for (int i = 0; i < trace.nb_archives; i++) {
     for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
       auto thread = trace.archive_list[i]->getThreadAt(j);
-      if (thread != nullptr)
-        readers.emplace_back(trace.archive_list[i], thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
+      if (thread == nullptr)  continue;
+      if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
+
+      readers.emplace_back(trace.archive_list[i], thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
+      threads_data[&readers.back()] = {};
     }
   }
+
 
   _print_timestamp_header();
   _print_duration_header();
@@ -93,7 +160,12 @@ void printTrace(const pallas::GlobalArchive& trace) {
 
     auto token = min_reader->pollCurToken();
     if (token.type == pallas::TypeEvent) {
-      printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]));
+      if(flamegraph) {
+	auto e = min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]);
+	printFlame(threads_data, min_reader, e);
+      } else {
+	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]));
+      }
     }
 
     if (! min_reader->getNextToken().isValid()) {
@@ -167,6 +239,8 @@ void printStructure(const int flags, const pallas::GlobalArchive& trace) {
       auto thread = trace.archive_list[i]->getThreadAt(j);
       if (thread == nullptr)
         continue;
+      if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
+    	continue;
       pallas::ThreadReader tr = pallas::ThreadReader(
         trace.archive_list[i],
         thread->id,
@@ -187,6 +261,8 @@ void usage(const char* prog_name) {
   std::cout << "\t" << "-S" << "\t" << "Enable structure mode (per thread mode only)" << std::endl;
   std::cout << "\t" << "-s" << "\t" << "Do not unroll sequences (structure mode only)" << std::endl;
   std::cout << "\t" << "-l" << "\t" << "Do not unroll loops (structure mode only)" << std::endl;
+  std::cout << "\t" << "--thread thread_id" << "\t" << "Only print thread <thread_id>" << std::endl;
+  std::cout << "\t" << "-f" << "\t" << "Generate a flamegraph file" << std::endl;
 }
 
 int main(const int argc, char* argv[]) {
@@ -214,6 +290,12 @@ int main(const int argc, char* argv[]) {
       flags &= ~PALLAS_READ_FLAG_UNROLL_SEQUENCE;
     } else if (!strcmp(argv[nb_opts], "-l")) {
       flags &= ~PALLAS_READ_FLAG_UNROLL_LOOP;
+    } else if (!strcmp(argv[nb_opts], "-f")) {
+      flamegraph = true;
+    } else if (!strcmp(argv[nb_opts], "--thread")) {
+      per_thread = true;
+      thread_to_print = atoi(argv[nb_opts+1]);
+      nb_opts++;
     } else {
       /* Unknown parameter name. It's probably the trace's path name. We can stop
        * parsing the parameter list.
