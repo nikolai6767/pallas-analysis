@@ -1403,7 +1403,9 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
 
   uint8_t abi_version;
   file.read(&abi_version, sizeof(abi_version), 1);
-  pallas_assert_always(abi_version == PALLAS_ABI_VERSION);
+  if(abi_version != PALLAS_ABI_VERSION) {
+    pallas_error("This trace uses Pallas ABI version %x, but the current installation only supports version %x\n", abi_version, PALLAS_ABI_VERSION);
+  }
   pallas::parameterHandler = new pallas::ParameterHandler();
   pallas::parameterHandler->readFromFile(file.file);
   size_t size;
