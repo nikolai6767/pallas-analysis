@@ -182,7 +182,11 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
   const Token sequence_id = loop->repeated_token;
 
   const size_t loopIndex = currentState.currentFrame->tokenCount.get_value(loop_id);
-  const size_t offset = currentState.currentFrame->tokenCount.get_value(sequence_id);
+  size_t offset;
+  if (getCurIterable() != loop_id)
+    offset = currentState.currentFrame->tokenCount.get_value(sequence_id);
+  else
+    offset = currentState.callstack[currentState.current_frame_index-1].tokenCount.get_value(sequence_id);
   const size_t nIterations = loop->nb_iterations.at(loopIndex);
   DOFOR(i, nIterations) {
     sum += sequence->durations->at(offset + i);
@@ -420,7 +424,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   auto current_iterable_token = currentState.currentFrame->callstack_iterable;
   pallas_assert(current_iterable_token.isIterable());
 
-  if (currentState.currentFrame->frame_index == 1) {
+  if (currentState.currentFrame->frame_index == 0) {
     if (currentState.current_frame_index <= 1)
       return false;
     Token current_iterable_token = currentState.currentFrame->callstack_iterable;
@@ -616,6 +620,13 @@ bool ThreadReader::enterIfStartOfBlock(int flags) {
   return false;
 }
 
+Cursor ThreadReader::createCheckpoint() const {
+  return Cursor(this->currentState);
+}
+void ThreadReader::loadCheckpoint(Cursor *checkpoint) {
+  currentState = *checkpoint;
+}
+
 ThreadReader::~ThreadReader() {
   if (archive)
     archive->freeThread(thread_trace->id);
@@ -741,6 +752,12 @@ bool pallasExitIfEndOfBlock(ThreadReader* thread_reader, int flags) {
 }
 bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
   return thread_reader->enterIfStartOfBlock(flags);
+}
+Cursor pallasCreateCheckpoint(ThreadReader *thread_reader) {
+  return thread_reader->createCheckpoint();
+}
+void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint) {
+  thread_reader->loadCheckpoint(checkpoint);
 }
 
 TokenOccurence::~TokenOccurence() {

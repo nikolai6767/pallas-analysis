@@ -217,6 +217,9 @@ typedef struct ThreadReader {
   /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
   bool enterIfStartOfBlock(int flags = PALLAS_READ_FLAG_UNROLL_ALL);
 
+  Cursor createCheckpoint() const;
+  void loadCheckpoint(Cursor *checkpoint);
+
   ~ThreadReader();
 
   ThreadReader(const ThreadReader &);
