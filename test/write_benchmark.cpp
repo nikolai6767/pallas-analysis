@@ -77,7 +77,6 @@ static pallas_timestamp_t get_timestamp() {
 }
 
 void* worker(void* arg __attribute__((unused))) {
-  pthread_mutex_lock(&globalArchive.lock);
   ThreadId threadID = newThread();
   auto threadWriter = ThreadWriter();
 
