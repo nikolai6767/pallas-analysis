@@ -44,7 +44,7 @@ typedef struct SequenceOccurence {
   pallas_timestamp_t timestamp;         /**< Timestamp for that occurence.*/
   pallas_duration_t duration;           /**< Duration of that occurence.*/
   struct TokenOccurence* full_sequence; /** Array of the occurrences in this sequence. */
-  struct CallstackFrame *checkpoint;
+  struct Cursor *checkpoint;
 } SequenceOccurence;
 
 /**
@@ -98,11 +98,25 @@ typedef struct CallstackFrame {
 #ifdef __cplusplus
   /** Creates a cursor of the given reader.
    * @param reader Reader whose state of reading we want to take a screenshot. */
-  explicit CallstackFrame(const struct ThreadReader* reader);
   CallstackFrame();
   ~CallstackFrame();
 #endif
 } CallstackFrame;
+
+typedef struct Cursor {
+  /** Current frame = index of the event/loop being read in the callstacks.
+   * You can view this as the "depth" of the callstack. */
+  int current_frame_index;
+
+  CallstackFrame *currentFrame;
+
+  CallstackFrame callstack[MAX_CALLSTACK_DEPTH];
+#ifdef __cplusplus
+  explicit Cursor(const Cursor& other);
+  Cursor& operator=(const Cursor& other);
+  Cursor() = default;
+#endif
+} Cursor;
 
 /**
  * Reads one thread from an Pallas trace.
@@ -113,13 +127,7 @@ typedef struct ThreadReader {
   /** Thread being read. */
   struct Thread* thread_trace;
 
-  /** Current frame = index of the event/loop being read in the callstacks.
-   * You can view this as the "depth" of the callstack. */
-  int current_frame_index;
-
-  CallstackFrame *currentState;
-
-  CallstackFrame callstack[MAX_CALLSTACK_DEPTH];
+  Cursor currentState;
 
   /**
    * Options as defined in pallas::ThreadReaderOptions.
@@ -169,22 +177,13 @@ typedef struct ThreadReader {
   /** Returns an SequenceOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] SequenceOccurence getSequenceOccurence(Token sequence_id,
-                                                       size_t occurence_id,
-                                                       bool create_checkpoint = false) const;
+                                                       size_t occurence_id) const;
   /** Returns an LoopOccurence for the given Token appearing at the given occurence_id.
    * Timestamp is set to Reader's referential timestamp.*/
   [[nodiscard]] LoopOccurence getLoopOccurence(Token loop_id, size_t occurence_id) const;
 
   /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
   [[nodiscard]] AttributeList* getEventAttributeList(Token event_id, size_t occurence_id) const;
-
-  /** Creates a checkpoint (a copy of the current state) to be loaded later
-   * Warning : this function is non trivial an may be an expansive computation */
-  [[nodiscard]] CallstackFrame createCheckpoint() const;
-
-  /** Loads a checkpoint
-   * Warning : this function is non trivial an may be an expansive computation */
-//  void loadCheckpoint(CallstackFrame *checkpoint);
 
   //******************* EXPLORATION FUNCTIONS ********************
 
@@ -219,10 +218,15 @@ typedef struct ThreadReader {
   /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
   bool enterIfStartOfBlock(int flags = PALLAS_READ_FLAG_UNROLL_ALL);
 
+  Cursor createCheckpoint() const;
+  void loadCheckpoint(Cursor *checkpoint);
+
   ~ThreadReader();
 
   ThreadReader(const ThreadReader &);
   ThreadReader(ThreadReader&& other) noexcept ;
+  ThreadReader& operator=(const ThreadReader &);
+  ThreadReader& operator=(ThreadReader&& other) noexcept ;
 #endif
 } ThreadReader;
 
@@ -276,8 +280,6 @@ LoopOccurence pallasGetLoopOccurence(ThreadReader *thread_reader, Token loop_id,
 /** Returns a pointer to the AttributeList for the given occurence of the given Event. */
 AttributeList* pallasGetEventAttributeList(ThreadReader *thread_reader, Token event_id, size_t occurence_id);
 
-void pallasLoadCheckpoint(ThreadReader *thread_reader, CallstackFrame *checkpoint);
-
 //******************* EXPLORATION FUNCTIONS ********************
 
 /** Gets the current Token. */
@@ -308,11 +310,10 @@ void pallasLeaveBlock(ThreadReader *thread_reader);
 bool pallasExitIfEndOfBlock(ThreadReader *thread_reader, int flags);
 /** Enter a block if the current token starts a block, returns a boolean representing if the rader actually entered a block */
 bool pallasEnterIfStartOfBlock(ThreadReader *thread_reader, int flags);
-
-CallstackFrame pallasCreateCursorFromThreadReader(ThreadReader *thread_reader);
-CallstackFrame pallasCreateCursorFromCursor(CallstackFrame *other);
-CallstackFrame pallasDeepCopyCursor(CallstackFrame *other);
-void destroyCursor(const CallstackFrame *cursor);
+/** Creates a copy of the given ThreadReader to be used as a "checkpoint" and be reloaded later */
+Cursor pallasCreateCheckpoint(ThreadReader *thread_reader);
+/** Loads a checkpoint `ThreadReader` into another one */
+void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
 
 #ifdef __cplusplus
 }; /* namespace pallas */
