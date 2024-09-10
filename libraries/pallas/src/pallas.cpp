@@ -4,7 +4,6 @@
  */
 
 #include <cinttypes>
-#include <ranges>
 #include <set>
 #include <sstream>
 
@@ -610,7 +609,8 @@ TokenCountMap Sequence::getTokenCountWriting(const Thread* thread, const TokenCo
       updatingOffset = TokenCountMap(*offset);
     else
       updatingOffset = TokenCountMap();
-    for (auto& token : std::ranges::reverse_view(tokens)) {
+    for (int i = tokens.size() - 1; i >= 0; i --) {
+      auto& token = tokens[i];
       updatingOffset[token]++;
       if (token.type == TypeSequence) {
         auto* s = thread->getSequence(token);
