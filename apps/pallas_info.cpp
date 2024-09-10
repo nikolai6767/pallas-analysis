@@ -7,6 +7,7 @@
 #include <iomanip>
 #if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
 #include <format>
+#include <climits>
 #define HAS_FORMAT
 #endif
 #include "pallas/pallas.h"
