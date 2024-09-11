@@ -809,14 +809,6 @@ static const char* getThreadPath(pallas::Thread* th) {
   return folderPath;
 }
 
-static const char* pallasGetEventFilename(const char* base_dirname, pallas::Thread* th) {
-  char* filename = new char[1024];
-  const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
-  delete[] threadPath;
-  return filename;
-}
-
 static const char* pallasGetEventDurationFilename(const char* base_dirname, pallas::Thread* th) {
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
@@ -902,13 +894,6 @@ static void pallasReadEvent(pallas::EventSummary& event,
   event.nb_occurences = event.durations->size;
 }
 
-static const char* pallasGetSequenceFilename(const char* base_dirname, pallas::Thread* th) {
-  char* filename = new char[1024];
-  const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
-  return filename;
-}
-
 static const char* pallasGetSequenceDurationFilename(const char* base_dirname, pallas::Thread* th) {
   char* filename = new char[1024];
   const char* threadPath = getThreadPath(th);
@@ -948,14 +933,6 @@ static void pallasReadSequence(pallas::Sequence& sequence,
   }
   pallas_log(pallas::DebugLevel::Debug, "\tLoaded sequence %d {.size=%zu, .nb_ts=%zu}\n", sequence.id, sequence.size(),
              sequence.durations->size);
-}
-
-static pallas::File pallasGetLoopFile(const char* base_dirname, pallas::Thread* th, const char* mode) {
-  char filename[1024];
-  const char* threadPath = getThreadPath(th);
-  snprintf(filename, 1024, "%s/%s/thread.pallas", base_dirname, threadPath);
-  delete[] threadPath;
-  return pallas::File(filename, mode);
 }
 
 static void pallasStoreLoop(pallas::Loop& loop, const pallas::File& loopFile) {
