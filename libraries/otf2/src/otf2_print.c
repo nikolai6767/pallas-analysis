@@ -173,7 +173,7 @@ OTF2_CallbackCode print_global_def_string(void *userData, OTF2_StringRef self, c
   user_data->strings = realloc(user_data->strings, sizeof(struct otf2_string) * user_data->nb_strings);
   s = &user_data->strings[index];
   s->ref = self;
-  strncpy(s->str, string, STRING_MAX_LEN);
+  strncpy(s->str, string, STRING_MAX_LEN-1);
 
   return OTF2_CALLBACK_SUCCESS;
 }

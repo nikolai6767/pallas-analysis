@@ -265,7 +265,7 @@ void usage(const char* prog_name) {
 int main(const int argc, char* argv[]) {
   int flags = PALLAS_READ_FLAG_UNROLL_ALL;
   bool show_structure = false;
-  char* trace_name;
+  char* trace_name = nullptr;
 
   for (int nb_opts = 1; nb_opts < argc; nb_opts++) {
     if (!strcmp(argv[nb_opts], "-v")) {

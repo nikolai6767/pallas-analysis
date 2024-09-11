@@ -345,8 +345,7 @@ bool ThreadReader::moveToNextToken(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
 
-  auto current_iterable_token = getCurIterable();
-  pallas_assert(current_iterable_token.isIterable());
+  pallas_assert(getCurIterable().isIterable());
 
   auto current_token = this->pollCurToken();
 
@@ -421,8 +420,7 @@ bool ThreadReader::moveToPrevToken(int flags) {
   if (flags == PALLAS_READ_FLAG_NONE)
     flags = pallas_read_flag;
 
-  auto current_iterable_token = currentState.currentFrame->callstack_iterable;
-  pallas_assert(current_iterable_token.isIterable());
+  pallas_assert(currentState.currentFrame->callstack_iterable.isIterable());
 
   if (currentState.currentFrame->frame_index == 0) {
     if (currentState.current_frame_index <= 1)
@@ -572,8 +570,7 @@ void ThreadReader::leaveBlock() {
   currentState.currentFrame--;
 
   if (debugLevel >= DebugLevel::Debug && currentState.current_frame_index >= 0) {
-    auto current_sequence = getCurIterable();
-    pallas_assert(current_sequence.isIterable());
+    pallas_assert(getCurIterable().isIterable());
   }
 }
 
