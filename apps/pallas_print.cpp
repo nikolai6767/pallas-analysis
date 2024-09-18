@@ -234,7 +234,7 @@ void printTrace(const pallas::GlobalArchive& trace) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printFlame(threads_data, min_reader, e);
       } else if(csv) {
-	auto e = min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]);
+	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printCSV(threads_data, min_reader, e);
       } else {
 	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
