@@ -2,10 +2,8 @@
  * Copyright (C) Telecom SudParis
  * See LICENSE in top-level directory.
  */
-#include <algorithm>
 #include <iostream>
 #include <limits>
-#include <list>
 #include <string>
 #include <iomanip>
 #include "pallas/pallas.h"
@@ -216,7 +214,6 @@ void printTrace(const pallas::GlobalArchive& trace) {
     }
   }
 
-
   _print_timestamp_header();
   _print_duration_header();
   std::cout << std::endl;
@@ -225,22 +222,22 @@ void printTrace(const pallas::GlobalArchive& trace) {
     pallas::ThreadReader* min_reader = &readers[0];
     pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
     for (auto & reader : readers) {
-      if (!reader.isEndOfTrace() && reader.currentState->referential_timestamp < min_timestamp) {
+      if (!reader.isEndOfTrace() && reader.currentState.currentFrame->referential_timestamp < min_timestamp) {
         min_reader = &reader;
-        min_timestamp = reader.currentState->referential_timestamp;
+        min_timestamp = reader.currentState.currentFrame->referential_timestamp;
       }
     }
 
     auto token = min_reader->pollCurToken();
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
-	auto e = min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]);
+	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printFlame(threads_data, min_reader, e);
       } else if(csv) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]);
 	printCSV(threads_data, min_reader, e);
       } else {
-	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState->tokenCount[token]));
+	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
       }
     }
 
@@ -252,14 +249,14 @@ void printTrace(const pallas::GlobalArchive& trace) {
 
 static std::string structure_indent[MAX_CALLSTACK_DEPTH];
 std::string getCurrentIndent(const pallas::ThreadReader& tr) {
-  if (tr.current_frame_index <= 1) {
+  if (tr.currentState.current_frame_index <= 1) {
     return "";
   }
   const auto t = tr.pollCurToken();
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
-  structure_indent[tr.current_frame_index - 2] = (isLastOfSeq ? "╰" : "├");
-    DOFOR(i, tr.current_frame_index - 1) {
+  structure_indent[tr.currentState.current_frame_index - 2] = (isLastOfSeq ? "╰" : "├");
+    DOFOR(i, tr.currentState.current_frame_index - 1) {
       current_indent += structure_indent[i];
     }
     if (t.type != pallas::TypeEvent) {
@@ -273,7 +270,7 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
     } else {
       current_indent += "─";
     }
-    structure_indent[tr.current_frame_index - 2] = isLastOfSeq ? " " : "│";
+    structure_indent[tr.currentState.current_frame_index - 2] = isLastOfSeq ? " " : "│";
     return current_indent;
 }
 
@@ -281,15 +278,15 @@ void printThreadStructure(pallas::ThreadReader& tr) {
   std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
   auto current_token = tr.pollCurToken();
   while (true) {
-    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.current_frame_index <= 1) ? 0 : tr.current_frame_index))
+    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame_index <= 1) ? 0 : tr.currentState.current_frame_index))
               << tr.thread_trace->getTokenString(current_token) << "";
     if (current_token.type == pallas::TypeEvent) {
-      auto occ = tr.getEventOccurence(current_token, tr.currentState->tokenCount[current_token]);
+      auto occ = tr.getEventOccurence(current_token, tr.currentState.currentFrame->tokenCount[current_token]);
       printEvent(tr.thread_trace, current_token, occ);
     }
     else if (current_token.type == pallas::TypeSequence) {
       if (show_durations) {
-        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.currentState->tokenCount[current_token]);
+        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.currentState.currentFrame->tokenCount[current_token]);
         std::cout << std::setw(21) << "";
         std::cout.precision(9);
         std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;

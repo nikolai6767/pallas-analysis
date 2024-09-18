@@ -229,7 +229,7 @@ void info_loop(Thread* t, int index) {
 
   std::string loop_name = guess_loop_name(t, l);
   
-  uint64_t min_iteration = INT_MAX;
+  uint64_t min_iteration = -1;
   uint64_t max_iteration = 0;
   uint64_t mean_iteration = 0;
   for(auto iter: l->nb_iterations) {
