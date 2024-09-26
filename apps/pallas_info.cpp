@@ -53,9 +53,6 @@ void info_archive(Archive* archive);
 void info_thread_header();
 void info_thread_summary(Thread* thread);
 
-std::string guess_sequence_name(Thread *t, Sequence*s);
-std::string guess_loop_name(Thread *t, Loop*l);
-
 void print_sequence(const Sequence* s, const Thread* t) {
   std::cout << "{";
   for (unsigned i = 0; i < s->size(); i++) {
@@ -83,13 +80,13 @@ std::string getTokenString(Thread* thread, Token t) {
   case TypeSequence:
     {
       Sequence* s = thread->getSequence(t);
-      return guess_sequence_name(thread, s);
+      return s->guessName(thread);
       break;
     }
   case TypeLoop:
     {
       Loop* l = thread->getLoop(t);
-      return guess_loop_name(thread, l);
+      return l->guessName(thread);
       break;
     }
   default:
@@ -135,34 +132,17 @@ void info_sequence_header() {
   std::cout << std::setw(18) << std::right << "Mean_duration(s)";
   std::cout << std::setw(18) << std::right << "Total_duration(s)";
   std::cout << std::setw(18) << std::right << "Nb_token";
-  std::cout << std::setw(18) << std::right << "Event_count";
+  //  std::cout << std::setw(18) << std::right << "Event_count";
+  std::cout << std::setw(18) << std::right << "Contention_score";
   std::cout << std::endl;
 }
 
-std::string guess_sequence_name(Thread *t, Sequence*s) {
-  if(s->size() < 4) {
-    Token t_start = s->tokens[0];
-    if(t_start.type == TypeEvent) {
-      Event* event = t->getEvent(t_start);
-      const char* event_name = t->getRegionStringFromEvent(event);
-      std::string prefix(event_name);
-
-      if(s->size() == 3) {
-	// that's probably an MPI call. To differentiate calls (eg
-	// MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the 
-	// the second token to the name
-	Token t_second = s->tokens[1];
-
-	std::string res = prefix + "_" + t->getTokenString(t_second);
-	return res;
-      }
-      return prefix;
-    }
-  }
-  char buff[128];
-  snprintf(buff, sizeof(buff), "Sequence_%d", s->id);
-  
-  return std::string(buff);
+float contention_score(Thread*t, Sequence *s) {
+  pallas_duration_t delta_duration = s->durations->size * (s->durations->mean - s->durations->min);
+  pallas_duration_t thread_duration = t->getDuration();
+  if(delta_duration > thread_duration)
+    return -1;
+  return (float)delta_duration / thread_duration;
 }
 
 void info_sequence(Thread*t, int index, bool details=false) {
@@ -173,7 +153,7 @@ void info_sequence(Thread*t, int index, bool details=false) {
     info_sequence_header();
   }
 
-  std::string sequence_name = guess_sequence_name(t, s);
+  std::string sequence_name = s->guessName(t);
   
   std::cout << std::left<< "S"<<std::setw(14) <<std::left <<index;
   std::cout << std::setw(35) << std::left<< sequence_name;
@@ -183,6 +163,8 @@ void info_sequence(Thread*t, int index, bool details=false) {
   std::cout << std::setw(18) << std::right << ns2s(s->durations->mean == UINT64_MAX? 0 : s->durations->mean);
   std::cout << std::setw(18) << std::right << ns2s(s->durations->mean == UINT64_MAX? 0 : s->durations->mean * s->durations->size);
   std::cout << std::setw(18) << std::right << s->size();
+
+  std::cout << std::setw(18) << std::right << contention_score(t, s);
   // std::cout << std::setw(18) << std::right << s->getEventCount(t);
   std::cout << std::endl;
 
@@ -219,15 +201,10 @@ void info_loop_header() {
   std::cout << std::endl;
 }
 
-std::string guess_loop_name(Thread *t, Loop* l) {
-  Sequence *s = t->getSequence(l->repeated_token);
-  return guess_sequence_name(t, s);
-}
-
 void info_loop(Thread* t, int index) {
   Loop* l = &t->loops[index];
 
-  std::string loop_name = guess_loop_name(t, l);
+  std::string loop_name = l->guessName(t);
   
   uint64_t min_iteration = -1;
   uint64_t max_iteration = 0;

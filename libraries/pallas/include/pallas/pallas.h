@@ -322,6 +322,10 @@ typedef struct Sequence {
                               const TokenCountMap& threadReaderTokenCountMap,
                               bool isReversedOrder = false);
 
+  /** Tries to guess the name of the sequence
+   * @returns A string that describes the sequence.
+   */
+  std::string guessName(const pallas::Thread* thread);
   size_t getEventCount(const struct Thread* thread);
   ~Sequence() { delete durations; };
 #endif
@@ -336,7 +340,14 @@ typedef struct Loop {
   Token repeated_token;               /**< Token of the Sequence being repeated. */
   Token self_id;                      /**< Token identifying that Loop. */
   DEFINE_Vector(uint, nb_iterations); /**< Vector of uint counting the number of iterations of that loop. */
+#ifdef __cplusplus
   CXX(void addIteration();)           /**< Adds an iteration to the lastest occurence of that loop. */
+
+  /** Tries to guess the name of the loop
+   * @returns A string that describes the loop.
+   */
+  std::string guessName(const pallas::Thread* thread);
+#endif
 } Loop;
 
 /**
