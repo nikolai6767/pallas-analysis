@@ -489,6 +489,32 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
   return false;
 };
 
+std::string Sequence::guessName(const pallas::Thread* thread) {
+  if(this->size() < 4) {
+    Token t_start = this->tokens[0];
+    if(t_start.type == TypeEvent) {
+      Event* event = thread->getEvent(t_start);
+      const char* event_name = thread->getRegionStringFromEvent(event);
+      std::string prefix(event_name);
+
+      if(this->size() == 3) {
+	// that's probably an MPI call. To differentiate calls (eg
+	// MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the 
+	// the second token to the name
+	Token t_second = this->tokens[1];
+
+	std::string res = prefix + "_" + thread->getTokenString(t_second);
+	return res;
+      }
+      return prefix;
+    }
+  }
+  char buff[128];
+  snprintf(buff, sizeof(buff), "Sequence_%d", this->id);
+  
+  return std::string(buff);
+}
+
 size_t Sequence::getEventCount(const struct Thread* thread) {
   // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops inside of it.
   return 0;
@@ -530,6 +556,10 @@ void _loopGetTokenCountReading(const Loop* loop,
   }
 }
 
+std::string Loop::guessName(const Thread *t) {
+  Sequence *s = t->getSequence(this->repeated_token);
+  return s->guessName(t);
+}
 void _sequenceGetTokenCountReading(Sequence* seq,
                                             const Thread* thread,
                                             TokenCountMap& readerTokenCountMap,

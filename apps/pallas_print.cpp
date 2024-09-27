@@ -18,6 +18,7 @@ bool show_durations = false;
 bool show_timestamps = true;
 int thread_to_print = -1;
 bool flamegraph = false;
+bool csv = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
   if (show_timestamps) {
@@ -26,7 +27,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
   }
 }
 static void _print_timestamp_header() {
-  if (show_timestamps && !flamegraph) {
+  if (show_timestamps && (!flamegraph) && (!csv) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
 }
@@ -39,7 +40,7 @@ static void _print_duration(pallas_timestamp_t d) {
 }
 
 static void _print_duration_header() {
-  if (show_durations && !flamegraph) {
+  if (show_durations && (!flamegraph) && (!csv)) {
     std::cout << std::right << std::setw(21) << "Duration";
   }
 }
@@ -72,6 +73,7 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
 struct thread_data {
   std::vector<std::string> callstack{};
   std::vector<pallas_duration_t> callstack_duration{};
+  std::vector<pallas_timestamp_t> callstack_timestamp{};
 };
 
 void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
@@ -125,6 +127,77 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
 
 }
 
+void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
+	      pallas::ThreadReader* min_reader,
+	      pallas::EventOccurence& e) {
+
+  // This lambda prints the callstack in the flamegraph format
+  auto  _print_callstack = [&]() {
+    pallas_duration_t duration = 0;
+    if(! threads_data[min_reader].callstack_duration.empty()) {
+      duration = threads_data[min_reader].callstack_duration.back();
+    }   
+
+    pallas_timestamp_t first_timestamp = 0;
+    if(! threads_data[min_reader].callstack_timestamp.empty()) {
+      first_timestamp = threads_data[min_reader].callstack_timestamp.back();
+    }
+
+
+    static bool first_line = true;
+    if(first_line) {
+      std::cout<<"Task,Resource,Start,Finish"<<std::endl;
+      first_line = false;
+    }
+
+    std::cout<<"CPU1, ";
+    if(threads_data[min_reader].callstack.empty())
+      std::cout<<"main";
+    else
+      std::cout<<threads_data[min_reader].callstack.back();
+
+    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<std::endl;
+  };
+
+  if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
+    // Start a new frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+
+    // Print the previous frame
+    _print_callstack();
+
+    // Start a new callstack duration
+    threads_data[min_reader].callstack.emplace_back(std::string(function_name));
+    threads_data[min_reader].callstack_duration.emplace_back(e.duration);
+    threads_data[min_reader].callstack_timestamp.emplace_back(e.timestamp);
+
+  } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
+    // End a frame
+    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
+    // Print the current frame
+    _print_callstack();
+
+    // Start a new frame
+
+    threads_data[min_reader].callstack.pop_back();
+    threads_data[min_reader].callstack_duration.pop_back();
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() = e.duration; // reset the counter
+
+    threads_data[min_reader].callstack_timestamp.pop_back();
+    if(threads_data[min_reader].callstack_timestamp.empty()) threads_data[min_reader].callstack_timestamp.push_back(0);
+    threads_data[min_reader].callstack_timestamp.back() = e.timestamp; // reset the counter
+
+    
+  } else {
+    // Accumulate duration in the current frame
+    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
+    threads_data[min_reader].callstack_duration.back() += e.duration;
+  }
+
+
+}
+
 void printTrace(const pallas::GlobalArchive& trace) {
 
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
@@ -160,6 +233,9 @@ void printTrace(const pallas::GlobalArchive& trace) {
       if(flamegraph) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printFlame(threads_data, min_reader, e);
+      } else if(csv) {
+	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
+	printCSV(threads_data, min_reader, e);
       } else {
 	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
       }
@@ -260,6 +336,7 @@ void usage(const char* prog_name) {
   std::cout << "\t" << "-l" << "\t" << "Do not unroll loops (structure mode only)" << std::endl;
   std::cout << "\t" << "--thread thread_id" << "\t" << "Only print thread <thread_id>" << std::endl;
   std::cout << "\t" << "-f" << "\t" << "Generate a flamegraph file" << std::endl;
+  std::cout << "\t" << "-c" << "\t" << "Generate a csv file" << std::endl;
 }
 
 int main(const int argc, char* argv[]) {
@@ -289,6 +366,8 @@ int main(const int argc, char* argv[]) {
       flags &= ~PALLAS_READ_FLAG_UNROLL_LOOP;
     } else if (!strcmp(argv[nb_opts], "-f")) {
       flamegraph = true;
+    } else if (!strcmp(argv[nb_opts], "-c")) {
+      csv = true;
     } else if (!strcmp(argv[nb_opts], "--thread")) {
       per_thread = true;
       thread_to_print = atoi(argv[nb_opts+1]);
