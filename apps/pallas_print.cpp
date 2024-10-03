@@ -150,7 +150,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
       first_line = false;
     }
 
-    std::cout<<"CPU1, ";
+    std::cout<<min_reader->thread_trace->getName()<<", ";
     if(threads_data[min_reader].callstack.empty())
       std::cout<<"main";
     else
