@@ -42,7 +42,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   auto& sequencesWithSameHash = hashToSequence[hash];
   if (!sequencesWithSameHash.empty()) {
     if (sequencesWithSameHash.size() > 1) {
-      pallas_log(DebugLevel::Error, "Found more than one sequence with the same hash\n");
+      pallas_log(DebugLevel::Debug, "Found more than one sequence with the same hash\n");
     }
     for (const auto sid : sequencesWithSameHash) {
       if (_pallas_arrays_equal(token_array, array_len, sequences[sid]->tokens.data(), sequences[sid]->size())) {
