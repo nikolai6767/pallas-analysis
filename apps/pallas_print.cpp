@@ -133,6 +133,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
   // This lambda prints the callstack in the flamegraph format
   auto  _print_callstack = [&]() {
+    static pallas_timestamp_t last_timestamp = 0;
     pallas_duration_t duration = 0;
     if(! threads_data[min_reader].callstack_duration.empty()) {
       duration = threads_data[min_reader].callstack_duration.back();
@@ -157,6 +158,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
       std::cout<<threads_data[min_reader].callstack.back();
 
     std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<std::endl;
+
+    pallas_assert_always(last_timestamp > first_timestamp);
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
@@ -188,14 +191,12 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     if(threads_data[min_reader].callstack_timestamp.empty()) threads_data[min_reader].callstack_timestamp.push_back(0);
     threads_data[min_reader].callstack_timestamp.back() = e.timestamp; // reset the counter
 
-    
   } else {
     // Accumulate duration in the current frame
     if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
     threads_data[min_reader].callstack_duration.back() += e.duration;
+
   }
-
-
 }
 
 void printTrace(const pallas::GlobalArchive& trace) {
