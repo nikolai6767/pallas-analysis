@@ -18,6 +18,7 @@ void Thread::loadTimestamps() {
   }
   DOFOR(i, nb_sequences) {
     size_t loaded_duration = sequences[i]->durations->front();
+    size_t loaed_timestamps = sequences[i]->timestamps->front();
   }
 }
 

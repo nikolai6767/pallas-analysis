@@ -291,7 +291,8 @@ struct TokenCountMap : public std::map<Token, size_t> {
  */
 typedef struct Sequence {
   TokenId id CXX({PALLAS_TOKEN_ID_INVALID});         /**< ID of that sequence. */
-  LinkedVector* durations CXX({new LinkedVector()}); /**< Vector of durations for these type of sequences. */
+  LinkedDurationVector* durations CXX({new LinkedDurationVector()}); /**< Vector of durations for these type of sequences. */
+  LinkedVector* timestamps CXX({new LinkedVector()});
   uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
   bool contains_loops CXX({false});
   DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
@@ -327,7 +328,7 @@ typedef struct Sequence {
    */
   std::string guessName(const pallas::Thread* thread);
   size_t getEventCount(const struct Thread* thread);
-  ~Sequence() { delete durations; };
+  ~Sequence() { delete durations; delete timestamps; };
 #endif
 } Sequence;
 
@@ -360,7 +361,7 @@ typedef struct Loop {
 typedef struct EventSummary {
   TokenId id;              /**< ID of the Event */
   Event event;             /**< The Event being summarized.*/
-  LinkedVector* durations; /**< Durations for each occurrence of that Event.*/
+  LinkedDurationVector* durations; /**< Durations for each occurrence of that Event.*/
   size_t nb_occurences;    /**< Number of times that Event has happened. */
 
   byte* attribute_buffer;       /**< Storage for Attribute.*/

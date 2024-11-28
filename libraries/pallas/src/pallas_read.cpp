@@ -191,6 +191,7 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
   DOFOR(i, nIterations) {
     sum += sequence->durations->at(offset + i);
   }
+  // TODO Use sequence's timestamps !
   return sum;
 }
 

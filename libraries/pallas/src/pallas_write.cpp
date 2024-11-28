@@ -190,12 +190,30 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     // But only if those are new sequences
     Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
 
+    // Compute the durations
     const pallas_duration_t duration_first_iteration = thread_trace.getLastSequenceDuration(loop_seq, 1);
     const pallas_duration_t duration_second_iteration = thread_trace.getLastSequenceDuration(loop_seq, 0);
-    // We don't take into account the last token because it's not a duration yet
+    // Reminded: when offset is 0, it doesn't take into account the duration of the last event
+    // Because it's not a duration yet, it's a timestamp
 
     loop_seq->durations->add(duration_first_iteration);
     addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
+
+    // Then we compute the timestamps
+    // First get the timestamp (currently stored in duration) of the last recorded event
+    auto last_recorded_token = curTokenSeq.back();
+    while (last_recorded_token.type != TypeEvent) {
+      if (last_recorded_token.type == TypeLoop) {
+        last_recorded_token = thread_trace.getLoop(last_recorded_token)->repeated_token;
+      }
+      if (last_recorded_token.type == TypeSequence) {
+        last_recorded_token = thread_trace.getSequence(last_recorded_token)->tokens.back();      }
+    }
+    const size_t last_timestamp = thread_trace.getEventSummary(last_recorded_token)->durations->back();
+
+    // And add that timestamp to the vectors
+    loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
+    loop_seq->timestamps->add(last_timestamp - duration_second_iteration);
   }
 
   // The current sequence last_timestamp does not need to be updated
@@ -229,8 +247,8 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       Loop* loop = thread_trace.getLoop(l);
       pallas_assert(loop);
 
-      Sequence* loopSeq = thread_trace.getSequence(loop->repeated_token);
-      pallas_assert(loopSeq);
+      Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
+      pallas_assert(loop_seq);
 
       // First check for repetitions of sequences
       if (loopLength == 1 && curTokenSeq[startS1] == loop->repeated_token) {
@@ -241,14 +259,20 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         return;
       }
       // Then check for actual iterations of tokens which correspond to the one in the loop
-      if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, loopSeq->tokens.data(), loopSeq->size())) {
+      if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, loop_seq->tokens.data(), loop_seq->size())) {
         pallas_log(DebugLevel::Debug, "findLoopBasic: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
                    loop->repeated_token.id);
         loop->addIteration();
-        const pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(loopSeq, 0);
-        addDurationToComplete(loopSeq->durations->add(ts));
+
+        // This iteration's ts = previous ts + previous duration
+        loop_seq->timestamps->add(loop_seq->timestamps->back() + loop_seq->durations->back());
+
+        // Then compute duration
+        const pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(loop_seq, 0);
+        addDurationToComplete(loop_seq->durations->add(ts));
+
+        // And finally, remove trailing repeated tokens
         curTokenSeq.resize(startS1);
-        // Roundabount way to remove the tokens representing the loop
         return;
       }
     }
@@ -662,7 +686,7 @@ void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
   attribute_buffer = nullptr;
   attribute_buffer_size = 0;
   attribute_pos = 0;
-  durations = new LinkedVector();
+  durations = new LinkedDurationVector();
   memcpy(&event, &e, sizeof(e));
 }
 

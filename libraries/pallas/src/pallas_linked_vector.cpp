@@ -13,7 +13,12 @@ LinkedVector::LinkedVector() {
   last = first;
 }
 
-void LinkedVector::updateStats() {
+LinkedDurationVector::LinkedDurationVector() {
+  first = new SubVector(defaultSize);
+  last = first;
+}
+
+void LinkedDurationVector::updateStats() {
   if (size > 1) {
     auto& val = at(size - 2);
     max = std::max(max, val);
@@ -22,20 +27,28 @@ void LinkedVector::updateStats() {
   }
 }
 
-void LinkedVector::finalUpdateStats() {
+void LinkedDurationVector::finalUpdateStats() {
   auto& val = back();
   max = std::max(max, val);
   min = std::min(min, val);
   mean = (mean + val) / size;
 }
 
-uint64_t* LinkedVector::add(uint64_t val) {
+uint64_t* LinkedDurationVector::add(uint64_t val) {
   if (this->last->size >= this->last->allocated) {
     pallas_log(DebugLevel::Debug, "Adding a new tail to an array: %p\n", this);
     last = new SubVector(defaultSize, last);
   }
   size++;
   updateStats();
+  return last->add(val);
+}
+uint64_t* LinkedVector::add(uint64_t val) {
+  if (this->last->size >= this->last->allocated) {
+    pallas_log(DebugLevel::Debug, "Adding a new tail to an array: %p\n", this);
+    last = new SubVector(defaultSize, last);
+  }
+  size++;
   return last->add(val);
 }
 

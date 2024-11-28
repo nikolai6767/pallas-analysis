@@ -30,15 +30,12 @@ namespace pallas {
  */
 typedef struct LinkedVector {
   size_t size CXX({0});           /**< Number of element stored in the vector.  */
-  uint64_t min CXX({UINT64_MAX}); /**< Max element stored in the vector. */
-  uint64_t max CXX({0});          /**< Min element stored in the vector. */
-  uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
-  CXX(private:)
+  CXX(protected:)
   const char* filePath; /**< Path to the file storing the durations. */
   long offset;          /**< Offset in the file. */
 
 #ifdef __cplusplus
- private:
+ protected:
   /**
    * A fixed-sized array functionning as a node in a LinkedList.
    *
@@ -105,22 +102,13 @@ typedef struct LinkedVector {
    * Loads the timestamps / durations from filePath.
    */
   void load_timestamps();
-  /**
-   * Updates the min/max/mean, not using the last item, but the item before the last.
-   * This is so that we actually get the durations, and not the timestamps.
-   */
-  void updateStats();
 
  public:
-  /** Does the final calculation for updating the statistics in that vector.*/
-  void finalUpdateStats();
   /**
    * Creates a new LinkedVector, with a SubVector of size `defaultSize`.
    */
   LinkedVector();
-  /** Loads a LinkedVector from a file.
-   * If size is given, does so without reading the size.
-   * */
+  /** Creates a new LinkedVector from a file. Doesn't actually load it until and element is accessed. */
   LinkedVector(FILE* vectorFile, const char* valueFilePath);
   /**
    * Adds a new element at the end of the vector, after its current last element.
@@ -165,11 +153,6 @@ typedef struct LinkedVector {
   void print();
   /**
    * Writes the vector to the given files.
-   * If size >= 4, we do the following:\n
-   *    - To vectorFile, we write [size, min, max, mean, offset] in that order.\n
-   *    - To valueFile, we write the array.\n
-   * If size <= 3, we don't write anything to valueFile.
-   * Instead, we write [size] + array to vectorFile.\n
    * @param vectorFile File where metadata is stored.
    * @param valueFile  File where data is stored (most of the time).
    */
@@ -233,6 +216,53 @@ typedef struct LinkedVector {
   ~LinkedVector();
 #endif
 } LinkedVector;
+
+
+typedef struct LinkedDurationVector: LinkedVector {
+private:
+  /**
+   * Updates the min/max/mean, taking into account all the items from 0 to size-1.
+   *
+   * This is because we assume the last element isn't a duration, but a timestamp.
+   */
+  void updateStats();
+  /** Does the final calculation for updating the statistics in that vector.*/
+  void finalUpdateStats();
+public:
+  /**
+   * Adds a new element at the end of the vector, after its current last element.
+   * The content of `val` is copied to the new element.
+   * Updates mean, min and max.
+   *
+   * @param val Value to be copied to the new element.
+   * @return Reference to the new element.
+   */
+  uint64_t* add(uint64_t val);
+  uint64_t min CXX({UINT64_MAX}); /**< Max element stored in the vector. */
+  uint64_t max CXX({0});          /**< Min element stored in the vector. */
+  uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
+
+  /**
+   * Writes the vector to the given files.
+   * If size >= 4, we do the following:\n
+   *    - To vectorFile, we write [size, min, max, mean, offset] in that order.\n
+   *    - To valueFile, we write the array.\n
+   * If size <= 3, we don't write anything to valueFile.
+   * Instead, we write [size] + array to vectorFile.\n
+   * @param vectorFile File where metadata is stored.
+   * @param valueFile  File where data is stored (most of the time).
+   */
+  void writeToFile(FILE* vectorFile, FILE* valueFile);
+  /** Loads a LinkedDurationVector from a file.
+   * Only loads the statistics, doesn't load the timestamps until they're accessed.
+  */
+  LinkedDurationVector(FILE*vectorFile, const char*valueFilePath);
+
+  /**
+   * Creates a new LinkedDurationVector, with a SubVector of size `defaultSize`.
+   */
+  LinkedDurationVector();
+} LinkedDurationVector;
 
 CXX(
 })  // namespace pallas
