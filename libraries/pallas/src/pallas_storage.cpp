@@ -701,9 +701,9 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
 }
 
 void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
-  if (first)
-  // Write the statistics to the vectorFile
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
+  if (size == 0) return;
+  // Write the statistics to the vectorFile
   offset = ftell(valueFile);
   _pallas_fwrite(&offset, sizeof(offset), 1, vectorFile);
 
@@ -731,10 +731,10 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
 }
 
 void pallas::LinkedDurationVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
-  if (first)
+  _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
+  if (size == 0) return;
     finalUpdateStats();
   // Write the statistics to the vectorFile
-  _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
   if (size <= 3) {
     _pallas_fwrite(first->array, sizeof(size_t), size, vectorFile);
   } else if (size >= 4) {
@@ -789,6 +789,7 @@ pallas::LinkedDurationVector::LinkedDurationVector(FILE* vectorFile, const char*
     min = 0;
     max = 0;
     mean = 0;
+    return;
   }
   if (size <= 3) {
     auto temp = new size_t[size];
@@ -951,8 +952,9 @@ static void pallasStoreSequence(pallas::Sequence& sequence,
              sequence.durations->size);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
     //    th->printSequence(sequence);
+    std::cout << "Durations: ";
     sequence.durations->print();
-    std::cout << "\n";
+    std::cout << "\nTimestamps: ";
     sequence.timestamps->print();
     std::cout << "\n";
 

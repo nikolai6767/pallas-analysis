@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   }
   size_t TEST_SIZE = std::stoi(argv[1]);
 
-  pallas::LinkedVector vector = pallas::LinkedVector();
+  pallas::LinkedDurationVector vector = pallas::LinkedDurationVector();
 
   for (size_t i = 0; i < TEST_SIZE; i++) {
     vector.add(i);

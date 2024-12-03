@@ -21,7 +21,6 @@
 /** Default size for creating Vectors and SubVectors.*/
 #define DEFAULT_VECTOR_SIZE 1000
 namespace pallas {
-#endif
 /**
  * An hybrid between a LinkedList and a Vector.
  *
@@ -29,13 +28,10 @@ namespace pallas {
  * Does not implement any methods to remove items from itself.
  */
 typedef struct LinkedVector {
-  size_t size CXX({0});           /**< Number of element stored in the vector.  */
-  CXX(protected:)
-  const char* filePath; /**< Path to the file storing the durations. */
-  long offset;          /**< Offset in the file. */
-
-#ifdef __cplusplus
+  size_t size{0}; /**< Number of element stored in the vector.  */
  protected:
+  const char* filePath; /**< Path to the file storing the durations. */
+  long offset {0};          /**< Offset in the file. */
   /**
    * A fixed-sized array functionning as a node in a LinkedList.
    *
@@ -93,11 +89,9 @@ typedef struct LinkedVector {
      */
     void copyToArray(uint64_t* given_array) const;
   };
-#endif
   size_t defaultSize CXX({DEFAULT_VECTOR_SIZE}); /**< Default size of the newly created SubVectors.*/
   C_CXX(void, SubVector) * first;                /**< First SubVector in the LinkedList structure.*/
   C_CXX(void, SubVector) * last;                 /**< Last SubVector in the LinkedList structure.*/
-#ifdef __cplusplus
   /**
    * Loads the timestamps / durations from filePath.
    */
@@ -214,21 +208,19 @@ typedef struct LinkedVector {
    * Here, it means nullptr.*/
   [[nodiscard]] Iterator end() const { return {nullptr}; };
   ~LinkedVector();
-#endif
 } LinkedVector;
 
-
-typedef struct LinkedDurationVector: LinkedVector {
-private:
+typedef struct LinkedDurationVector : LinkedVector {
+ private:
   /**
    * Updates the min/max/mean, taking into account all the items from 0 to size-1.
    *
    * This is because we assume the last element isn't a duration, but a timestamp.
    */
   void updateStats();
-  /** Does the final calculation for updating the statistics in that vector.*/
-  void finalUpdateStats();
 public:
+ /** Does the final calculation for updating the statistics in that vector.*/
+ void finalUpdateStats();
   /**
    * Adds a new element at the end of the vector, after its current last element.
    * The content of `val` is copied to the new element.
@@ -238,9 +230,9 @@ public:
    * @return Reference to the new element.
    */
   uint64_t* add(uint64_t val);
-  uint64_t min CXX({UINT64_MAX}); /**< Max element stored in the vector. */
-  uint64_t max CXX({0});          /**< Min element stored in the vector. */
-  uint64_t mean CXX({0});         /**< Mean of all the elements in the vector. */
+  uint64_t min{UINT64_MAX}; /**< Max element stored in the vector. */
+  uint64_t max{0};          /**< Min element stored in the vector. */
+  uint64_t mean{0};         /**< Mean of all the elements in the vector. */
 
   /**
    * Writes the vector to the given files.
@@ -255,20 +247,36 @@ public:
   void writeToFile(FILE* vectorFile, FILE* valueFile);
   /** Loads a LinkedDurationVector from a file.
    * Only loads the statistics, doesn't load the timestamps until they're accessed.
-  */
-  LinkedDurationVector(FILE*vectorFile, const char*valueFilePath);
+   */
+  LinkedDurationVector(FILE* vectorFile, const char* valueFilePath);
 
   /**
    * Creates a new LinkedDurationVector, with a SubVector of size `defaultSize`.
    */
   LinkedDurationVector();
 } LinkedDurationVector;
+#else
+typedef struct LinkedVector {
+  size_t size;          /**< Number of element stored in the vector.  */
+  const char* filePath; /**< Path to the file storing the durations. */
+  long offset;          /**< Offset in the file. */
+  size_t defaultSize;   /**< Default size of the newly created SubVectors.*/
+  void* first;          /**< First SubVector in the LinkedList structure.*/
+  void* last;           /**< First SubVector in the LinkedList structure.*/
+} LinkedVector;
 
-CXX(
-})  // namespace pallas
+typedef struct LinkedDurationVector {
+  LinkedVector linked_vector; /**< Actual vector storing the information. */
+  uint64_t min;         /**< Max element stored in the vector. */
+  uint64_t max;         /**< Min element stored in the vector. */
+  uint64_t mean;        /**< Mean of all the elements in the vector. */
+} LinkedDurationVector;
+#endif
 
-
-CXX(extern "C" {)
+#ifdef __cplusplus
+}  // namespace pallas
+extern "C" {
+#endif
 /** Allocates and returns a new LinkedVector. */
   extern PALLAS(LinkedVector)* linked_vector_new(void);
   /**

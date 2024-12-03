@@ -560,9 +560,7 @@ void ThreadReader::enterBlock() {
 
 void ThreadReader::leaveBlock() {
   if (debugLevel >= DebugLevel::Debug) {
-    pallas_log(DebugLevel::Debug, "[%d] Leave ", currentState.current_frame_index);
-    printCurSequence();
-    printf("\n");
+    pallas_log(DebugLevel::Debug, "[%d] Leave \n", currentState.current_frame_index);
   }
 
   pallas_assert(currentState.current_frame_index > 0);
