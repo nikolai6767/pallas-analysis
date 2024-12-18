@@ -204,17 +204,25 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
   case PALLAS_EVENT_ENTER: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->global_archive->getRegion(region_ref);
-    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
+    if (archive->global_archive) {
+      const Region* region = archive->global_archive->getRegion(region_ref);
+      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
+    } else {
+      snprintf(output_str, buffer_size, "Enter %d", region_ref);
+    }
     break;
   }
   case PALLAS_EVENT_LEAVE: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->global_archive->getRegion(region_ref);
-    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
+    if (archive->global_archive) {
+      const Region* region = archive->global_archive->getRegion(region_ref);
+      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
+    } else {
+      snprintf(output_str, buffer_size, "Leave %d", region_ref);
+    }
     break;
   }
 
