@@ -86,7 +86,6 @@ std::map<LoopFindingAlgorithm, std::string> LoopFindingAlgorithmMap = {
   {LoopFindingAlgorithm::None, "None"},
   {LoopFindingAlgorithm::Basic, "Basic"},
   {LoopFindingAlgorithm::BasicTruncated, "BasicTruncated"},
-  {LoopFindingAlgorithm::Filter, "Filter"},
   {LoopFindingAlgorithm::Invalid, "Invalid"},
 };
 

@@ -205,23 +205,10 @@ void info_loop(Thread* t, int index) {
   Loop* l = &t->loops[index];
 
   std::string loop_name = l->guessName(t);
-  
-  uint64_t min_iteration = -1;
-  uint64_t max_iteration = 0;
-  uint64_t mean_iteration = 0;
-  for(auto iter: l->nb_iterations) {
-    mean_iteration += iter;
-    min_iteration = iter < min_iteration ? iter: min_iteration;
-    max_iteration = iter > max_iteration ? iter: max_iteration;
-  }
-  mean_iteration = mean_iteration/l->nb_iterations.size();
 
   std::cout << std::left<< "L"<<std::setw(14) <<std::left <<index;
   std::cout << std::setw(35) << std::left<< loop_name;
-  std::cout << std::setw(18) << std::right << l->nb_iterations.size();
-  std::cout << std::setw(18) << std::right << min_iteration;
-  std::cout << std::setw(18) << std::right << max_iteration;
-  std::cout << std::setw(18) << std::right << mean_iteration;
+  std::cout << std::setw(18) << std::right << l->nb_iterations;
   std::cout << std::endl;
 }
 

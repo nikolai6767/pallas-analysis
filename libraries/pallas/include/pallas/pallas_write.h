@@ -44,9 +44,10 @@ typedef struct ThreadWriter {
 
  private:
   void findLoopBasic(size_t maxLoopLength);
-  void findLoopFilter();
   /** Tries to find a Loop in the current array of tokens.  */
   void findLoop();
+  /** Tries to find and replace the last n tokens in the grammar sequence. */
+  void findSequence(size_t n);
   /** Creates a Loop in the trace, and returns a pointer to it.
    * Does not change the current array of tokens.
    * @param start_index Starting index of the loop (first token in the loop).
