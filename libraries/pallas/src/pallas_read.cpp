@@ -181,7 +181,6 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
 
   const Token sequence_id = loop->repeated_token;
 
-  const size_t loopIndex = currentState.currentFrame->tokenCount.get_value(loop_id);
   size_t offset;
   if (getCurIterable() != loop_id)
     offset = currentState.currentFrame->tokenCount.get_value(sequence_id);
