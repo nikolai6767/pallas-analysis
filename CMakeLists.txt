@@ -19,7 +19,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # CMakeFind repository
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
 # C++ standard
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Testing library

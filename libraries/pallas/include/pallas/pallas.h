@@ -102,6 +102,7 @@ typedef struct Token {
    * @return Boolean indicating if the Tokens are equals.
    */
   bool operator==(const Token& other) const { return (other.type == type && other.id == id); }
+  bool operator!=(const Token& other) const { return ! operator==(other); }
   /** Checks for ordering between Tokens. Absolute order is decided first on type then on id.
    * @param other Token to check for ordering.
    * @return Boolean indicating if this < other.

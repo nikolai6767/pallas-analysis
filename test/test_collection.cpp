@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
-#if __GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929
+#if __cplusplus >= 202002L && (__GNUC__ >= 13 || __clang__ >= 14 || _MSC_VER >= 1929)
 #include <format>
 #define HAS_FORMAT
 #endif
