@@ -7,12 +7,20 @@ endif ()
 
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 
-add_library(pallas_python SHARED)
-
-target_sources(pallas_python
-        PRIVATE
-        pallas_python.cpp
+execute_process(
+        COMMAND ${Python_EXECUTABLE} -c "import skbuild; import os; print(os.path.join(os.path.dirname(skbuild.__file__), 'resources', 'cmake'))"
+        OUTPUT_VARIABLE SCIKIT_BUILD_CMAKE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+message(SCIKIT_BUILD_CMAKE_DIR=${SCIKIT_BUILD_CMAKE_DIR})
+cmake_policy(SET CMP0148 OLD)
+# Add the scikit-build cmake directory to CMAKE_MODULE_PATH
+list(APPEND CMAKE_MODULE_PATH ${SCIKIT_BUILD_CMAKE_DIR})
+
+find_package(PythonExtensions REQUIRED)
+add_library(pallas_python MODULE pallas_python.cpp)
+
+python_extension_module(pallas_python)
 
 set_target_properties(
         pallas_python
@@ -27,17 +35,10 @@ target_compile_options(pallas_python
         PRIVATE
         -Wall -Wextra ${WARNINGS}
 )
-message("Warning list: ${WARNINGS}")
 
 target_link_libraries(pallas_python
-        PUBLIC
-        dl
-        PRIVATE
-        pallas
-        ${CMAKE_DL_LIBS}
-        rt
-        m
         ${Python3_LIBRARIES}
+        pallas
 )
 
 target_include_directories(pallas_python PUBLIC ${Python3_INCLUDE_DIRS})
