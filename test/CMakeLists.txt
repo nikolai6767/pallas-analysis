@@ -9,9 +9,9 @@ link_libraries(pallas Threads::Threads)
 
 
 enable_testing()
-
+find_package(GTest REQUIRED)
 add_executable(test_collection test_collection.cpp)
-target_link_libraries(test_collection GTest::gtest_main)
+target_link_libraries(test_collection GTest::gtest GTest::gtest_main)
 
 
 include(GoogleTest)
