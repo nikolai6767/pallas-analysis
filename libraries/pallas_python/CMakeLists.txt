@@ -1,34 +1,16 @@
 cmake_minimum_required(VERSION 3.14.0)
+set (CMAKE_CXX_STANDARD 20)
 
-# POLICIES #####################
-if (POLICY CMP0076)
-    cmake_policy(SET CMP0076 NEW)
-endif ()
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development NumPy)
 
-find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 
-execute_process(
-        COMMAND ${Python_EXECUTABLE} -c "import skbuild; import os; print(os.path.join(os.path.dirname(skbuild.__file__), 'resources', 'cmake'))"
-        OUTPUT_VARIABLE SCIKIT_BUILD_CMAKE_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(SCIKIT_BUILD_CMAKE_DIR=${SCIKIT_BUILD_CMAKE_DIR})
-cmake_policy(SET CMP0148 OLD)
-# Add the scikit-build cmake directory to CMAKE_MODULE_PATH
-list(APPEND CMAKE_MODULE_PATH ${SCIKIT_BUILD_CMAKE_DIR})
+set(CMAKE_SHARED_MODULE_PREFIX "")  # Remove default 'lib' prefix
+set(CMAKE_SHARED_LIBRARY_SUFFIX ${Python3_SOABI}.so)  # Ensure correct suffix for Python
 
-find_package(PythonExtensions REQUIRED)
 add_library(pallas_python MODULE pallas_python.cpp)
 
-python_extension_module(pallas_python)
+list(APPEND WARNINGS "-Wno-missing-field-initializers")
 
-set_target_properties(
-        pallas_python
-        PROPERTIES
-            PREFIX ""
-            OUTPUT_NAME "pallas_python"
-            LINKER_LANGUAGE CXX
-)
 target_compile_options(pallas_python
         PUBLIC
         -D_GNU_SOURCE
@@ -36,10 +18,14 @@ target_compile_options(pallas_python
         -Wall -Wextra ${WARNINGS}
 )
 
+target_include_directories(pallas_python PUBLIC ${Python3_INCLUDE_DIRS})
+target_link_directories(pallas_python PRIVATE ${Python3_LIBRARY_DIRS})
+
 target_link_libraries(pallas_python
-        ${Python3_LIBRARIES}
+        PRIVATE
+        dl
         pallas
+        ${Python3_LIBRARIES}
 )
 
-target_include_directories(pallas_python PUBLIC ${Python3_INCLUDE_DIRS})
-target_link_directories(pallas_python PRIVATE ${Python3_LIBRARIES})
+install(TARGETS pallas_python LIBRARY DESTINATION ${INSTALL_LIBDIR})
