@@ -23,7 +23,7 @@
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_storage.h"
 
-#include "global_archive.cpp"
+#include "trace_structure.cpp"
 
 static PyMethodDef PallasMethods[] = {
   {"open_trace", open_trace, METH_VARARGS, "Open a Pallas trace."},
