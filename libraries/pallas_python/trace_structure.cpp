@@ -68,6 +68,8 @@ static PyObject* Archive_get_threads(ArchiveObject* self, void* closure) {
       PyList_Append(list, reinterpret_cast<PyObject*>(thread));
     }
   }
+  // This is disgusting
+  // Blame EZTrace for giving us false threads !!!
   return list;
 }
 
