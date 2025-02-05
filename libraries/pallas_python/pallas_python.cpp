@@ -47,12 +47,19 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PyObject* m;
   if (PyType_Ready(&TraceType) < 0)
     return NULL;
+  if (PyType_Ready(&ArchiveType) < 0)
+    return NULL;
 
   m = PyModule_Create(&pallasmodule);
   if (m == NULL)
     return NULL;
 
-  if (PyModule_AddObjectRef(m, "Custom", (PyObject*)&TraceType) < 0) {
+  if (PyModule_AddObjectRef(m, "Trace", (PyObject*)&TraceType) < 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  if (PyModule_AddObjectRef(m, "Archive", (PyObject*)&ArchiveType) < 0) {
     Py_DECREF(m);
     return NULL;
   }
