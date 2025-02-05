@@ -42,26 +42,38 @@ static struct PyModuleDef pallasmodule = {
   nullptr,
 };
 
+#define PYTHON_CHECK_READY(TypeName)  if (PyType_Ready(& TypeName##Type) < 0) return NULL
+
+#define ADD_PYTHON_TYPE(TypeName) \
+if (PyModule_AddObjectRef(m, #TypeName, (PyObject*)& TypeName##Type) < 0) { \
+Py_DECREF(m); \
+return NULL; \
+  }
+
 PyMODINIT_FUNC PyInit_pallas_python(void) {
   PyObject* m;
-  if (PyType_Ready(&TraceType) < 0)
-    return NULL;
-  if (PyType_Ready(&ArchiveType) < 0)
-    return NULL;
+  PYTHON_CHECK_READY(Token);
+  PYTHON_CHECK_READY(Sequence);
+  PYTHON_CHECK_READY(Loop);
+  PYTHON_CHECK_READY(EventSummary);
+
+  PYTHON_CHECK_READY(Thread);
+  PYTHON_CHECK_READY(Trace);
+  PYTHON_CHECK_READY(Archive);
+
 
   m = PyModule_Create(&pallasmodule);
   if (m == NULL)
     return NULL;
 
-  if (PyModule_AddObjectRef(m, "Trace", (PyObject*)&TraceType) < 0) {
-    Py_DECREF(m);
-    return NULL;
-  }
+  ADD_PYTHON_TYPE(Token);
+  ADD_PYTHON_TYPE(Sequence);
+  ADD_PYTHON_TYPE(Loop);
+  ADD_PYTHON_TYPE(EventSummary);
 
-  if (PyModule_AddObjectRef(m, "Archive", (PyObject*)&ArchiveType) < 0) {
-    Py_DECREF(m);
-    return NULL;
-  }
+  ADD_PYTHON_TYPE(Thread);
+  ADD_PYTHON_TYPE(Trace);
+  ADD_PYTHON_TYPE(Archive);
 
   return m;
 }

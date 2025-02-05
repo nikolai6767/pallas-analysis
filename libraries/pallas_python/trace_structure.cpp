@@ -1,11 +1,60 @@
 //
 // Created by khatharsis on 31/01/25.
 //
+#include "grammar.cpp"
+typedef struct {
+  PyObject ob_base;
+  pallas::Thread* thread;
+} ThreadObject;
+
+static PyObject* Thread_get_id(ThreadObject* self, void*) {
+  if (self->thread == nullptr) {
+    return PyLong_FromLong(-1L);
+  }
+  return PyLong_FromLong(self->thread->id);
+}
+
+static PyObject* Thread_get_nb_events(ThreadObject* self, void*) {
+  if (self->thread == nullptr) {
+    return PyLong_FromLong(-1L);
+  }
+  return PyLong_FromUnsignedLong(self->thread->nb_events);
+}
+
+static PyObject* Thread_get_nb_sequences(ThreadObject* self, void*) {
+  if (self->thread == nullptr) {
+    return PyLong_FromLong(-1L);
+  }
+  return PyLong_FromUnsignedLong(self->thread->nb_sequences);
+}
+
+static PyObject* Thread_get_nb_loops(ThreadObject* self, void*) {
+  if (self->thread == nullptr) {
+    return PyLong_FromLong(-1L);
+  }
+  return PyLong_FromUnsignedLong(self->thread->nb_loops);
+}
+
+static PyGetSetDef Thread_getset[] = {
+  {"id", (getter)Thread_get_id, NULL, "Thread ID", NULL},
+  {"nb_events", (getter)Thread_get_nb_events, NULL, "Number of events", NULL},
+  {"nb_sequences", (getter)Thread_get_nb_sequences, NULL, "Number of sequences", NULL},
+  {"nb_loops", (getter)Thread_get_nb_loops, NULL, "Number of loops", NULL},
+  {NULL}  // Sentinel
+};
+
+static PyTypeObject ThreadType = {
+  .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pallas.Thread",
+  .tp_basicsize = sizeof(ThreadObject),
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("A Pallas thread object."),
+  .tp_getset = Thread_getset,
+};
 
 // Object for the Archives
 typedef struct {
   PyObject ob_base;
-  pallas::Archive* archive; // We're using a pointer for less memory shenanigans
+  pallas::Archive* archive;  // We're using a pointer for less memory shenanigans
 } ArchiveObject;
 
 // So we have to do a whole bunch of getters
@@ -21,15 +70,23 @@ static PyObject* Archive_get_fullpath(ArchiveObject* self, void*) {
   return PyUnicode_FromString(self->archive->fullpath);
 }
 
-static PyObject* Archive_get_nb_threads(ArchiveObject* self, void*) {
-  return PyLong_FromLong(self->archive->nb_threads);
+static PyObject* Archive_get_threads(ArchiveObject* self, void* closure) {
+  PyObject* list = PyList_New(self->archive->nb_threads);
+  for (size_t i = 0; i < self->archive->nb_threads; ++i) {
+    auto* thread = PyObject_New(ThreadObject, &ThreadType);
+    PyObject_Init(reinterpret_cast<PyObject*>(thread), &ThreadType);
+    thread->thread = self->archive->getThreadAt(i);
+    PyList_SetItem(list, i, reinterpret_cast<PyObject*>(thread));
+  }
+  return list;
 }
 
 static PyGetSetDef Archive_getset[] = {
   {"dir_name", (getter)Archive_get_dir_name, nullptr, "Directory name of the archive.", nullptr},
   {"trace_name", (getter)Archive_get_trace_name, nullptr, "Trace name of the archive.", nullptr},
   {"fullpath", (getter)Archive_get_fullpath, nullptr, "Full path of the archive.", nullptr},
-  {"nb_threads", (getter)Archive_get_nb_threads, nullptr, "Number of threads in the archive.", nullptr},
+  {"threads", (getter)Archive_get_threads, nullptr, "List of threads in the archive.", nullptr},
+
   {nullptr}  // Sentinel
 };
 
@@ -41,7 +98,6 @@ static PyTypeObject ArchiveType = {
   .tp_doc = PyDoc_STR("A Pallas archive object."),
   .tp_members = nullptr,
   .tp_getset = Archive_getset,
-  .tp_new = PyType_GenericNew,
 };
 
 // Creating the Python Object that'll match the trace
@@ -79,11 +135,17 @@ static PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
 
 static PyObject* Trace_get_archives(TraceObject* self, void* closure) {
   PyObject* list = PyList_New(self->trace.location_groups.size());
-  for (size_t i = 0; i < self->trace.location_groups.size(); ++i) {
+  int i = 0;
+  for (auto& locationGroup : self->trace.location_groups) {
     auto* archive = PyObject_New(ArchiveObject, &ArchiveType);
     PyObject_Init(reinterpret_cast<PyObject*>(archive), &ArchiveType);
-    archive->archive = self->trace.archive_list[i];
-    PyList_SetItem(list, i, reinterpret_cast<PyObject*>(archive));
+    if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
+      archive->archive = self->trace.getArchive(locationGroup.id);
+    else
+      archive->archive = self->trace.getArchive(locationGroup.mainLoc);
+
+    PyList_SetItem(list, i++, reinterpret_cast<PyObject*>(archive));
+
   }
   return list;
 }
@@ -103,7 +165,6 @@ static PyTypeObject TraceType = {
   .tp_doc = PyDoc_STR("A Pallas trace object."),
   .tp_members = Trace_members,
   .tp_getset = Trace_getsetters,
-  .tp_new = PyType_GenericNew,
 };
 
 static PyObject* open_trace(PyObject* self, PyObject* args) {
@@ -111,7 +172,8 @@ static PyObject* open_trace(PyObject* self, PyObject* args) {
   if (!PyArg_ParseTuple(args, "s", &trace_name)) {
     return nullptr;
   }
-  auto* temp = reinterpret_cast<TraceObject*>(PyObject_CallNoArgs(reinterpret_cast<PyObject*>(&TraceType)));
+  auto* temp = PyObject_New(TraceObject, &TraceType);
+  PyObject_Init(reinterpret_cast<PyObject*>(temp), &TraceType);
   if (!temp) {
     return nullptr;
   }
