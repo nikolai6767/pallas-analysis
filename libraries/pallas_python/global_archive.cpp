@@ -2,39 +2,6 @@
 // Created by khatharsis on 31/01/25.
 //
 
-// Creating the Python Object that'll match the trace
-typedef struct {
-  PyObject ob_base;
-  pallas::GlobalArchive trace;
-} TraceObject;
-
-// Defining some custom members
-static PyMemberDef Trace_members[] = {
-  {"dir_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, dir_name), 0, "Directory name."},
-  {"trace_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, trace_name), 0, "Trace name."},
-  {"fullpath", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, fullpath), 0, "Full path."},
-  {"nb_archives", Py_T_INT, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, nb_archives), 0, "Number of Archives."},
-  {nullptr},  // Sentinel value, marks the end of the array
-};
-
-// Defining custom getters for the Locations / Locations Groups
-static PyObject* Trace_get_locations(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace.locations.size());
-  for (size_t i = 0; i < self->trace.locations.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace.locations[i].id);
-    PyList_SetItem(list, i, loc);
-  }
-  return list;
-}
-static PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace.location_groups.size());
-  for (size_t i = 0; i < self->trace.location_groups.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace.location_groups[i].id);
-    PyList_SetItem(list, i, loc);
-  }
-  return list;
-}
-
 // Object for the Archives
 typedef struct {
   PyObject ob_base;
@@ -76,6 +43,39 @@ static PyTypeObject ArchiveType = {
   .tp_getset = Archive_getset,
   .tp_new = PyType_GenericNew,
 };
+
+// Creating the Python Object that'll match the trace
+typedef struct {
+  PyObject ob_base;
+  pallas::GlobalArchive trace;
+} TraceObject;
+
+// Defining some custom members
+static PyMemberDef Trace_members[] = {
+  {"dir_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, dir_name), 0, "Directory name."},
+  {"trace_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, trace_name), 0, "Trace name."},
+  {"fullpath", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, fullpath), 0, "Full path."},
+  {"nb_archives", Py_T_INT, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, nb_archives), 0, "Number of Archives."},
+  {nullptr},  // Sentinel value, marks the end of the array
+};
+
+// Defining custom getters for the Locations / Locations Groups
+static PyObject* Trace_get_locations(TraceObject* self, void* closure) {
+  PyObject* list = PyList_New(self->trace.locations.size());
+  for (size_t i = 0; i < self->trace.locations.size(); ++i) {
+    PyObject* loc = PyLong_FromLong(self->trace.locations[i].id);
+    PyList_SetItem(list, i, loc);
+  }
+  return list;
+}
+static PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
+  PyObject* list = PyList_New(self->trace.location_groups.size());
+  for (size_t i = 0; i < self->trace.location_groups.size(); ++i) {
+    PyObject* loc = PyLong_FromLong(self->trace.location_groups[i].id);
+    PyList_SetItem(list, i, loc);
+  }
+  return list;
+}
 
 static PyObject* Trace_get_archives(TraceObject* self, void* closure) {
   PyObject* list = PyList_New(self->trace.location_groups.size());

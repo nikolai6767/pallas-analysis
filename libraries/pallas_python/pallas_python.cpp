@@ -25,7 +25,6 @@
 
 #include "global_archive.cpp"
 
-
 static PyMethodDef PallasMethods[] = {
   {"open_trace", open_trace, METH_VARARGS, "Open a Pallas trace."},
   {nullptr, nullptr, 0, nullptr}, /* Sentinel */
