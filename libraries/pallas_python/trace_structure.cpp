@@ -8,30 +8,18 @@ typedef struct {
 } ThreadObject;
 
 static PyObject* Thread_get_id(ThreadObject* self, void*) {
-  if (self->thread == nullptr) {
-    return PyLong_FromLong(-1L);
-  }
   return PyLong_FromLong(self->thread->id);
 }
 
 static PyObject* Thread_get_nb_events(ThreadObject* self, void*) {
-  if (self->thread == nullptr) {
-    return PyLong_FromLong(-1L);
-  }
   return PyLong_FromUnsignedLong(self->thread->nb_events);
 }
 
 static PyObject* Thread_get_nb_sequences(ThreadObject* self, void*) {
-  if (self->thread == nullptr) {
-    return PyLong_FromLong(-1L);
-  }
   return PyLong_FromUnsignedLong(self->thread->nb_sequences);
 }
 
 static PyObject* Thread_get_nb_loops(ThreadObject* self, void*) {
-  if (self->thread == nullptr) {
-    return PyLong_FromLong(-1L);
-  }
   return PyLong_FromUnsignedLong(self->thread->nb_loops);
 }
 
@@ -71,12 +59,14 @@ static PyObject* Archive_get_fullpath(ArchiveObject* self, void*) {
 }
 
 static PyObject* Archive_get_threads(ArchiveObject* self, void* closure) {
-  PyObject* list = PyList_New(self->archive->nb_threads);
+  PyObject* list = PyList_New(0);
   for (size_t i = 0; i < self->archive->nb_threads; ++i) {
-    auto* thread = PyObject_New(ThreadObject, &ThreadType);
-    PyObject_Init(reinterpret_cast<PyObject*>(thread), &ThreadType);
-    thread->thread = self->archive->getThreadAt(i);
-    PyList_SetItem(list, i, reinterpret_cast<PyObject*>(thread));
+    if (self->archive->getThreadAt(i)) {
+      auto* thread = PyObject_New(ThreadObject, &ThreadType);
+      PyObject_Init(reinterpret_cast<PyObject*>(thread), &ThreadType);
+      thread->thread = self->archive->getThreadAt(i);
+      PyList_Append(list, reinterpret_cast<PyObject*>(thread));
+    }
   }
   return list;
 }
@@ -145,8 +135,11 @@ static PyObject* Trace_get_archives(TraceObject* self, void* closure) {
       archive->archive = self->trace.getArchive(locationGroup.mainLoc);
 
     PyList_SetItem(list, i++, reinterpret_cast<PyObject*>(archive));
-
   }
+
+  // This is disgusting code but that's how it works in the readGlobalArchive
+  // so I don't see why we shouldn't use it here
+  // Blame EZTrace for giving us wrongly formatted Location Groups !!!
   return list;
 }
 
