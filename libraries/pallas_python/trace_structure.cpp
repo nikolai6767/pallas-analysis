@@ -32,7 +32,7 @@ static PyGetSetDef Thread_getset[] = {
 };
 
 static PyTypeObject ThreadType = {
-  .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pallas.Thread",
+  .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pallas_python.Thread",
   .tp_basicsize = sizeof(ThreadObject),
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = PyDoc_STR("A Pallas thread object."),
