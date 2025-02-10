@@ -26,3 +26,10 @@ typedef struct {
   pallas::EventSummary* event_summary;
 } EventSummaryObject;
 extern PyTypeObject EventSummaryType;
+
+
+typedef struct {
+  PyObject ob_base;
+  pallas::Event* event;
+} EventObject;
+extern PyTypeObject EventType;

@@ -6,6 +6,9 @@
 #include "grammar.h"
 #include "structure.h"
 
+PyObject* tokenTypeEnum;
+PyObject* eventRecordEnum;
+
 PyMethodDef PallasMethods[] = {
   {"open_trace", open_trace, METH_VARARGS, "Open a Pallas trace."},
   {nullptr, nullptr, 0, nullptr}, /* Sentinel */
@@ -40,6 +43,8 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PYTHON_CHECK_READY(Sequence);
   PYTHON_CHECK_READY(Loop);
   PYTHON_CHECK_READY(EventSummary);
+  PYTHON_CHECK_READY(Event);
+
 
   PYTHON_CHECK_READY(Thread);
   PYTHON_CHECK_READY(Trace);
@@ -136,6 +141,7 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   ADD_PYTHON_TYPE(Sequence);
   ADD_PYTHON_TYPE(Loop);
   ADD_PYTHON_TYPE(EventSummary);
+  ADD_PYTHON_TYPE(Event);
 
   ADD_PYTHON_TYPE(Thread);
   ADD_PYTHON_TYPE(Trace);

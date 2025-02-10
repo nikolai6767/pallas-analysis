@@ -121,7 +121,6 @@ PyGetSetDef Loop_getset[] = {
   {nullptr}  // Sentinel
 };
 
-
 PyTypeObject SequenceType = {
   .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.Sequence",
   .tp_basicsize = sizeof(SequenceObject),
@@ -138,7 +137,6 @@ PyTypeObject LoopType = {
   .tp_getset = Loop_getset,
 };
 
-
 PyObject* EventSummary_to_string(PyObject* self) {
   return PyUnicode_FromFormat("<EventSummary id=%d>", reinterpret_cast<EventSummaryObject*>(self)->event_summary->id);
 }
@@ -148,7 +146,11 @@ PyObject* EventSummary_get_id(EventSummaryObject* self, void*) {
 }
 
 PyObject* EventSummary_get_event(EventSummaryObject* self, void*) {
-  return nullptr;  // PyLong_FromUnsignedLong(self->event_summary->event);
+  auto* event = new EventObject {
+    .ob_base = PyObject_HEAD_INIT(&EventType)  //
+                 .event = &self->event_summary->event,
+  };
+  return reinterpret_cast<PyObject*>(event);
 }
 
 PyObject* EventSummary_get_durations(EventSummaryObject* self, void*) {
@@ -168,16 +170,136 @@ PyGetSetDef EventSummary_getset[] = {
   {"id", (getter)EventSummary_get_id, nullptr, "ID of the Event", nullptr},
   {"event", (getter)EventSummary_get_event, nullptr, "The Event being summarized", nullptr},
   {"durations", (getter)EventSummary_get_durations, nullptr, "Durations for each occurrence of that Event", nullptr},
-  // {"attribute_buffer", (getter)EventSummary_get_attribute_buffer, nullptr, "Storage for Attribute", nullptr},
+  // {"attributes", (getter)EventSummary_get_attributes, nullptr, "List of attributes.", nullptr},
   {nullptr}  // Sentinel
 };
-
 
 PyTypeObject EventSummaryType = {
   .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.EventSummary",
   .tp_basicsize = sizeof(EventSummaryObject),
+  .tp_repr = EventSummary_to_string,
   .tp_str = EventSummary_to_string,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = PyDoc_STR("A Pallas EventSummary object."),
   .tp_getset = EventSummary_getset,
+};
+
+PyObject* Event_get_record(EventObject* self, void*) {
+  return PyObject_CallFunction(eventRecordEnum, "l", self->event->record);
+}
+
+static inline void pop_data(pallas::Event* e, void* data, size_t data_size, byte*& cursor) {
+  if (cursor == nullptr) {
+    cursor = &e->event_data[0];
+  }
+  memcpy(data, cursor, data_size);
+  cursor += data_size;
+}
+
+#define READ_LONG(type, name)                                 \
+  {                                                           \
+    type name;                                                \
+    pop_data(e, &name, sizeof(type), cursor);                 \
+    PyDict_SetItemString(dict, #name, PyLong_FromLong(name)); \
+  }
+
+static PyObject* Event_get_data(EventObject* self, void*) {
+  PyObject* dict = PyDict_New();
+  if (!dict)
+    return NULL;
+  auto* e = self->event;
+  byte* cursor = nullptr;
+
+  switch (e->record) {
+  case pallas::PALLAS_EVENT_ENTER:
+  case pallas::PALLAS_EVENT_LEAVE: {
+    READ_LONG(pallas::RegionRef, region_ref);
+    break;
+  }
+  case pallas::PALLAS_EVENT_THREAD_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_END:
+  case pallas::PALLAS_EVENT_THREAD_TEAM_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_TEAM_END:
+  case pallas::PALLAS_EVENT_THREAD_JOIN:
+  case pallas::PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_TASK_CREATE:
+  case pallas::PALLAS_EVENT_THREAD_TASK_COMPLETE:
+  case pallas::PALLAS_EVENT_THREAD_TASK_SWITCH:
+    // No additional data for these events
+    break;
+  case pallas::PALLAS_EVENT_THREAD_FORK:
+  case pallas::PALLAS_EVENT_OMP_FORK: {
+    READ_LONG(uint32_t, numberOfRequestedThreads);
+  }
+  case pallas::PALLAS_EVENT_MPI_SEND:
+  case pallas::PALLAS_EVENT_MPI_RECV: {
+    READ_LONG(uint32_t, receiver);
+    READ_LONG(uint32_t, communicator);
+    READ_LONG(uint32_t, msgTag);
+    READ_LONG(uint64_t, msgLength);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_ISEND:
+  case pallas::PALLAS_EVENT_MPI_IRECV: {
+    READ_LONG(uint32_t, receiver);
+    READ_LONG(uint32_t, communicator);
+    READ_LONG(uint32_t, msgTag);
+    READ_LONG(uint64_t, msgLength);
+    READ_LONG(uint64_t, requestID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_ISEND_COMPLETE:
+  case pallas::PALLAS_EVENT_MPI_IRECV_REQUEST: {
+    READ_LONG(uint64_t, requestID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_THREAD_ACQUIRE_LOCK:
+  case pallas::PALLAS_EVENT_THREAD_RELEASE_LOCK:
+  case pallas::PALLAS_EVENT_OMP_ACQUIRE_LOCK:
+  case pallas::PALLAS_EVENT_OMP_RELEASE_LOCK: {
+    READ_LONG(uint32_t, lockID);
+    READ_LONG(uint32_t, acquisitionOrder);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_COLLECTIVE_END: {
+    READ_LONG(uint32_t, collectiveOp);
+    READ_LONG(uint32_t, communicator);
+    READ_LONG(uint32_t, root);
+    READ_LONG(uint64_t, sizeSent);
+    READ_LONG(uint64_t, sizeReceived);
+    break;
+  }
+  case pallas::PALLAS_EVENT_OMP_TASK_CREATE:
+  case pallas::PALLAS_EVENT_OMP_TASK_SWITCH:
+  case pallas::PALLAS_EVENT_OMP_TASK_COMPLETE: {
+    READ_LONG(uint64_t, taskID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_GENERIC: {
+    pallas::StringRef event_name;
+    pop_data(e, &event_name, sizeof(event_name), cursor);
+    PyDict_SetItemString(dict, "event_name", PyUnicode_FromString(reinterpret_cast<const char*>(&event_name)));
+    break;
+  }
+
+  default:
+    Py_RETURN_NONE;
+    break;
+  }
+
+  return dict;
+}
+
+PyGetSetDef Event_getset[] = {
+  {"record", (getter)Event_get_record, nullptr, "Event record", nullptr},
+  {"data", (getter)Event_get_data, nullptr, "That event's data", nullptr},
+  {nullptr}  // Sentinel
+};
+
+PyTypeObject EventType = {
+  .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.Event",
+  .tp_basicsize = sizeof(EventObject),
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("A Pallas Event object."),
+  .tp_getset = Event_getset,
 };

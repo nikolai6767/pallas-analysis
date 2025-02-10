@@ -24,5 +24,5 @@
 #include <pallas/pallas_archive.h>
 #include <pallas/pallas_storage.h>
 
-static PyObject* tokenTypeEnum;
-static PyObject* eventRecordEnum;
+extern PyObject* tokenTypeEnum;
+extern PyObject* eventRecordEnum;
