@@ -1,36 +1,17 @@
 //
 // Created by khatharsis on 23/01/25.
 //
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-// This HAS to be at the beginning of the file
-// Do NOT modify it
+#define PY_ARRAY_UNIQUE_SYMBOL PallasPython
+#include "pallas_python.h"
+#include "grammar.h"
+#include "structure.h"
 
-// Handle additional fields introduced in Python 3.13+
-
-#if PY_VERSION_HEX >= ((3 << 24) | (13 << 16))
-#define PYTYPEOBJECT_EXTRA_FIELDS \
-  0,   /* tp_vectorcall */        \
-    0, /* tp_watched */           \
-    0  /* tp_versions_used */
-#elif PY_VERSION_HEX >= ((3 << 24) | (8 << 16))
-#define PYTYPEOBJECT_EXTRA_FIELDS 0 /* tp_vectorcall */
-#else
-#define PYTYPEOBJECT_EXTRA_FIELDS
-#endif
-
-#include "pallas/pallas.h"
-#include "pallas/pallas_archive.h"
-#include "pallas/pallas_storage.h"
-
-#include "trace_structure.cpp"
-
-static PyMethodDef PallasMethods[] = {
+PyMethodDef PallasMethods[] = {
   {"open_trace", open_trace, METH_VARARGS, "Open a Pallas trace."},
   {nullptr, nullptr, 0, nullptr}, /* Sentinel */
 };
 
-static struct PyModuleDef pallasmodule = {
+struct PyModuleDef pallasmodule = {
   PyModuleDef_HEAD_INIT,
   "pallas_python",                             /* name of module */
   "Python API for the Pallas Tracing Library", /* module documentation, may be NULL */
@@ -53,6 +34,7 @@ static struct PyModuleDef pallasmodule = {
   }
 
 PyMODINIT_FUNC PyInit_pallas_python(void) {
+  import_array();
   PyObject* m;
   PYTHON_CHECK_READY(Token);
   PYTHON_CHECK_READY(Sequence);
@@ -63,7 +45,6 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PYTHON_CHECK_READY(Trace);
   PYTHON_CHECK_READY(Archive);
 
-  import_array();
   m = PyModule_Create(&pallasmodule);
   if (m == NULL)
     return NULL;
@@ -81,7 +62,7 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PyDict_SetItemString(tokenTypeDict, "SEQUENCE", PyLong_FromLong(pallas::TypeSequence));
   PyDict_SetItemString(tokenTypeDict, "LOOP", PyLong_FromLong(pallas::TypeLoop));
 
-  PyObject *tokenTypeEnum = PyObject_CallFunction(enumClass, "sO", "TokenType", tokenTypeDict);
+  tokenTypeEnum = PyObject_CallFunction(enumClass, "sO", "TokenType", tokenTypeDict);
   PyModule_AddObject(m, "TokenType", tokenTypeEnum);
 
   // Then the RecordType
@@ -148,7 +129,7 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PyDict_SetItemString(eventRecordDict, "GENERIC", PyLong_FromLong(pallas::PALLAS_EVENT_GENERIC));
 
   // Add EventRecord enum to module
-  PyObject *eventRecordEnum = PyObject_CallFunction(enumClass, "sO", "EventRecord", eventRecordDict);
+  eventRecordEnum = PyObject_CallFunction(enumClass, "sO", "EventRecord", eventRecordDict);
   PyModule_AddObject(m, "EventRecord", eventRecordEnum);
 
   ADD_PYTHON_TYPE(Token);

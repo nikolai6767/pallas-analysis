@@ -7,7 +7,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development NumPy)
 set(CMAKE_SHARED_MODULE_PREFIX "")  # Remove default 'lib' prefix
 set(CMAKE_SHARED_LIBRARY_SUFFIX ${Python3_SOABI}.so)  # Ensure correct suffix for Python
 
-add_library(pallas_python MODULE pallas_python.cpp)
+add_library(pallas_python MODULE pallas_python.cpp grammar.cpp structure.cpp)
+set_property(TARGET pallas_python PROPERTY PUBLIC_HEADER grammar.h structure.h pallas_python.h)
 
 list(APPEND WARNINGS "-Wno-missing-field-initializers")
 
