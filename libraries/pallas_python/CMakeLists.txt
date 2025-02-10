@@ -26,6 +26,7 @@ target_link_libraries(pallas_python
         dl
         pallas
         ${Python3_LIBRARIES}
+        Python3::NumPy
 )
 
 install(TARGETS pallas_python LIBRARY DESTINATION ${INSTALL_LIBDIR})

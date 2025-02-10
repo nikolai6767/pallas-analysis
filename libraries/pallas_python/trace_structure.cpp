@@ -11,23 +11,47 @@ static PyObject* Thread_get_id(ThreadObject* self, void*) {
   return PyLong_FromLong(self->thread->id);
 }
 
-static PyObject* Thread_get_nb_events(ThreadObject* self, void*) {
-  return PyLong_FromUnsignedLong(self->thread->nb_events);
+static PyObject* Thread_get_event_summaries(ThreadObject* self, void*) {
+  PyObject* list = PyList_New(self->thread->nb_events);
+  for (int eid = 0; eid < self->thread->nb_events; eid++) {
+      auto* eventSummary = new EventSummaryObject{
+        .ob_base = PyObject_HEAD_INIT(&EventSummaryType)  //
+                     .event_summary = &self->thread->events[eid],
+      };
+      PyList_SET_ITEM(list, eid, eventSummary);
+  }
+  return list;
 }
 
-static PyObject* Thread_get_nb_sequences(ThreadObject* self, void*) {
-  return PyLong_FromUnsignedLong(self->thread->nb_sequences);
+static PyObject* Thread_get_sequences(ThreadObject* self, void*) {
+  PyObject* list = PyList_New(self->thread->nb_sequences);
+  for (int sid = 0; sid < self->thread->nb_sequences; sid++) {
+    auto* sequence = new SequenceObject{
+      .ob_base = PyObject_HEAD_INIT(&SequenceType)  //
+                   .sequence = self->thread->sequences[sid],
+    };
+    PyList_SET_ITEM(list, sid, sequence);
+  }
+  return list;
 }
 
-static PyObject* Thread_get_nb_loops(ThreadObject* self, void*) {
-  return PyLong_FromUnsignedLong(self->thread->nb_loops);
+static PyObject* Thread_get_loops(ThreadObject* self, void*) {
+  PyObject* list = PyList_New(self->thread->nb_loops);
+  for (int lid = 0; lid < self->thread->nb_events; lid++) {
+    auto* loop = new LoopObject {
+      .ob_base = PyObject_HEAD_INIT(&LoopType)  //
+                   .loop = &self->thread->loops[lid],
+    };
+    PyList_SET_ITEM(list, lid, loop);
+  }
+  return list;
 }
 
 static PyGetSetDef Thread_getset[] = {
   {"id", (getter)Thread_get_id, NULL, "Thread ID", NULL},
-  {"nb_events", (getter)Thread_get_nb_events, NULL, "Number of events", NULL},
-  {"nb_sequences", (getter)Thread_get_nb_sequences, NULL, "Number of sequences", NULL},
-  {"nb_loops", (getter)Thread_get_nb_loops, NULL, "Number of loops", NULL},
+  {"events", (getter)Thread_get_event_summaries, NULL, "List of events", NULL},
+  {"sequences", (getter)Thread_get_sequences, NULL, "List of sequences", NULL},
+  {"loops", (getter)Thread_get_loops, NULL, "List of loops", NULL},
   {NULL}  // Sentinel
 };
 

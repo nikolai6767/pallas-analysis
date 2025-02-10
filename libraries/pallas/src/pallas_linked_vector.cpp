@@ -85,6 +85,16 @@ uint64_t& LinkedVector::back() {
   return last->at(size - 1);
 }
 
+
+void LinkedVector::deleteTimestamps() {
+  auto* sub = first;
+  while (sub) {
+    delete[] sub->array;
+    auto* temp = sub->next;
+    delete sub;
+    sub = temp;
+  }
+}
 void LinkedVector::print() {
   std::cout << "[";
   if (size) {
@@ -94,14 +104,9 @@ void LinkedVector::print() {
   } else
     std::cout << "]";
 }
+
 LinkedVector::~LinkedVector() {
-  auto* sub = first;
-  while (sub) {
-    delete[] sub->array;
-    auto* temp = sub->next;
-    delete sub;
-    sub = temp;
-  }
+  deleteTimestamps();
 }
 
 /* C++ Callbacks for C Usage */

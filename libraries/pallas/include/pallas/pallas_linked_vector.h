@@ -140,6 +140,12 @@ typedef struct LinkedVector {
    * @return Reference to the last element.
    */
   [[nodiscard]] uint64_t& back();
+  /**
+   * Does the inverse of loadTimestamps.
+   * This is used when you want to free some memory,
+   * but don't want to  lose access the actual data
+   */
+  void deleteTimestamps();
 
   /**
    * Prints the content of the LinkedVector to stdout.
