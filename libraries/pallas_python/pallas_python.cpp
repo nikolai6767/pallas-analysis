@@ -28,12 +28,12 @@ struct PyModuleDef pallasmodule = {
 
 #define PYTHON_CHECK_READY(TypeName)     \
   if (PyType_Ready(&TypeName##Type) < 0) \
-  return NULL
+  return nullptr
 
 #define ADD_PYTHON_TYPE(TypeName)                                            \
   if (PyModule_AddObjectRef(m, #TypeName, (PyObject*)&TypeName##Type) < 0) { \
     Py_DECREF(m);                                                            \
-    return NULL;                                                             \
+    return nullptr;                                                          \
   }
 
 PyMODINIT_FUNC PyInit_pallas_python(void) {
@@ -45,19 +45,17 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PYTHON_CHECK_READY(EventSummary);
   PYTHON_CHECK_READY(Event);
 
-
   PYTHON_CHECK_READY(Thread);
   PYTHON_CHECK_READY(Trace);
   PYTHON_CHECK_READY(Archive);
 
   m = PyModule_Create(&pallasmodule);
-  if (m == NULL)
-    return NULL;
-
+  if (m == nullptr)
+    return nullptr;
 
   // Import the enum module
-  PyObject *enumModule = PyImport_ImportModule("enum");
-  PyObject *enumClass = PyObject_GetAttrString(enumModule, "Enum");
+  PyObject* enumModule = PyImport_ImportModule("enum");
+  PyObject* enumClass = PyObject_GetAttrString(enumModule, "Enum");
 
   // Create some enums
   // First the TokenType
