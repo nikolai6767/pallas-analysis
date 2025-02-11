@@ -36,7 +36,7 @@ PyObject* Thread_get_sequences(ThreadObject* self, void*) {
 
 PyObject* Thread_get_loops(ThreadObject* self, void*) {
   PyObject* list = PyList_New(self->thread->nb_loops);
-  for (int lid = 0; lid < self->thread->nb_events; lid++) {
+  for (int lid = 0; lid < self->thread->nb_loops; lid++) {
     auto* loop = new LoopObject {
       .ob_base = PyObject_HEAD_INIT(&LoopType)  //
                    .loop = &self->thread->loops[lid],
