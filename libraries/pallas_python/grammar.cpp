@@ -146,7 +146,7 @@ PyObject* EventSummary_get_id(EventSummaryObject* self, void*) {
 }
 
 PyObject* EventSummary_get_event(EventSummaryObject* self, void*) {
-  auto* event = new EventObject {
+  auto* event = new EventObject{
     .ob_base = PyObject_HEAD_INIT(&EventType)  //
                  .event = &self->event_summary->event,
   };
@@ -166,10 +166,28 @@ PyObject* EventSummary_get_durations(EventSummaryObject* self, void*) {
   return np_array;
 }
 
+PyObject* EventSummary_get_mean_duration(EventSummaryObject* self, void*) {
+  return PyLong_FromLong(self->event_summary->durations->mean);
+}
+PyObject* EventSummary_get_min_duration(EventSummaryObject* self, void*) {
+  return PyLong_FromLong(self->event_summary->durations->min);
+}
+PyObject* EventSummary_get_max_duration(EventSummaryObject* self, void*) {
+  return PyLong_FromLong(self->event_summary->durations->max);
+}
+PyObject* EventSummary_get_n_occurrences(EventSummaryObject* self, void*) {
+  return PyLong_FromLong(self->event_summary->durations->size);
+}
+
 PyGetSetDef EventSummary_getset[] = {
   {"id", (getter)EventSummary_get_id, nullptr, "ID of the Event", nullptr},
   {"event", (getter)EventSummary_get_event, nullptr, "The Event being summarized", nullptr},
   {"durations", (getter)EventSummary_get_durations, nullptr, "Durations for each occurrence of that Event", nullptr},
+  {"min_duration", (getter)EventSummary_get_min_duration, nullptr, "Minimum duration for that Event", nullptr},
+  {"max_duration", (getter)EventSummary_get_max_duration, nullptr, "Maximum duration for that Event", nullptr},
+  {"mean_duration", (getter)EventSummary_get_mean_duration, nullptr, "Average duration for that Event", nullptr},
+  {"number_occurrence", (getter)EventSummary_get_n_occurrences, nullptr, "Number of repetitions for that Event", nullptr},
+
   // {"attributes", (getter)EventSummary_get_attributes, nullptr, "List of attributes.", nullptr},
   {nullptr}  // Sentinel
 };
