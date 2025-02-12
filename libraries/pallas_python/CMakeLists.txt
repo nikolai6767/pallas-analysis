@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.14.0)
 set (CMAKE_CXX_STANDARD 20)
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development NumPy)
-
-
 set(CMAKE_SHARED_MODULE_PREFIX "")  # Remove default 'lib' prefix
 set(CMAKE_SHARED_LIBRARY_SUFFIX ${Python3_SOABI}.so)  # Ensure correct suffix for Python
 

@@ -5,6 +5,8 @@
 #define PY_ARRAY_UNIQUE_SYMBOL PallasPython
 #include "grammar.h"
 
+#include <sstream>
+
 PyObject* Token_get_type(TokenObject* self, void*) {
   return PyObject_CallFunction(tokenTypeEnum, "i", self->token.type);
 }
@@ -59,7 +61,7 @@ PyObject* Sequence_get_tokens(SequenceObject* self, void*) {
       .ob_base = PyObject_HEAD_INIT(&TokenType)  //
                    .token = self->sequence->tokens[i],
     };
-    PyList_SET_ITEM(list, i, token);
+    PyList_SET_ITEM(list, i, reinterpret_cast<PyObject*>(token));
   }
   return list;
 }

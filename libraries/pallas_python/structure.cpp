@@ -17,7 +17,7 @@ PyObject* Thread_get_event_summaries(ThreadObject* self, void*) {
         .ob_base = PyObject_HEAD_INIT(&EventSummaryType)  //
                      .event_summary = &self->thread->events[eid],
       };
-      PyList_SET_ITEM(list, eid, eventSummary);
+      PyList_SET_ITEM(list, eid, reinterpret_cast<PyObject*>(eventSummary));
   }
   return list;
 }
@@ -29,7 +29,7 @@ PyObject* Thread_get_sequences(ThreadObject* self, void*) {
       .ob_base = PyObject_HEAD_INIT(&SequenceType)  //
                    .sequence = self->thread->sequences[sid],
     };
-    PyList_SET_ITEM(list, sid, sequence);
+    PyList_SET_ITEM(list, sid, reinterpret_cast<PyObject*>(sequence));
   }
   return list;
 }
@@ -41,7 +41,7 @@ PyObject* Thread_get_loops(ThreadObject* self, void*) {
       .ob_base = PyObject_HEAD_INIT(&LoopType)  //
                    .loop = &self->thread->loops[lid],
     };
-    PyList_SET_ITEM(list, lid, loop);
+    PyList_SET_ITEM(list, lid, reinterpret_cast<PyObject*>(loop));
   }
   return list;
 }
@@ -156,10 +156,19 @@ PyObject* Trace_get_archives(TraceObject* self, void* closure) {
   return list;
 }
 
+PyObject* Trace_get_strings(TraceObject* self, void* ) {
+  PyObject* map = PyDict_New();
+  for (auto& [key, value] : self->trace.definitions.strings) {
+    PyDict_SetItem(map, PyLong_FromLong(key), PyUnicode_FromStringAndSize(value.str, value.length - 1));
+  }
+  return map;
+}
+
 PyGetSetDef Trace_getsetters[] = {
   {"locations", (getter)Trace_get_locations, nullptr, "List of Locations", nullptr},
   {"location_groups", (getter)Trace_get_location_groups, nullptr, "List of Location Groups", nullptr},
   {"archives", (getter)Trace_get_archives, nullptr, "List of Archives", nullptr},
+   {"strings", (getter) Trace_get_strings, nullptr, "Array of Strings", nullptr},
   {nullptr}  // Sentinel
 };
 
