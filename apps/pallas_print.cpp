@@ -159,7 +159,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
     std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<std::endl;
 
-    pallas_assert_always(last_timestamp > first_timestamp);
+    pallas_assert_always(last_timestamp >= first_timestamp);
+    last_timestamp = first_timestamp+duration;
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
