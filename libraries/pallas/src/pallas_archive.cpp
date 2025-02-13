@@ -314,6 +314,13 @@ void GlobalArchive::addComm(CommRef comm_ref, StringRef name, GroupRef group, Co
   pthread_mutex_unlock(&lock);
 }
 
+GlobalArchive::~GlobalArchive() {
+  delete[] dir_name;
+  delete[] trace_name;
+  delete[] fullpath;
+  delete[] archive_list;
+};
+
 Archive::~Archive() {
   free(dir_name);
   delete[] trace_name;

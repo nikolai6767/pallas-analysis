@@ -13,11 +13,11 @@ PyObject* Thread_get_id(ThreadObject* self, void*) {
 PyObject* Thread_get_event_summaries(ThreadObject* self, void*) {
   PyObject* list = PyList_New(self->thread->nb_events);
   for (int eid = 0; eid < self->thread->nb_events; eid++) {
-      auto* eventSummary = new EventSummaryObject{
-        .ob_base = PyObject_HEAD_INIT(&EventSummaryType)  //
-                     .event_summary = &self->thread->events[eid],
-      };
-      PyList_SET_ITEM(list, eid, reinterpret_cast<PyObject*>(eventSummary));
+    auto* eventSummary = new EventSummaryObject{
+      .ob_base = PyObject_HEAD_INIT(&EventSummaryType)  //
+                   .event_summary = &self->thread->events[eid],
+    };
+    PyList_SET_ITEM(list, eid, reinterpret_cast<PyObject*>(eventSummary));
   }
   return list;
 }
@@ -37,7 +37,7 @@ PyObject* Thread_get_sequences(ThreadObject* self, void*) {
 PyObject* Thread_get_loops(ThreadObject* self, void*) {
   PyObject* list = PyList_New(self->thread->nb_loops);
   for (int lid = 0; lid < self->thread->nb_loops; lid++) {
-    auto* loop = new LoopObject {
+    auto* loop = new LoopObject{
       .ob_base = PyObject_HEAD_INIT(&LoopType)  //
                    .loop = &self->thread->loops[lid],
     };
@@ -109,43 +109,48 @@ PyTypeObject ArchiveType = {
   .tp_getset = Archive_getset,
 };
 
-// Defining some custom members
-PyMemberDef Trace_members[] = {
-  {"dir_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, dir_name), 0, "Directory name."},
-  {"trace_name", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, trace_name), 0, "Trace name."},
-  {"fullpath", Py_T_STRING, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, fullpath), 0, "Full path."},
-  {"nb_archives", Py_T_INT, offsetof(TraceObject, trace) + offsetof(pallas::GlobalArchive, nb_archives), 0, "Number of Archives."},
-  {nullptr},  // Sentinel value, marks the end of the array
-};
+// So we have to do a whole bunch of getters
+PyObject* Trace_get_dir_name(TraceObject* self, void*) {
+  return PyUnicode_FromString(self->trace->dir_name);
+}
+
+PyObject* Trace_get_trace_name(TraceObject* self, void*) {
+  return PyUnicode_FromString(self->trace->trace_name);
+}
+
+PyObject* Trace_get_fullpath(TraceObject* self, void*) {
+  return PyUnicode_FromString(self->trace->fullpath);
+}
+
 
 // Defining custom getters for the Locations / Locations Groups
 PyObject* Trace_get_locations(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace.locations.size());
-  for (size_t i = 0; i < self->trace.locations.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace.locations[i].id);
+  PyObject* list = PyList_New(self->trace->locations.size());
+  for (size_t i = 0; i < self->trace->locations.size(); ++i) {
+    PyObject* loc = PyLong_FromLong(self->trace->locations[i].id);
     PyList_SetItem(list, i, loc);
   }
   return list;
 }
 PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace.location_groups.size());
-  for (size_t i = 0; i < self->trace.location_groups.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace.location_groups[i].id);
+  PyObject* list = PyList_New(self->trace->location_groups.size());
+  for (size_t i = 0; i < self->trace->location_groups.size(); ++i) {
+    PyObject* loc = PyLong_FromLong(self->trace->location_groups[i].id);
     PyList_SetItem(list, i, loc);
   }
   return list;
 }
 
 PyObject* Trace_get_archives(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace.location_groups.size());
+  PyObject* list = PyList_New(self->trace->location_groups.size());
   int i = 0;
-  for (auto& locationGroup : self->trace.location_groups) {
+  for (auto& locationGroup : self->trace->location_groups) {
     auto* archive = PyObject_New(ArchiveObject, &ArchiveType);
     PyObject_Init(reinterpret_cast<PyObject*>(archive), &ArchiveType);
     if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
-      archive->archive = self->trace.getArchive(locationGroup.id);
+      archive->archive = self->trace->getArchive(locationGroup.id);
     else
-      archive->archive = self->trace.getArchive(locationGroup.mainLoc);
+      archive->archive = self->trace->getArchive(locationGroup.mainLoc);
 
     PyList_SetItem(list, i++, reinterpret_cast<PyObject*>(archive));
   }
@@ -156,31 +161,55 @@ PyObject* Trace_get_archives(TraceObject* self, void* closure) {
   return list;
 }
 
-PyObject* Trace_get_strings(TraceObject* self, void* ) {
+PyObject* Trace_get_strings(TraceObject* self, void*) {
   PyObject* map = PyDict_New();
-  for (auto& [key, value] : self->trace.definitions.strings) {
+  for (auto& [key, value] : self->trace->definitions.strings) {
     PyDict_SetItem(map, PyLong_FromLong(key), PyUnicode_FromStringAndSize(value.str, value.length - 1));
   }
   return map;
 }
+PyObject* Region_toDict(const pallas::Region& r, const pallas::Definition& d) {
+  PyObject* map = PyDict_New();
+  PyDict_SetItem(map, PyUnicode_FromString("region_ref"), PyLong_FromLong(r.region_ref));
+  PyDict_SetItem(map, PyUnicode_FromString("string"), PyUnicode_FromStringAndSize(d.strings.find(r.string_ref)->second.str, d.strings.find(r.string_ref)->second.length - 1));
+  return map;
+}
+
+PyObject* Trace_get_regions(TraceObject* self, void*) {
+  PyObject* map = PyDict_New();
+  for (auto& [key, value] : self->trace->definitions.regions) {
+    PyDict_SetItem(map, PyLong_FromLong(key), Region_toDict(value, self->trace->definitions));
+  }
+  return map;
+}
+
+void Trace_dealloc(TraceObject* self) {
+  std::cout << "WARNING: Trace has been deallocated, but the timestamps haven't" << std::endl;
+  std::cout << "         This is intentional and a current WIP" << std::endl;
+  delete self->trace;
+  Py_TYPE(self)->tp_free((PyObject*)self);
+}
 
 PyGetSetDef Trace_getsetters[] = {
+  {"dir_name", (getter)Trace_get_dir_name, nullptr, "Directory name of the trace.", nullptr},
+ {"trace_name", (getter)Trace_get_trace_name, nullptr, "Trace name of the trace.", nullptr},
+ {"fullpath", (getter)Trace_get_fullpath, nullptr, "Full path of the trace.", nullptr},
   {"locations", (getter)Trace_get_locations, nullptr, "List of Locations", nullptr},
   {"location_groups", (getter)Trace_get_location_groups, nullptr, "List of Location Groups", nullptr},
   {"archives", (getter)Trace_get_archives, nullptr, "List of Archives", nullptr},
-   {"strings", (getter) Trace_get_strings, nullptr, "Array of Strings", nullptr},
+  {"strings", (getter)Trace_get_strings, nullptr, "Dict of Strings", nullptr},
+  {"regions", (getter)Trace_get_regions, nullptr, "Dict of Regions", nullptr},
   {nullptr}  // Sentinel
 };
 
 PyTypeObject TraceType = {
   .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.Trace",
   .tp_basicsize = sizeof(TraceObject),
+  .tp_dealloc = (destructor)Trace_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = PyDoc_STR("A Pallas trace object."),
-  .tp_members = Trace_members,
   .tp_getset = Trace_getsetters,
 };
-
 
 PyObject* open_trace(PyObject* self, PyObject* args) {
   const char* trace_name;
@@ -192,24 +221,7 @@ PyObject* open_trace(PyObject* self, PyObject* args) {
   if (!temp) {
     return nullptr;
   }
-  // WTF
-  std::memset(&temp->trace, 0, sizeof(temp->trace));
-  /*
-   * OK so the Python library is just straight up lying to us now
-   * Because it claims to initialize everything to nullptr
-   * WHICH IT CLEARLY DOES NOT
-   * This is stupid and the person who designed this deserves to `git commit sepuku`
-   *
-   * Edit: OK so actually idk what the "tp_alloc" field is used for
-   * Because this https://docs.python.org/3.13/c-api/type.html#c.PyType_GenericAlloc is actually true
-   * But so is this https://docs.python.org/3.13/c-api/allocation.html#c.PyObject_New
-   * And the second one CLAIMS that it doesn't set anything to nullptr, it only allocates.
-   * ...
-   * What ? Why ? What ?
-   * They have an allocator that claims to initialize everything to nullptr
-   * but it's actually not what's used for anything other than the Python header ?!?!?!
-   * Are you shitting me ?!?! Python was a mistake.
-   */
-  pallasReadGlobalArchive(&temp->trace, trace_name);
+  temp->trace = new pallas::GlobalArchive;
+  pallasReadGlobalArchive(temp->trace, trace_name);
   return reinterpret_cast<PyObject*>(temp);
 }

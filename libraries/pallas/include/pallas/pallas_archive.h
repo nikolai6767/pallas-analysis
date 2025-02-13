@@ -144,6 +144,7 @@ typedef struct GlobalArchive {
   Archive* getArchive(LocationGroupId archiveId, bool print_warning = true);
   void freeArchive(LocationGroupId archiveId);
   [[nodiscard]] struct Archive* getArchiveFromLocation(ThreadId) const;
+  ~GlobalArchive();
 #endif
 } GlobalArchive;
 

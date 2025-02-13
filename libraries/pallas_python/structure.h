@@ -20,7 +20,7 @@ extern PyTypeObject ArchiveType;
 // Creating the Python Object that'll match the trace
 typedef struct {
   PyObject ob_base;
-  pallas::GlobalArchive trace;
+  pallas::GlobalArchive* trace;
 } TraceObject;
 
 extern PyTypeObject TraceType;
