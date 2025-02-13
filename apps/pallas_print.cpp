@@ -74,6 +74,7 @@ struct thread_data {
   std::vector<std::string> callstack{};
   std::vector<pallas_duration_t> callstack_duration{};
   std::vector<pallas_timestamp_t> callstack_timestamp{};
+  pallas_timestamp_t last_timestamp;
 };
 
 void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
@@ -133,7 +134,6 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
   // This lambda prints the callstack in the flamegraph format
   auto  _print_callstack = [&]() {
-    static pallas_timestamp_t last_timestamp = 0;
     pallas_duration_t duration = 0;
     if(! threads_data[min_reader].callstack_duration.empty()) {
       duration = threads_data[min_reader].callstack_duration.back();
@@ -159,8 +159,9 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
     std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<std::endl;
 
-    pallas_assert_always(last_timestamp >= first_timestamp);
-    last_timestamp = first_timestamp+duration;
+    // Check that timestamps to not overlap
+    pallas_assert_always(threads_data[min_reader].last_timestamp >= first_timestamp);
+    threads_data[min_reader].last_timestamp = first_timestamp + duration;
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
