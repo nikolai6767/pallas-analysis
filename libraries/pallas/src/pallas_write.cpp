@@ -75,27 +75,27 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
 
 Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   auto& curTokenSeq = getCurrentTokenSequence();
-  const Token sid = thread_trace.getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
+  const Token sid = thread_trace->getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
 
   int index = -1;
-  // for (int i = 0; i < thread_trace.nb_loops; i++) {
-  //   if (thread_trace.loops[i].repeated_token.id == sid.id) {
+  // for (int i = 0; i < thread_trace->nb_loops; i++) {
+  //   if (thread_trace->loops[i].repeated_token.id == sid.id) {
   //     index = i;
   //     pallas_log(DebugLevel::Debug, "createLoop:\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
   //     break;
   //   }
   // }
   if (index == -1) {
-    if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
+    if (thread_trace->nb_loops >= thread_trace->nb_allocated_loops) {
       pallas_log(DebugLevel::Debug, "Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
-                 thread_trace.nb_allocated_loops);
-      DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace.loops, thread_trace.nb_allocated_loops, Loop);
+                 thread_trace->nb_allocated_loops);
+      DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace->loops, thread_trace->nb_allocated_loops, Loop);
     }
-    index = thread_trace.nb_loops++;
+    index = thread_trace->nb_loops++;
     pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
   }
 
-  Loop* l = &thread_trace.loops[index];
+  Loop* l = &thread_trace->loops[index];
   l->nb_iterations = 1;
   l->repeated_token = sid;
   l->self_id = PALLAS_LOOP_ID(index);
@@ -171,11 +171,11 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
   if (loop_len > 1 || curTokenSeq[index_first_iteration].type != TypeSequence) {
     // We need to go back in the current sequence in order to correctly calculate our durations
     // But only if those are new sequences
-    Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
+    Sequence* loop_seq = thread_trace->getSequence(loop->repeated_token);
 
     // Compute the durations
-    const pallas_duration_t duration_first_iteration = thread_trace.getLastSequenceDuration(loop_seq, 1);
-    const pallas_duration_t duration_second_iteration = thread_trace.getLastSequenceDuration(loop_seq, 0);
+    const pallas_duration_t duration_first_iteration = thread_trace->getLastSequenceDuration(loop_seq, 1);
+    const pallas_duration_t duration_second_iteration = thread_trace->getLastSequenceDuration(loop_seq, 0);
     // Reminded: when offset is 0, it doesn't take into account the duration of the last event
     // Because it's not a duration yet, it's a timestamp
 
@@ -187,13 +187,13 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     auto last_recorded_token = curTokenSeq.back();
     while (last_recorded_token.type != TypeEvent) {
       if (last_recorded_token.type == TypeLoop) {
-        last_recorded_token = thread_trace.getLoop(last_recorded_token)->repeated_token;
+        last_recorded_token = thread_trace->getLoop(last_recorded_token)->repeated_token;
       }
       if (last_recorded_token.type == TypeSequence) {
-        last_recorded_token = thread_trace.getSequence(last_recorded_token)->tokens.back();
+        last_recorded_token = thread_trace->getSequence(last_recorded_token)->tokens.back();
       }
     }
-    const size_t last_timestamp = thread_trace.getEventSummary(last_recorded_token)->durations->back();
+    const size_t last_timestamp = thread_trace->getEventSummary(last_recorded_token)->durations->back();
 
     // And add that timestamp to the vectors
     loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
@@ -225,7 +225,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   const size_t curIndex = curTokenSeq.size() - 1;
   if (curIndex >= 1) {
     if (curTokenSeq[curIndex - 1].type == TypeLoop) {
-      auto l = thread_trace.getLoop(curTokenSeq[curIndex - 1]);
+      auto l = thread_trace->getLoop(curTokenSeq[curIndex - 1]);
       pallas_assert(l);
       if (l->repeated_token == curTokenSeq[curIndex]) {
         pallas_log(DebugLevel::Debug, "findLoopBasic: Last token was the sequence from L%d: S%d\n", l->self_id.id,
@@ -235,14 +235,14 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         return;
       }
       // We need to find a way to tell if the Loop at [curIndex - 1] is finalized
-      auto * s = thread_trace.getSequence(l->repeated_token);
-      if (s->getTokenCountWriting(&thread_trace)[curTokenSeq[curIndex]] == 0) {
+      auto * s = thread_trace->getSequence(l->repeated_token);
+      if (s->getTokenCountWriting(thread_trace)[curTokenSeq[curIndex]] == 0) {
         for (int i = 0; i < l->self_id.id; i ++) {
-          if (thread_trace.loops[i].repeated_token == l->repeated_token
-            && thread_trace.loops[i].nb_iterations == l->nb_iterations) {
+          if (thread_trace->loops[i].repeated_token == l->repeated_token
+            && thread_trace->loops[i].nb_iterations == l->nb_iterations) {
             curTokenSeq[curIndex - 1] = l->repeated_token;
-            if (l->self_id.id == thread_trace.nb_loops - 1) {
-              thread_trace.nb_loops --;
+            if (l->self_id.id == thread_trace->nb_loops - 1) {
+              thread_trace->nb_loops --;
             }
             break;
             }
@@ -259,7 +259,7 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, &curTokenSeq[startS2], loopLength)) {
         if (debugLevel >= DebugLevel::Debug) {
           pallas_log(DebugLevel::Debug, "findLoopBasic: Found a loop of len %d:", loopLength);
-          thread_trace.printTokenArray(curTokenSeq.data(), startS2, loopLength * 2);
+          thread_trace->printTokenArray(curTokenSeq.data(), startS2, loopLength * 2);
           printf("\n");
         }
         replaceTokensInLoop(loopLength, startS1, startS2);
@@ -279,11 +279,11 @@ void ThreadWriter::findSequence(size_t n) {
   for (int array_len = 1; array_len <= n; array_len++) {
     auto token_array = &curTokenSeq[currentIndex - array_len + 1];
     uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
-    auto sequencesWithSameHash = thread_trace.hashToSequence[hash];
+    auto sequencesWithSameHash = thread_trace->hashToSequence[hash];
     if (!sequencesWithSameHash.empty()) {
       for (const auto sid : sequencesWithSameHash) {
-        if (_pallas_arrays_equal(token_array, array_len, thread_trace.sequences[sid]->tokens.data(),
-                                 thread_trace.sequences[sid]->size())) {
+        if (_pallas_arrays_equal(token_array, array_len, thread_trace->sequences[sid]->tokens.data(),
+                                 thread_trace->sequences[sid]->size())) {
           found_sequence_id = sid;
           break;
         }
@@ -293,8 +293,8 @@ void ThreadWriter::findSequence(size_t n) {
       curTokenSeq.resize(curTokenSeq.size() - array_len);
       auto seqTok = Token(TypeSequence, found_sequence_id);
       storeToken(curTokenSeq, seqTok);
-      auto s = thread_trace.getSequence(seqTok);
-      const pallas_duration_t sequence_duration = thread_trace.getLastSequenceDuration(s, 0);
+      auto s = thread_trace->getSequence(seqTok);
+      const pallas_duration_t sequence_duration = thread_trace->getLastSequenceDuration(s, 0);
       addDurationToComplete(s->durations->add(sequence_duration));
       return;
     }
@@ -375,14 +375,14 @@ void ThreadWriter::recordExitFunction() {
   Token last_token = curTokenSeq.back();
 
   if (first_token.type == TypeEvent) {
-    Event* first_event = thread_trace.getEvent(first_token);
-    Event* last_event = thread_trace.getEvent(last_token);
+    Event* first_event = thread_trace->getEvent(first_token);
+    Event* last_event = thread_trace->getEvent(last_token);
 
     enum Record expected_record = getMatchingRecord(first_event->record);
     if (expected_record == PALLAS_EVENT_MAX_ID) {
       char output_str[1024];
       size_t buffer_size = 1024;
-      thread_trace.printEventToString(first_event, output_str, buffer_size);
+      thread_trace->printEventToString(first_event, output_str, buffer_size);
       pallas_warn("Unexpected start_event record:\n");
       pallas_warn("\t%s\n", output_str);
       pallas_abort();
@@ -392,8 +392,8 @@ void ThreadWriter::recordExitFunction() {
       char start_event_string[1024];
       char last_event_string[1024];
       size_t buffer_size = 1024;
-      thread_trace.printEventToString(first_event, start_event_string, buffer_size);
-      thread_trace.printEventToString(last_event, last_event_string, buffer_size);
+      thread_trace->printEventToString(first_event, start_event_string, buffer_size);
+      thread_trace->printEventToString(last_event, last_event_string, buffer_size);
       pallas_warn("Unexpected close event:\n");
       pallas_warn("\tStart_sequence event: \t%s as E%d\n", start_event_string, first_token.id);
       pallas_warn("\tEnd_sequence event: \t%s as E%d\n", last_event_string, last_token.id);
@@ -402,7 +402,7 @@ void ThreadWriter::recordExitFunction() {
         enum Record expected_start_record = getMatchingRecord(last_event->record);
         if (expected_start_record == PALLAS_EVENT_MAX_ID) {
           char output_str[1024];
-          thread_trace.printEventToString(last_event, output_str, buffer_size);
+          thread_trace->printEventToString(last_event, output_str, buffer_size);
           pallas_warn("Unexpected last_event record:\n");
           pallas_warn("\t%s\n", output_str);
           pallas_abort();
@@ -414,10 +414,10 @@ void ThreadWriter::recordExitFunction() {
         e.record = expected_record;
         memcpy(e.event_data, first_event->event_data, first_event->event_size);
         e.event_size = first_event->event_size;
-        TokenId e_id = thread_trace.getEventId(&e);
+        TokenId e_id = thread_trace->getEventId(&e);
         char output_str[1024];
         size_t buffer_size = 1024;
-        thread_trace.printEventToString(&e, output_str, buffer_size);
+        thread_trace->printEventToString(&e, output_str, buffer_size);
         pallas_warn("\tInserting %s as E%d at end of curSequence\n", output_str, e_id);
         storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
         pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
@@ -433,8 +433,8 @@ void ThreadWriter::recordExitFunction() {
   }
 #endif
 
-  const Token seq_id = thread_trace.getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
-  auto* seq = thread_trace.sequences[seq_id.id];
+  const Token seq_id = thread_trace->getSequenceIdFromArray(curTokenSeq.data(), curTokenSeq.size());
+  auto* seq = thread_trace->sequences[seq_id.id];
 
   const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
   addDurationToComplete(seq->durations->add(sequence_duration));
@@ -465,7 +465,7 @@ size_t ThreadWriter::storeEvent(enum EventType event_type,
   Token token = Token(TypeEvent, event_id);
   auto& curTokenSeq = getCurrentTokenSequence();
 
-  EventSummary* es = &thread_trace.events[event_id];
+  EventSummary* es = &thread_trace->events[event_id];
   size_t occurrence_index = es->nb_occurences++;
   storeTimestamp(es, ts);
   storeToken(curTokenSeq, token);
@@ -485,7 +485,7 @@ void ThreadWriter::threadClose() {
     recordExitFunction();
   }
   // Then we need to close the main sequence
-  auto& mainSequence = thread_trace.sequences[0];
+  auto& mainSequence = thread_trace->sequences[0];
   mainSequence->tokens = sequence_stack[0];
   pallas_log(DebugLevel::Debug, "Last sequence token: (%d.%d)\n", mainSequence->tokens.back().type,
              mainSequence->tokens.back().id);
@@ -494,7 +494,7 @@ void ThreadWriter::threadClose() {
   completeDurations(0);
   pallas_timestamp_t duration = last_timestamp;
   mainSequence->durations->add(duration);
-  thread_trace.finalizeThread();
+  thread_trace->finalizeThread();
 }
 
 void Archive::open(const char* dirname, const char* given_trace_name, LocationGroupId archive_id) {
@@ -529,14 +529,14 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 
   pallas_log(DebugLevel::Debug, "ThreadWriter(%ux)::open\n", thread_id);
 
-  thread_trace.initThread(archive, thread_id);
+  initThread(archive, thread_id);
   max_depth = CALLSTACK_DEPTH_DEFAULT;
   sequence_stack = new std::vector<Token>[max_depth];
 
   // We need to initialize the main Sequence (Sequence 0)
-  auto& mainSequence = thread_trace.sequences[0];
+  auto& mainSequence = thread_trace->sequences[0];
   mainSequence->id = 0;
-  thread_trace.nb_sequences = 1;
+  thread_trace->nb_sequences = 1;
 
   last_timestamp = PALLAS_TIMESTAMP_INVALID;
   last_duration = nullptr;
@@ -546,6 +546,39 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 
   pallas_recursion_shield--;
 }
+
+
+void ThreadWriter::initThread(Archive* a, ThreadId thread_id) {
+  pthread_mutex_lock(&a->lock);
+  while (a->nb_threads >= a->nb_allocated_threads) {
+    DOUBLE_MEMORY_SPACE(a->threads, a->nb_allocated_threads, Thread*);
+  }
+  thread_trace = new Thread;
+  a->threads[a->nb_threads++] = thread_trace;
+  thread_trace->archive = a;
+  thread_trace->id = thread_id;
+
+  thread_trace->nb_allocated_events = NB_EVENT_DEFAULT;
+  thread_trace->events = new EventSummary[thread_trace->nb_allocated_events]();
+  thread_trace->nb_events = 0;
+
+  thread_trace->nb_allocated_sequences = NB_SEQUENCE_DEFAULT;
+  thread_trace->sequences = new Sequence*[thread_trace->nb_allocated_sequences]();
+  thread_trace->nb_sequences = 0;
+  for (int i = 0; i < thread_trace->nb_allocated_sequences; i++) {
+    thread_trace->sequences[i] = new Sequence();
+  }
+
+  thread_trace->hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();
+  thread_trace->hashToEvent = std::unordered_map<uint32_t, std::vector<TokenId>>();
+
+  thread_trace->nb_allocated_loops = NB_LOOP_DEFAULT;
+  thread_trace->loops = new Loop[thread_trace->nb_allocated_loops]();
+  thread_trace->nb_loops = 0;
+
+  pthread_mutex_unlock(&a->lock);
+}
+
 
 void GlobalArchive::open(const char* dirname, const char* given_trace_name) {
   if (pallas_recursion_shield)

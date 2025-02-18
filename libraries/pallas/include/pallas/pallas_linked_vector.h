@@ -30,7 +30,7 @@ namespace pallas {
 typedef struct LinkedVector {
   size_t size{0}; /**< Number of element stored in the vector.  */
  protected:
-  const char* filePath; /**< Path to the file storing the durations. */
+  const char* filePath {nullptr}; /**< Path to the file storing the durations. */
   long offset {0};          /**< Offset in the file. */
   /**
    * A fixed-sized array functionning as a node in a LinkedList.

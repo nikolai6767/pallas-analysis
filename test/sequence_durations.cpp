@@ -65,15 +65,15 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     }
   }
   pallas_record_generic(&thread_writer, nullptr, get_timestamp(), 0);
-  thread_writer.thread_trace.events[0].durations->at(0) = 0;
+  thread_writer.thread_trace->events[0].durations->at(0) = 0;
   thread_writer.threadClose();
   archive.close();
 
   for (int sequence_number = 0; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
-    Sequence* s = thread_writer.thread_trace.sequences[sequence_number];
+    Sequence* s = thread_writer.thread_trace->sequences[sequence_number];
     std::cout << "Information on sequence " << sequence_number << ":\n"
               << "\tNumber of tokens: " << s->tokens.size() << ": ";
-    thread_writer.thread_trace.printTokenVector(s->tokens);
+    thread_writer.thread_trace->printTokenVector(s->tokens);
     std::cout << "\tNumber of iterations: " << s->durations->size << "\n"
               << "\tDurations: ";
     s->durations->print();

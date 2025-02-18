@@ -371,6 +371,7 @@ typedef struct EventSummary {
  public:
   /** Initialize and EventSummary */
   void initEventSummary(TokenId, const Event&);
+  ~EventSummary();
 #endif
 } EventSummary;
 
@@ -561,9 +562,6 @@ typedef struct Thread {
   /** Returns the duration for the last - offset given Sequence.*/
   pallas_duration_t getLastSequenceDuration(Sequence* sequence, size_t offset = 0) const;
   void finalizeThread();
-  /** Initializes the Thread from an archive and an id.
-   * This is used when writing the trace, because it creates Threads using malloc. */
-  void initThread(Archive* a, ThreadId id);
 
   /** Create a blank new Thread. This is used when reading the trace. */
   Thread();

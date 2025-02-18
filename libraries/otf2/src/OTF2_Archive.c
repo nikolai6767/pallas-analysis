@@ -207,7 +207,7 @@ OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRe
       pallas_log(Debug,"\t->%d (.location=%lu, .writer=%p)\n", i, archive->evt_writers[i]->locationRef,
              archive->evt_writers[i]->thread_writer);
 
-      //      pallas_assert(archive->evt_writers[i]->thread_writer->thread_trace.container);
+      //      pallas_assert(archive->evt_writers[i]->thread_writer->thread_trace->container);
       pthread_mutex_unlock(&archive->lock);
       return archive->evt_writers[i];
     }
@@ -218,7 +218,7 @@ OTF2_EvtWriter* OTF2_Archive_GetEvtWriter(OTF2_Archive* archive, OTF2_LocationRe
   pallas_log(Debug,"New EvtWriter (ref=%lu, writer=%p)\n", archive->evt_writers[index]->locationRef,
          archive->evt_writers[index]->thread_writer);
 
-  //  pallas_assert(archive->evt_writers[index]->thread_writer->thread_trace.container);
+  //  pallas_assert(archive->evt_writers[index]->thread_writer->thread_trace->container);
   pthread_mutex_unlock(&archive->lock);
   return archive->evt_writers[index];
 }

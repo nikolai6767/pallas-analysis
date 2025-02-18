@@ -72,11 +72,11 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 1);
   pallas_assert_always(thread_writer.sequence_stack[0][0].type == TypeLoop);
   /* Check that the loop is correct */
-  auto& firstLoop = thread_writer.thread_trace.loops[0];
+  auto& firstLoop = thread_writer.thread_trace->loops[0];
   pallas_assert_always(firstLoop.nb_iterations == 2);
 
   /* Check that the sequence inside that loop is correct */
-  struct Sequence* s = thread_writer.thread_trace.getSequence(firstLoop.repeated_token);
+  struct Sequence* s = thread_writer.thread_trace->getSequence(firstLoop.repeated_token);
 
   pallas_assert_always(s->size() == (unsigned int)MAX_EVENT);
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 3); // L0 E L1
   pallas_assert_always(firstLoop.nb_iterations == 3);
 
-  auto& secondLoop = thread_writer.thread_trace.loops[1];
+  auto& secondLoop = thread_writer.thread_trace->loops[1];
   pallas_assert_always(secondLoop.nb_iterations == NUM_LOOPS);
 
   thread_writer.threadClose();

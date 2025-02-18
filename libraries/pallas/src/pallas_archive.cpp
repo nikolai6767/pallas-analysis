@@ -318,6 +318,9 @@ GlobalArchive::~GlobalArchive() {
   delete[] dir_name;
   delete[] trace_name;
   delete[] fullpath;
+  for (size_t i = 0; i < nb_archives; i ++) {
+    delete archive_list[i];
+  }
   delete[] archive_list;
 };
 
@@ -325,6 +328,9 @@ Archive::~Archive() {
   free(dir_name);
   delete[] trace_name;
   delete[] fullpath;
+  for (size_t i = 0; i < nb_threads; i ++) {
+    delete threads[i];
+  }
   delete[] threads;
 }
 

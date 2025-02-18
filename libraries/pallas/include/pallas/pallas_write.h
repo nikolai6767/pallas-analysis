@@ -16,7 +16,7 @@ namespace pallas {
  * Writes one thread to the Pallas trace format.
  */
 typedef struct ThreadWriter {
-  Thread thread_trace; /**< Thread being written. */
+  Thread* thread_trace CXX({nullptr}); /**< Thread being written. */
   C_CXX(void, std::vector<Token>) *
     sequence_stack; /**< Stack of all the *incomplete* sequences the writer is currently in. */
   int cur_depth;    /**< Current depth in the callstack. */
@@ -43,6 +43,10 @@ typedef struct ThreadWriter {
 #ifdef __cplusplus
 
  private:
+  /**
+   * Does the initialization of the thread pointer to the provided archive's thread.
+   */
+  void initThread(Archive* a, ThreadId thread_id);
   void findLoopBasic(size_t maxLoopLength);
   /** Tries to find a Loop in the current array of tokens.  */
   void findLoop();
