@@ -109,6 +109,24 @@ PyTypeObject ArchiveType = {
   .tp_getset = Archive_getset,
 };
 
+
+PyObject* getLocation(pallas::Location& loc, pallas::GlobalArchive* trace) {
+  PyObject* dict = PyDict_New();
+  PyDict_SetItemString(dict, "id", PyLong_FromLong(loc.id));
+  PyDict_SetItemString(dict, "name", PyUnicode_FromString(trace->getString(loc.name)->str));
+  PyDict_SetItemString(dict, "parent", PyLong_FromLong(loc.parent));
+  return dict;
+}
+
+PyObject* getLocationGroup(pallas::LocationGroup& loc_group, pallas::GlobalArchive* trace) {
+  PyObject* dict = PyDict_New();
+  PyDict_SetItemString(dict, "id", PyLong_FromLong(loc_group.id));
+  PyDict_SetItemString(dict, "name", PyUnicode_FromString(trace->getString(loc_group.name)->str));
+  PyDict_SetItemString(dict, "parent", PyLong_FromLong(loc_group.parent));
+  PyDict_SetItemString(dict, "mainLocation", PyLong_FromLong(loc_group.mainLoc));
+  return dict;
+}
+
 // So we have to do a whole bunch of getters
 PyObject* Trace_get_dir_name(TraceObject* self, void*) {
   return PyUnicode_FromString(self->trace->dir_name);
@@ -125,20 +143,20 @@ PyObject* Trace_get_fullpath(TraceObject* self, void*) {
 
 // Defining custom getters for the Locations / Locations Groups
 PyObject* Trace_get_locations(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace->locations.size());
+  PyObject* dict = PyDict_New();
   for (size_t i = 0; i < self->trace->locations.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace->locations[i].id);
-    PyList_SetItem(list, i, loc);
+    PyObject* loc = getLocation(self->trace->locations[i], self->trace);
+    PyDict_SetItem(dict, PyLong_FromLong(self->trace->locations[i].id), loc);
   }
-  return list;
+  return dict;
 }
 PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
-  PyObject* list = PyList_New(self->trace->location_groups.size());
+  PyObject* dict = PyDict_New();
   for (size_t i = 0; i < self->trace->location_groups.size(); ++i) {
-    PyObject* loc = PyLong_FromLong(self->trace->location_groups[i].id);
-    PyList_SetItem(list, i, loc);
+    PyObject* loc = getLocationGroup(self->trace->location_groups[i], self->trace);
+    PyDict_SetItem(dict, PyLong_FromLong(self->trace->location_groups[i].id), loc);
   }
-  return list;
+  return dict;
 }
 
 PyObject* Trace_get_archives(TraceObject* self, void* closure) {
