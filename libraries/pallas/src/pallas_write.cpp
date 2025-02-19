@@ -185,19 +185,6 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     loop_seq->durations->add(duration_first_iteration);
     addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
 
-    // Then we compute the timestamps
-    // First get the timestamp (currently stored in duration) of the last recorded event
-    auto last_recorded_token = curTokenSeq.back();
-    while (last_recorded_token.type != TypeEvent) {
-      if (last_recorded_token.type == TypeLoop) {
-        last_recorded_token = thread_trace.getLoop(last_recorded_token)->repeated_token;
-      }
-      if (last_recorded_token.type == TypeSequence) {
-        last_recorded_token = thread_trace.getSequence(last_recorded_token)->tokens.back();
-      }
-    }
-    const size_t last_timestamp = thread_trace.getEventSummary(last_recorded_token)->durations->back();
-
     // And add that timestamp to the vectors
     loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
     loop_seq->timestamps->add(last_timestamp - duration_second_iteration);
@@ -298,7 +285,8 @@ void ThreadWriter::findSequence(size_t n) {
       storeToken(curTokenSeq, seqTok);
       auto s = thread_trace.getSequence(seqTok);
       const pallas_duration_t sequence_duration = thread_trace.getLastSequenceDuration(s, 0);
-      addDurationToComplete(s->durations->add(sequence_duration));
+      addDurationToComplete(s->durations->add(sequence_duration)); 
+      s->timestamps->add(last_timestamp);
       return;
     }
   }
@@ -441,6 +429,7 @@ void ThreadWriter::recordExitFunction() {
 
   const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
   addDurationToComplete(seq->durations->add(sequence_duration));
+  seq->timestamps->add(sequence_start_timestamp[cur_depth]);
 
   pallas_log(DebugLevel::Debug, "Exiting a function, closing sequence %d\n", seq_id.id);
 
@@ -495,8 +484,10 @@ void ThreadWriter::threadClose() {
   if (last_duration)
     *last_duration = 0;
   completeDurations(0);
-  pallas_timestamp_t duration = last_timestamp;
+  pallas_timestamp_t duration = last_timestamp - thread_trace.first_timestamp;
   mainSequence->durations->add(duration);
+  mainSequence->timestamps->add(thread_trace.first_timestamp);
+
   thread_trace.finalizeThread();
 }
 
