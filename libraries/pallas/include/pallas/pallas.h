@@ -486,6 +486,7 @@ typedef struct Thread {
   unsigned nb_allocated_sequences; /**< Number of blocks of size pallas:Sequence allocated in #sequences. */
   unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
+  pallas_timestamp_t first_timestamp;
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;

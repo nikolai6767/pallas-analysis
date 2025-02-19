@@ -116,6 +116,9 @@ void ThreadWriter::storeTimestamp(EventSummary* es, pallas_timestamp_t ts) {
     last_duration = es->durations->add(ts);
   }
 
+  if(thread_trace.first_timestamp == PALLAS_TIMESTAMP_INVALID)
+    thread_trace.first_timestamp = ts;
+
   last_timestamp = ts;
 }
 
