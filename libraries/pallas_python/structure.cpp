@@ -202,8 +202,6 @@ PyObject* Trace_get_regions(TraceObject* self, void*) {
 }
 
 void Trace_dealloc(TraceObject* self) {
-  std::cout << "WARNING: Trace has been deallocated, but the timestamps haven't" << std::endl;
-  std::cout << "         This is intentional and a current WIP" << std::endl;
   delete self->trace;
   Py_TYPE(self)->tp_free((PyObject*)self);
 }
