@@ -977,8 +977,6 @@ static void pallasReadSequence(pallas::Sequence& sequence,
   sequence.tokens.resize(size);
   sequenceFile.read(sequence.tokens.data(), sizeof(pallas::Token), size);
   if (STORE_TIMESTAMPS) {
-    delete sequence.durations;  // durations is created when making a new Sequence
-    delete sequence.timestamps;
     sequence.durations = new pallas::LinkedDurationVector(sequenceFile.file, durationFileName);
     sequence.timestamps = new pallas::LinkedVector(sequenceFile.file, durationFileName);
   }
@@ -1551,6 +1549,13 @@ void pallas::Archive::freeThread(pallas::ThreadId thread_id) {
       delete threads[i];
       threads[i] = nullptr;
     }
+  }
+};
+
+void pallas::Archive::freeThreadAt(size_t i) {
+  if (i < nb_threads) {
+    delete threads[i];
+    threads[i] = nullptr;
   }
 };
 

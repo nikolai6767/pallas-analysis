@@ -57,6 +57,8 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     DOUBLE_MEMORY_SPACE(sequences, nb_allocated_sequences, Sequence*);
     for (uint i = nb_allocated_sequences / 2; i < nb_allocated_sequences; i++) {
       sequences[i] = new Sequence;
+      sequences[i]->durations = new LinkedDurationVector();
+      sequences[i]->timestamps = new LinkedDurationVector();
     }
   }
 
@@ -567,6 +569,8 @@ void ThreadWriter::initThread(Archive* a, ThreadId thread_id) {
   thread_trace->nb_sequences = 0;
   for (int i = 0; i < thread_trace->nb_allocated_sequences; i++) {
     thread_trace->sequences[i] = new Sequence();
+    thread_trace->sequences[i]->durations = new LinkedDurationVector();
+    thread_trace->sequences[i]->timestamps = new LinkedDurationVector();
   }
 
   thread_trace->hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();

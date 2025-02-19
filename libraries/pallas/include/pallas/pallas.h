@@ -292,8 +292,8 @@ struct TokenCountMap : public std::map<Token, size_t> {
  */
 typedef struct Sequence {
   TokenId id CXX({PALLAS_TOKEN_ID_INVALID});         /**< ID of that sequence. */
-  LinkedDurationVector* durations CXX({new LinkedDurationVector()}); /**< Vector of durations for these type of sequences. */
-  LinkedVector* timestamps CXX({new LinkedVector()});
+  LinkedDurationVector* durations; /**< Vector of durations for these type of sequences. */
+  LinkedVector* timestamps;
   uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
   DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
   CXX(private:)
