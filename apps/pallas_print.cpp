@@ -202,18 +202,33 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
   }
 }
 
+/** Print the trace as a CSV. Each line contains:
+ *   - Thread: the thread that called a function
+ *   - Function: the name of the function
+ *   - Start: the timestamp of the begining of the function
+ *   - Finish: the timestamp of the end of the function
+ *   - Duration: the duration of the function
+ *
+ * Unlike with printCSV, the function calls timestamp may overlap: if
+ * foo calls bar, this will look like this:
+ * T0,foo,17,25,8
+ * T0,bar,19,22,3 
+ *
+ * Moreover, the timestamps are not sorted
+ */
 void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
   static bool first_line = true;
-
   for (auto & reader : readers) {
+    std::map<pallas::Sequence*, std::string> sequence_names;
+    reader.guessSequencesNames(sequence_names);
 
-    for(int i=0; i<reader.thread_trace->nb_sequences; i++) {
-      auto &s = reader.thread_trace->sequences[i];
-      const auto &seq_name = s->guessName(reader.thread_trace);
+    // iterate over the sequences (ignoring sequence 0), and dump their timestamps
+    for(int i=1; i<reader.thread_trace->nb_sequences; i++) {
+      auto s = reader.thread_trace->sequences[i];
+      const auto &seq_name = sequence_names[s];
 
       pallas_duration_t duration = s->durations->at(0);
       pallas_timestamp_t ts = s->timestamps->at(0);
-
 
       for(int occurence_id = 0; occurence_id < s->durations->size; occurence_id++) {
 	pallas_duration_t duration = s->durations->at(occurence_id);
@@ -223,7 +238,7 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
 	  std::cout<<"Thread,Function,Start,Finish,Duration\n";
 	  first_line = false;
 	}
-	
+
 	std::cout<<reader.thread_trace->getName()<<",";
 	std::cout<<seq_name<<","<<ts<<","<<ts+duration<<","<<duration<<"\n";
       }
