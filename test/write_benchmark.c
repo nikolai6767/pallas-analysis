@@ -35,6 +35,7 @@ static RegionRef* regions;
 static char** region_names;
 static StringRef* strings;
 
+static pthread_barrier_t thread_ready;
 static pthread_barrier_t bench_start;
 static pthread_barrier_t bench_stop;
 
@@ -85,6 +86,8 @@ void* worker(void* arg __attribute__((unused))) {
   pallas_write_define_location(global_archive, thread_id, thread_name_id, process_id);
 
   pallas_write_thread_open(trace, thread_writer, thread_id);
+
+  pthread_barrier_wait(&thread_ready);
 
   struct timespec t1, t2;
   pthread_barrier_wait(&bench_start);
@@ -180,6 +183,7 @@ int main(int argc, char** argv) {
   }
 
   pthread_t tid[nb_threads];
+  pthread_barrier_init(&thread_ready, NULL, 2);
   pthread_barrier_init(&bench_start, NULL, nb_threads + 1);
   pthread_barrier_init(&bench_stop, NULL, nb_threads + 1);
   thread_writers = malloc(sizeof(struct pallas_thread_writer*) * nb_threads);
@@ -212,8 +216,11 @@ int main(int argc, char** argv) {
     pallas_archive_register_region(global_archive, regions[i], strings[i]);
   }
 
-  for (int i = 0; i < nb_threads; i++)
+  for (int i = 0; i < nb_threads; i++) {
     pthread_create(&tid[i], NULL, worker, NULL);
+    /* make sure the thread is fully initialized before creating the next one */
+    pthread_barrier_wait(&thread_ready);
+  }
 
   struct timespec t1, t2;
   pthread_barrier_wait(&bench_start);
