@@ -60,8 +60,8 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) 
   // ie set the cursor on the first event
   this->currentState.current_frame_index = 0;
   this->currentState.currentFrame = &currentState.callstack[0];
-  currentState.currentFrame->callstack_iterable = Token(TypeSequence, 0);
-
+  this->currentState.currentFrame->callstack_iterable = Token(TypeSequence, 0);
+  this->currentState.currentFrame->referential_timestamp = this->thread_trace->first_timestamp;
   // Enter main sequence
   enterBlock();
 }

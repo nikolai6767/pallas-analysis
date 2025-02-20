@@ -1142,7 +1142,7 @@ static void pallasStoreLocationGroups(pallas::GlobalArchive* a, pallas::File& fi
   if (a->location_groups.empty())
     return;
 
-  pallas_log(pallas::DebugLevel::Debug, "\tStore %zu location groupds\n", a->location_groups.size());
+  pallas_log(pallas::DebugLevel::Debug, "\tStore %zu location groups\n", a->location_groups.size());
 
   file.write(a->location_groups.data(), sizeof(pallas::LocationGroup), a->location_groups.size());
 }
@@ -1197,6 +1197,8 @@ static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   threadFile.write(&th->nb_sequences, sizeof(th->nb_sequences), 1);
   threadFile.write(&th->nb_loops, sizeof(th->nb_loops), 1);
 
+  threadFile.write(&th->first_timestamp, sizeof(th->first_timestamp), 1);
+
   const char* eventDurationFilename = pallasGetEventDurationFilename(dir_name, th);
   pallas::File eventDurationFile = pallas::File(eventDurationFilename, "w");
   for (int i = 0; i < th->nb_events; i++) {
@@ -1247,6 +1249,8 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
   threadFile.read(&th->nb_loops, sizeof(th->nb_loops), 1);
   th->nb_allocated_loops = th->nb_loops;
   th->loops = new pallas::Loop[th->nb_allocated_loops];
+
+  threadFile.read(&th->first_timestamp, sizeof(th->first_timestamp), 1);
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %d events\n", th->nb_events);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);

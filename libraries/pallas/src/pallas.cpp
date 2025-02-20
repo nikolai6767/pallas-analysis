@@ -108,7 +108,7 @@ pallas_duration_t get_duration(PALLAS(Thread) * t) {
 }
 
 pallas_timestamp_t Thread::getFirstTimestamp() const {
-  return 0;  // TODO: find the first timestamp
+  return first_timestamp;
 }
 pallas_timestamp_t get_first_timestamp(PALLAS(Thread) * t) {
   return t->getFirstTimestamp();
@@ -452,6 +452,8 @@ Thread::Thread() {
   loops = nullptr;
   nb_allocated_loops = 0;
   nb_loops = 0;
+
+  first_timestamp = PALLAS_TIMESTAMP_INVALID;
 }
 
 Thread::~Thread() {
