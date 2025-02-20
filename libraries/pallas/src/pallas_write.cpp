@@ -12,11 +12,11 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_hash.h"
+#include "pallas/pallas_log.h"
 #include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas_storage.h"
 #include "pallas/pallas_timestamp.h"
 #include "pallas/pallas_write.h"
-#include "pallas/pallas_log.h"
 
 thread_local int pallas_recursion_shield = 0;
 namespace pallas {
@@ -70,22 +70,6 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   s->hash = hash;
   s->id = sid.id;
   sequencesWithSameHash.push_back(index);
-
-  // Detect if there's a Loop anywhere in the sequence
-  for (const auto& token: s->tokens) {
-    if (token.type == TypeLoop) {
-      s->contains_loops = true;
-      break;
-    }
-    if (token.type == TypeSequence) {
-      const auto temp = getSequence(token);
-      if (temp->contains_loops) {
-        s->contains_loops = true;
-        break;
-      }
-    }
-  }
-
   return sid;
 }
 
@@ -94,13 +78,13 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   const Token sid = thread_trace.getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
 
   int index = -1;
-  for (int i = 0; i < thread_trace.nb_loops; i++) {
-    if (thread_trace.loops[i].repeated_token.id == sid.id) {
-      index = i;
-      pallas_log(DebugLevel::Debug, "createLoop:\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
-      break;
-    }
-  }
+  // for (int i = 0; i < thread_trace.nb_loops; i++) {
+  //   if (thread_trace.loops[i].repeated_token.id == sid.id) {
+  //     index = i;
+  //     pallas_log(DebugLevel::Debug, "createLoop:\tLoop already exists: id=L%d containing S%d\n", index, sid.id);
+  //     break;
+  //   }
+  // }
   if (index == -1) {
     if (thread_trace.nb_loops >= thread_trace.nb_allocated_loops) {
       pallas_log(DebugLevel::Debug, "Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
@@ -112,7 +96,7 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   }
 
   Loop* l = &thread_trace.loops[index];
-  l->nb_iterations.push_back(1);
+  l->nb_iterations = 1;
   l->repeated_token = sid;
   l->self_id = PALLAS_LOOP_ID(index);
   return l;
@@ -131,6 +115,9 @@ void ThreadWriter::storeTimestamp(EventSummary* es, pallas_timestamp_t ts) {
     // allocate a new duration for the current event
     last_duration = es->durations->add(ts);
   }
+
+  if(thread_trace.first_timestamp == PALLAS_TIMESTAMP_INVALID)
+    thread_trace.first_timestamp = ts;
 
   last_timestamp = ts;
 }
@@ -170,9 +157,8 @@ void ThreadWriter::storeToken(std::vector<Token>& tokenSeq, Token t) {
  * Adds an iteration of the given sequence to the loop.
  */
 void Loop::addIteration() {
-  pallas_log(DebugLevel::Debug, "addIteration: + 1 to L%d n°%zu (to %u)\n", self_id.id, nb_iterations.size() - 1,
-             nb_iterations.back() + 1);
-  nb_iterations.back()++;
+  pallas_log(DebugLevel::Debug, "addIteration: + 1 to L%d (to %u)\n", self_id.id, nb_iterations + 1);
+  nb_iterations++;
 }
 
 void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteration, size_t index_second_iteration) {
@@ -198,18 +184,6 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
 
     loop_seq->durations->add(duration_first_iteration);
     addDurationToComplete(loop_seq->durations->add(duration_second_iteration));
-
-    // Then we compute the timestamps
-    // First get the timestamp (currently stored in duration) of the last recorded event
-    auto last_recorded_token = curTokenSeq.back();
-    while (last_recorded_token.type != TypeEvent) {
-      if (last_recorded_token.type == TypeLoop) {
-        last_recorded_token = thread_trace.getLoop(last_recorded_token)->repeated_token;
-      }
-      if (last_recorded_token.type == TypeSequence) {
-        last_recorded_token = thread_trace.getSequence(last_recorded_token)->tokens.back();      }
-    }
-    const size_t last_timestamp = thread_trace.getEventSummary(last_recorded_token)->durations->back();
 
     // And add that timestamp to the vectors
     loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
@@ -237,48 +211,40 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
  */
 void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   auto& curTokenSeq = getCurrentTokenSequence();
-  const size_t currentIndex = curTokenSeq.size() - 1;
-  for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= currentIndex; loopLength++) {
-    // search for a loop of loopLength tokens
-    const size_t startS1 = currentIndex + 1 - loopLength;
-    // First, check if there's a loop that start at loopStart
-    if (const size_t loopStart = startS1 - 1; curTokenSeq[loopStart].type == TypeLoop) {
-      const Token l = curTokenSeq[loopStart];
-      Loop* loop = thread_trace.getLoop(l);
-      pallas_assert(loop);
-
-      Sequence* loop_seq = thread_trace.getSequence(loop->repeated_token);
-      pallas_assert(loop_seq);
-
-      // First check for repetitions of sequences
-      if (loopLength == 1 && curTokenSeq[startS1] == loop->repeated_token) {
-        pallas_log(DebugLevel::Debug, "findLoopBasic: Last token was the sequence from L%d: S%d\n", loop->self_id.id,
-                   loop->repeated_token.id);
-        loop->addIteration();
-        curTokenSeq.resize(startS1);
+  // First, we check the case where there's a loop before a sequence containing it
+  const size_t curIndex = curTokenSeq.size() - 1;
+  if (curIndex >= 1) {
+    if (curTokenSeq[curIndex - 1].type == TypeLoop) {
+      auto l = thread_trace.getLoop(curTokenSeq[curIndex - 1]);
+      pallas_assert(l);
+      if (l->repeated_token == curTokenSeq[curIndex]) {
+        pallas_log(DebugLevel::Debug, "findLoopBasic: Last token was the sequence from L%d: S%d\n", l->self_id.id,
+                   l->repeated_token.id);
+        l->addIteration();
+        curTokenSeq.resize(curIndex);
         return;
       }
-      // Then check for actual iterations of tokens which correspond to the one in the loop
-      if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, loop_seq->tokens.data(), loop_seq->size())) {
-        pallas_log(DebugLevel::Debug, "findLoopBasic: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
-                   loop->repeated_token.id);
-        loop->addIteration();
-
-        // This iteration's ts = previous ts + previous duration
-        loop_seq->timestamps->add(loop_seq->timestamps->back() + loop_seq->durations->back());
-
-        // Then compute duration
-        const pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(loop_seq, 0);
-        addDurationToComplete(loop_seq->durations->add(ts));
-
-        // And finally, remove trailing repeated tokens
-        curTokenSeq.resize(startS1);
-        return;
+      // We need to find a way to tell if the Loop at [curIndex - 1] is finalized
+      auto * s = thread_trace.getSequence(l->repeated_token);
+      if (s->getTokenCountWriting(&thread_trace)[curTokenSeq[curIndex]] == 0) {
+        for (int i = 0; i < l->self_id.id; i ++) {
+          if (thread_trace.loops[i].repeated_token == l->repeated_token
+            && thread_trace.loops[i].nb_iterations == l->nb_iterations) {
+            curTokenSeq[curIndex - 1] = l->repeated_token;
+            if (l->self_id.id == thread_trace.nb_loops - 1) {
+              thread_trace.nb_loops --;
+            }
+            break;
+            }
+        }
       }
     }
-
-    if (currentIndex + 1 >= 2 * loopLength) {
-      const size_t startS2 = currentIndex + 1 - 2 * loopLength;
+  }
+  for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= curIndex; loopLength++) {
+    // search for a loop of loopLength tokens
+    const size_t startS1 = curIndex + 1 - loopLength;
+    if (curIndex + 1 >= 2 * loopLength) {
+      const size_t startS2 = curIndex + 1 - 2 * loopLength;
       /* search for a loop of loopLength tokens */
       if (_pallas_arrays_equal(&curTokenSeq[startS1], loopLength, &curTokenSeq[startS2], loopLength)) {
         if (debugLevel >= DebugLevel::Debug) {
@@ -293,67 +259,34 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   }
 }
 
-/**
- * Finds a Loop in the current Sequence by first filtering the correct Tokens.
- *
- * The idea is that since we always search for a Loop who will end on our last Token,
- * We only need to start searching arrays who end by that token.
- * We thus start by filtering the indexes of the correct tokens, and then we start searching for loops, using those
- * indexes.
- */
-void ThreadWriter::findLoopFilter() {
-  auto endingIndexes = std::vector<size_t>();
-  auto loopIndexes = std::vector<size_t>();
-  size_t i = 0;
+void ThreadWriter::findSequence(size_t n) {
   auto& curTokenSeq = getCurrentTokenSequence();
-  size_t curIndex = curTokenSeq.size() - 1;
-  for (auto token : curTokenSeq) {
-    if (token == curTokenSeq.back()) {
-      endingIndexes.push_back(i);
-    }
-    if (token.type == TypeLoop) {
-      loopIndexes.push_back(i);
-    }
-    i++;
-  }
-  for (auto endingIndex : endingIndexes) {
-    size_t loopLength = curIndex - endingIndex;
-    // If the loop can't exist, we skip it
-    if (!loopLength || (endingIndex + 1) < loopLength)
-      continue;
-    if (_pallas_arrays_equal(&curTokenSeq[endingIndex + 1], loopLength, &curTokenSeq[endingIndex + 1 - loopLength],
-                             loopLength)) {
-      if (debugLevel >= DebugLevel::Debug) {
-        printf("findLoopFilter: Found a loop of len %lu:\n", loopLength);
-        thread_trace.printTokenArray(curTokenSeq.data(), endingIndex + 1, loopLength);
-        thread_trace.printTokenArray(curTokenSeq.data(), endingIndex + 1 - loopLength, loopLength);
-        printf("\n");
+  size_t currentIndex = curTokenSeq.size() - 1;
+  if (n >= currentIndex)
+    n = currentIndex;
+
+  unsigned found_sequence_id = 0;
+  for (int array_len = 1; array_len <= n; array_len++) {
+    auto token_array = &curTokenSeq[currentIndex - array_len + 1];
+    uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
+    auto sequencesWithSameHash = thread_trace.hashToSequence[hash];
+    if (!sequencesWithSameHash.empty()) {
+      for (const auto sid : sequencesWithSameHash) {
+        if (_pallas_arrays_equal(token_array, array_len, thread_trace.sequences[sid]->tokens.data(),
+                                 thread_trace.sequences[sid]->size())) {
+          found_sequence_id = sid;
+          break;
+        }
       }
-      replaceTokensInLoop(loopLength, endingIndex + 1, endingIndex + 1 - loopLength);
     }
-  }
-
-  for (auto loopIndex : loopIndexes) {
-    Token token = curTokenSeq[loopIndex];
-    size_t loopLength = curIndex - loopIndex;
-    auto* loop = thread_trace.getLoop(token);
-    auto* sequence = thread_trace.getSequence(loop->repeated_token);
-    if (_pallas_arrays_equal(&curTokenSeq[loopIndex + 1], loopLength, sequence->tokens.data(), sequence->size())) {
-      pallas_log(DebugLevel::Debug, "findLoopFilter: Last tokens were a sequence from L%d aka S%d\n", loop->self_id.id,
-                 loop->repeated_token.id);
-      loop->addIteration();
-      // The current sequence last_timestamp does not need to be updated
-
-      pallas_timestamp_t ts = thread_trace.getLastSequenceDuration(sequence, 0);
-      addDurationToComplete(sequence->durations->add(ts));
-      curTokenSeq.resize(loopIndex + 1);
-      return;
-    } else if (loopLength == 1 && curTokenSeq[loopIndex + 1].type == TypeSequence &&
-               curTokenSeq[loopIndex + 1].id == sequence->id) {
-      pallas_log(DebugLevel::Debug, "findLoopFilter: Last token was the sequence from L%d: S%d\n", loop->self_id.id,
-                 loop->repeated_token.id);
-      loop->addIteration();
-      curTokenSeq.resize(loopIndex + 1);
+    if (found_sequence_id) {
+      curTokenSeq.resize(curTokenSeq.size() - array_len);
+      auto seqTok = Token(TypeSequence, found_sequence_id);
+      storeToken(curTokenSeq, seqTok);
+      auto s = thread_trace.getSequence(seqTok);
+      const pallas_duration_t sequence_duration = thread_trace.getLastSequenceDuration(s, 0);
+      addDurationToComplete(s->durations->add(sequence_duration)); 
+      s->timestamps->add(last_timestamp);
       return;
     }
   }
@@ -364,29 +297,18 @@ void ThreadWriter::findLoop() {
     return;
   }
 
-  auto& curTokenSeq = getCurrentTokenSequence();
-  size_t currentIndex = curTokenSeq.size() - 1;
+  size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated)
+                             ? parameterHandler->getMaxLoopLength()
+                             : SIZE_MAX;
+  findSequence(maxLoopLength);
 
   switch (parameterHandler->getLoopFindingAlgorithm()) {
   case LoopFindingAlgorithm::None:
     return;
   case LoopFindingAlgorithm::Basic:
   case LoopFindingAlgorithm::BasicTruncated: {
-    size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated)
-                             ? parameterHandler->getMaxLoopLength()
-                             : SIZE_MAX;
-    if (debugLevel >= DebugLevel::Debug) {
-      printf("findLoop: Using Basic Algorithm:\n");
-      size_t start_index = (currentIndex >= maxLoopLength) ? currentIndex - maxLoopLength : 0;
-      size_t len = (currentIndex <= maxLoopLength) ? currentIndex + 1 : maxLoopLength;
-      thread_trace.printTokenArray(curTokenSeq.data(), start_index, len);
-    }
     findLoopBasic(maxLoopLength);
   } break;
-  case LoopFindingAlgorithm::Filter: {
-    findLoopFilter();
-    break;
-  }
   default:
     pallas_error("Invalid LoopFinding algorithm\n");
   }
@@ -507,6 +429,7 @@ void ThreadWriter::recordExitFunction() {
 
   const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
   addDurationToComplete(seq->durations->add(sequence_duration));
+  seq->timestamps->add(sequence_start_timestamp[cur_depth]);
 
   pallas_log(DebugLevel::Debug, "Exiting a function, closing sequence %d\n", seq_id.id);
 
@@ -561,8 +484,10 @@ void ThreadWriter::threadClose() {
   if (last_duration)
     *last_duration = 0;
   completeDurations(0);
-  pallas_timestamp_t duration = last_timestamp;
+  pallas_timestamp_t duration = last_timestamp - thread_trace.first_timestamp;
   mainSequence->durations->add(duration);
+  mainSequence->timestamps->add(thread_trace.first_timestamp);
+
   thread_trace.finalizeThread();
 }
 
@@ -615,7 +540,6 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 
   pallas_recursion_shield--;
 }
-
 
 void GlobalArchive::open(const char* dirname, const char* given_trace_name) {
   if (pallas_recursion_shield)
@@ -678,8 +602,6 @@ void GlobalArchive ::close() {
   pallasStoreGlobalArchive(this);
 }
 
-
-
 void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
   id = token_id;
   nb_occurences = 0;
@@ -702,7 +624,7 @@ TokenId Thread::getEventId(pallas::Event* e) {
     for (const auto eid : eventWithSameHash) {
       if (memcmp(e, &events[eid].event, e->event_size) == 0) {
         pallas_log(DebugLevel::Debug, "getEventId: \t found with id=%u\n", eid);
-          return eid;
+        return eid;
       }
     }
   }
@@ -768,10 +690,12 @@ pallas::ThreadWriter* pallas_thread_writer_new() {
   return new pallas::ThreadWriter();
 }
 
-extern void pallas_write_global_archive_open(pallas::GlobalArchive * archive, const char* dir_name, const char* trace_name) {
+extern void pallas_write_global_archive_open(pallas::GlobalArchive* archive,
+                                             const char* dir_name,
+                                             const char* trace_name) {
   archive->open(dir_name, trace_name);
 };
-extern void pallas_write_global_archive_close(pallas::GlobalArchive * archive) {
+extern void pallas_write_global_archive_close(pallas::GlobalArchive* archive) {
   archive->close();
 };
 
@@ -785,14 +709,14 @@ extern void pallas_write_thread_close(pallas::ThreadWriter* thread_writer) {
   thread_writer->threadClose();
 };
 
-extern void pallas_write_define_location_group(pallas::GlobalArchive * archive,
+extern void pallas_write_define_location_group(pallas::GlobalArchive* archive,
                                                pallas::LocationGroupId id,
                                                pallas::StringRef name,
                                                pallas::LocationGroupId parent) {
   archive->defineLocationGroup(id, name, parent);
 };
 
-extern void pallas_write_define_location(pallas::GlobalArchive * archive,
+extern void pallas_write_define_location(pallas::GlobalArchive* archive,
                                          pallas::ThreadId id,
                                          pallas::StringRef name,
                                          pallas::LocationGroupId parent) {

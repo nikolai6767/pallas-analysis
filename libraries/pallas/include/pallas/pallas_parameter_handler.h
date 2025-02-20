@@ -95,10 +95,6 @@ enum class LoopFindingAlgorithm {
   /** Basic, quadratic loop finding algorithm.
    * The algorithm doesn't search for any pattern longer than ParameterHandler::maxLoopLength */
   BasicTruncated,
-  /** Start by filtering the tokens and only running the loop finding algorithm on the interesting ones.
-   * See ThreadWriter::findLoopFilter for more information.
-   */
-  Filter,
   Invalid
 };
 const enum LoopFindingAlgorithm LoopFindingAlgorithmDefault = LoopFindingAlgorithm::BasicTruncated;

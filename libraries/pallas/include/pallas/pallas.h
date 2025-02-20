@@ -102,6 +102,7 @@ typedef struct Token {
    * @return Boolean indicating if the Tokens are equals.
    */
   bool operator==(const Token& other) const { return (other.type == type && other.id == id); }
+  bool operator!=(const Token& other) const { return ! operator==(other); }
   /** Checks for ordering between Tokens. Absolute order is decided first on type then on id.
    * @param other Token to check for ordering.
    * @return Boolean indicating if this < other.
@@ -294,7 +295,6 @@ typedef struct Sequence {
   LinkedDurationVector* durations CXX({new LinkedDurationVector()}); /**< Vector of durations for these type of sequences. */
   LinkedVector* timestamps CXX({new LinkedVector()});
   uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
-  bool contains_loops CXX({false});
   DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
   CXX(private:)
   /**
@@ -340,7 +340,7 @@ typedef struct Sequence {
 typedef struct Loop {
   Token repeated_token;               /**< Token of the Sequence being repeated. */
   Token self_id;                      /**< Token identifying that Loop. */
-  DEFINE_Vector(uint, nb_iterations); /**< Vector of uint counting the number of iterations of that loop. */
+  uint nb_iterations;                 /**< Number of iterations of that loop. */
 #ifdef __cplusplus
   CXX(void addIteration();)           /**< Adds an iteration to the lastest occurence of that loop. */
 
@@ -486,6 +486,7 @@ typedef struct Thread {
   unsigned nb_allocated_sequences; /**< Number of blocks of size pallas:Sequence allocated in #sequences. */
   unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
+  pallas_timestamp_t first_timestamp;
   /** Map to associate the hash of the pallas::Sequence to their id.*/
 #ifdef __cplusplus
   std::unordered_map<uint32_t, std::vector<TokenId>> hashToSequence;
@@ -660,10 +661,6 @@ extern "C" {
   extern size_t pallas_sequence_get_size(PALLAS(Sequence) * sequence);
   /** Returns the nth token of the given sequence. */
   extern PALLAS(Token) pallas_sequence_get_token(PALLAS(Sequence) * sequence, int index);
-  /** Returns the number of similar loops. */
-  extern size_t pallas_loop_count(PALLAS(Loop) * loop);
-  /** Returns the number of loops for the nth loop. */
-  extern size_t pallas_loop_get_count(PALLAS(Loop) * loop, size_t index);
 
   /** Does a safe-ish realloc the the given buffer.
    * Given the use of realloc, it does not call the constructor  of the newly created objects.

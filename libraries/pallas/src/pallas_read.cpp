@@ -60,8 +60,8 @@ ThreadReader::ThreadReader(Archive* archive, ThreadId threadId, int read_flags) 
   // ie set the cursor on the first event
   this->currentState.current_frame_index = 0;
   this->currentState.currentFrame = &currentState.callstack[0];
-  currentState.currentFrame->callstack_iterable = Token(TypeSequence, 0);
-
+  this->currentState.currentFrame->callstack_iterable = Token(TypeSequence, 0);
+  this->currentState.currentFrame->referential_timestamp = this->thread_trace->first_timestamp;
   // Enter main sequence
   enterBlock();
 }
@@ -103,7 +103,7 @@ void ThreadReader::printCallstack() const {
     if (current_sequence_id.type == TypeLoop) {
       auto* loop = thread_trace->getLoop(current_sequence_id);
       printf(" iter %d/%d", currentState.callstack[i].frame_index,
-             loop->nb_iterations[currentState.currentFrame->tokenCount.get_value(current_sequence_id)]);
+             loop->nb_iterations);
       pallas_assert(currentState.callstack[i].frame_index < MAX_CALLSTACK_DEPTH);
     } else if (current_sequence_id.type == TypeSequence) {
       auto* sequence = thread_trace->getSequence(current_sequence_id);
@@ -142,8 +142,8 @@ bool ThreadReader::isEndOfSequence(int current_index, Token sequence_id) const {
 bool ThreadReader::isEndOfLoop(int current_index, Token loop_id) const {
   if (loop_id.type == TypeLoop) {
     auto* loop = thread_trace->getLoop(loop_id);
-    pallas_assert(current_index < loop->nb_iterations[currentState.currentFrame->tokenCount.get_value(loop_id)]);
-    return current_index + 1 >= loop->nb_iterations[currentState.currentFrame->tokenCount.get_value(loop_id)];
+    pallas_assert(current_index < loop->nb_iterations);
+    return current_index + 1 >= loop->nb_iterations;
     // We are in a loop and index is beyond the number of iterations
   }
   pallas_error("The given loop_id was the wrong type: %d\n", loop_id.type);
@@ -181,13 +181,12 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
 
   const Token sequence_id = loop->repeated_token;
 
-  const size_t loopIndex = currentState.currentFrame->tokenCount.get_value(loop_id);
   size_t offset;
   if (getCurIterable() != loop_id)
     offset = currentState.currentFrame->tokenCount.get_value(sequence_id);
   else
-    offset = currentState.callstack[currentState.current_frame_index-1].tokenCount.get_value(sequence_id);
-  const size_t nIterations = loop->nb_iterations.at(loopIndex);
+    offset = currentState.callstack[currentState.current_frame_index - 1].tokenCount.get_value(sequence_id);
+  const size_t nIterations = loop->nb_iterations;
   DOFOR(i, nIterations) {
     sum += sequence->durations->at(offset + i);
   }
@@ -206,8 +205,7 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
   return eventOccurence;
 }
 
-SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
-                                                     size_t occurence_id) const {
+SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t occurence_id) const {
   auto sequenceOccurence = SequenceOccurence();
   sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
@@ -221,7 +219,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id,
 LoopOccurence ThreadReader::getLoopOccurence(Token loop_id, size_t occurence_id) const {
   auto loopOccurence = LoopOccurence();
   loopOccurence.loop = thread_trace->getLoop(loop_id);
-  loopOccurence.nb_iterations = loopOccurence.loop->nb_iterations[occurence_id];
+  loopOccurence.nb_iterations = loopOccurence.loop->nb_iterations;
   loopOccurence.full_loop = nullptr;
   loopOccurence.timestamp = currentState.currentFrame->referential_timestamp;
   loopOccurence.duration = getLoopDuration(loop_id);
@@ -293,7 +291,6 @@ Token ThreadReader::pollNextToken(int flags) const {
     }
   }
   return thread_trace->getToken(current_iterable_token, current_index + 1);
-
 }
 
 Token ThreadReader::pollPrevToken(int flags) const {
@@ -368,36 +365,41 @@ bool ThreadReader::moveToNextToken(int flags) {
   pallas_duration_t token_duration = 0;
   switch (current_token.type) {
   case TypeEvent:
-    token_duration = getEventSummary(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
+    token_duration =
+      getEventSummary(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
     break;
 
-    case TypeLoop: {
-      token_duration = getLoopDuration(current_token);
-      auto loop = thread_trace->getLoop(current_token);
-      auto loopCount = loop->nb_iterations[currentState.currentFrame->tokenCount[current_token]];
-      for (size_t i = 0; i < loopCount; i ++) {
-        currentState.currentFrame->tokenCount += thread_trace->getSequence(loop->repeated_token)->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount);
-        currentState.currentFrame->tokenCount[loop->repeated_token] += 1;
-      }
-      break;
+  case TypeLoop: {
+    token_duration = getLoopDuration(current_token);
+    auto loop = thread_trace->getLoop(current_token);
+    auto loopCount = loop->nb_iterations;
+    for (size_t i = 0; i < loopCount; i++) {
+      currentState.currentFrame->tokenCount +=
+        thread_trace->getSequence(loop->repeated_token)
+          ->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount);
+      currentState.currentFrame->tokenCount[loop->repeated_token] += 1;
     }
+    break;
+  }
 
-    case TypeSequence: {
-      auto seq = thread_trace->getSequence(current_token);
-      token_duration = seq->durations->at(currentState.currentFrame->tokenCount[current_token]);
-      currentState.currentFrame->tokenCount += seq->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount);
-      break;
-    }
+  case TypeSequence: {
+    auto seq = thread_trace->getSequence(current_token);
+    token_duration = seq->durations->at(currentState.currentFrame->tokenCount[current_token]);
+    currentState.currentFrame->tokenCount +=
+      seq->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount);
+    break;
+  }
 
-    case TypeInvalid:
-      pallas_error("Token is Invalid");
-    }
+  case TypeInvalid:
+    pallas_error("Token is Invalid");
+  }
 #ifdef DEBUG
   // Some error checking, helps debugging writing errors
-  if (currentState.currentFrame->referential_timestamp + token_duration < currentState.currentFrame->referential_timestamp) {
-      pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id,
-                   token_duration);
-    }
+  if (currentState.currentFrame->referential_timestamp + token_duration <
+      currentState.currentFrame->referential_timestamp) {
+    pallas_error("Token duration negative for (%c.%d): %lu\n", PALLAS_TOKEN_TYPE_C(current_token), current_token.id,
+                 token_duration);
+  }
 #endif
 
   currentState.currentFrame->referential_timestamp += token_duration;
@@ -446,34 +448,39 @@ bool ThreadReader::moveToPrevToken(int flags) {
     if (previous_token.type == TypeSequence && flags & PALLAS_READ_FLAG_UNROLL_SEQUENCE) {
       ntokens = thread_trace->getSequence(previous_token)->size();
     } else if (previous_token.type == TypeLoop && flags & PALLAS_READ_FLAG_UNROLL_LOOP) {
-      ntokens = thread_trace->getLoop(previous_token)->nb_iterations.at(currentState.currentFrame->tokenCount[previous_token]-1);
+      ntokens = thread_trace->getLoop(previous_token)
+                  ->nb_iterations;
     } else {
       break;
     }
     // Save cursor before entering
     // TODO : Optimiser ça
     moveToPrevToken(PALLAS_READ_FLAG_NO_UNROLL);
-    if (!moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL)) { // If we didn't come back, we come back manually
+    if (!moveToNextToken(PALLAS_READ_FLAG_NO_UNROLL)) {  // If we didn't come back, we come back manually
       Token current_token = pollCurToken();
       pallas_duration_t token_duration = 0;
       switch (current_token.type) {
       case TypeEvent:
-        token_duration = getEventSummary(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
+        token_duration =
+          getEventSummary(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
         break;
 
       case TypeLoop:
         token_duration = getLoopDuration(current_token);
-        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations[currentState.currentFrame->tokenCount[current_token]];
-             i++) {
+        for (int i = 0; i < thread_trace->getLoop(current_token)->nb_iterations; i++) {
           currentState.currentFrame->tokenCount +=
-            thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
+            thread_trace->getSequence(thread_trace->getLoop(current_token)->repeated_token)
+              ->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
           currentState.currentFrame->tokenCount[thread_trace->getLoop(current_token)->repeated_token]++;
-             }
+        }
         break;
 
       case TypeSequence:
-        token_duration = thread_trace->getSequence(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
-        currentState.currentFrame->tokenCount += thread_trace->getSequence(current_token)->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
+        token_duration =
+          thread_trace->getSequence(current_token)->durations->at(currentState.currentFrame->tokenCount[current_token]);
+        currentState.currentFrame->tokenCount +=
+          thread_trace->getSequence(current_token)
+            ->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
         break;
 
       case TypeInvalid:
@@ -504,8 +511,10 @@ bool ThreadReader::moveToPrevToken(int flags) {
 
   case TypeLoop: {
     auto prev_loop = thread_trace->getLoop(previous_token);
-    for (int i = 0; i < prev_loop->nb_iterations[currentState.currentFrame->tokenCount[previous_token]]; i++) {
-      currentState.currentFrame->tokenCount -= thread_trace->getSequence(prev_loop->repeated_token)->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
+    for (int i = 0; i < prev_loop->nb_iterations; i++) {
+      currentState.currentFrame->tokenCount -=
+        thread_trace->getSequence(prev_loop->repeated_token)
+          ->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
       currentState.currentFrame->tokenCount[prev_loop->repeated_token]--;
     }
     currentState.currentFrame->referential_timestamp -= getLoopDuration(previous_token);
@@ -513,8 +522,10 @@ bool ThreadReader::moveToPrevToken(int flags) {
   }
   case TypeSequence: {
     auto prev_sequence = thread_trace->getSequence(previous_token);
-    currentState.currentFrame->tokenCount -= prev_sequence->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
-    currentState.currentFrame->referential_timestamp -= prev_sequence->durations->at(currentState.currentFrame->tokenCount[previous_token]);
+    currentState.currentFrame->tokenCount -=
+      prev_sequence->getTokenCountReading(thread_trace, currentState.currentFrame->tokenCount, true);
+    currentState.currentFrame->referential_timestamp -=
+      prev_sequence->durations->at(currentState.currentFrame->tokenCount[previous_token]);
     break;
   }
   case TypeInvalid:
@@ -553,9 +564,10 @@ void ThreadReader::enterBlock() {
   currentState.current_frame_index++;
   currentState.currentFrame++;
   currentState.currentFrame->frame_index = 0;
-  currentState.currentFrame->referential_timestamp = currentState.callstack[currentState.current_frame_index-1].referential_timestamp;
+  currentState.currentFrame->referential_timestamp =
+    currentState.callstack[currentState.current_frame_index - 1].referential_timestamp;
   currentState.currentFrame->callstack_iterable = new_block;
-  currentState.currentFrame->tokenCount = (currentState.currentFrame-1)->tokenCount;
+  currentState.currentFrame->tokenCount = (currentState.currentFrame - 1)->tokenCount;
 }
 
 void ThreadReader::leaveBlock() {
@@ -619,7 +631,7 @@ bool ThreadReader::enterIfStartOfBlock(int flags) {
 Cursor ThreadReader::createCheckpoint() const {
   return Cursor(this->currentState);
 }
-void ThreadReader::loadCheckpoint(Cursor *checkpoint) {
+void ThreadReader::loadCheckpoint(Cursor* checkpoint) {
   currentState = *checkpoint;
 }
 
@@ -699,9 +711,7 @@ bool pallasIsEndOfTrace(ThreadReader* thread_reader) {
 EventOccurence pallasGetEventOccurence(ThreadReader* thread_reader, Token event_id, size_t occurence_id) {
   return thread_reader->getEventOccurence(event_id, occurence_id);
 }
-SequenceOccurence pallasGetSequenceOccurence(ThreadReader* thread_reader,
-                                             Token sequence_id,
-                                             size_t occurence_id) {
+SequenceOccurence pallasGetSequenceOccurence(ThreadReader* thread_reader, Token sequence_id, size_t occurence_id) {
   return thread_reader->getSequenceOccurence(sequence_id, occurence_id);
 }
 LoopOccurence pallasGetLoopOccurence(ThreadReader* thread_reader, Token loop_id, size_t occurence_id) {
@@ -749,10 +759,10 @@ bool pallasExitIfEndOfBlock(ThreadReader* thread_reader, int flags) {
 bool pallasEnterIfStartOfBlock(ThreadReader* thread_reader, int flags) {
   return thread_reader->enterIfStartOfBlock(flags);
 }
-Cursor pallasCreateCheckpoint(ThreadReader *thread_reader) {
+Cursor pallasCreateCheckpoint(ThreadReader* thread_reader) {
   return thread_reader->createCheckpoint();
 }
-void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint) {
+void pallasLoadCheckpoint(ThreadReader* thread_reader, Cursor* checkpoint) {
   thread_reader->loadCheckpoint(checkpoint);
 }
 

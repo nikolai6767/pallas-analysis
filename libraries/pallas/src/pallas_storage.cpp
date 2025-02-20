@@ -702,7 +702,8 @@ inline static uint64_t* _pallas_compress_read(size_t n, FILE* file) {
 
 void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
-  if (size == 0) return;
+  if (size == 0)
+    return;
   // Write the statistics to the vectorFile
   offset = ftell(valueFile);
   _pallas_fwrite(&offset, sizeof(offset), 1, vectorFile);
@@ -732,8 +733,9 @@ void pallas::LinkedVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
 
 void pallas::LinkedDurationVector::writeToFile(FILE* vectorFile, FILE* valueFile) {
   _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
-  if (size == 0) return;
-    finalUpdateStats();
+  if (size == 0)
+    return;
+  finalUpdateStats();
   // Write the statistics to the vectorFile
   if (size <= 3) {
     _pallas_fwrite(first->array, sizeof(size_t), size, vectorFile);
@@ -957,7 +959,6 @@ static void pallasStoreSequence(pallas::Sequence& sequence,
     std::cout << "\nTimestamps: ";
     sequence.timestamps->print();
     std::cout << "\n";
-
   }
   size_t size = sequence.size();
   sequenceFile.write(&size, sizeof(size), 1);
@@ -987,57 +988,20 @@ static void pallasReadSequence(pallas::Sequence& sequence,
 
 static void pallasStoreLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug,
-               "\tStore loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations:", loop.self_id.id,
-               loop.nb_iterations.size(), loop.repeated_token.type, loop.repeated_token.id);
-    std::cout << "[";
-    for (const auto& i : loop.nb_iterations) {
-      std::cout << i << ((&i != &loop.nb_iterations.back()) ? ", " : "]");
-    }
+    pallas_log(pallas::DebugLevel::Debug, "\tStore loop %d {.repeated_token=%d.%d, .nb_iterations: %u\n",
+               loop.self_id.id, loop.repeated_token.type, loop.repeated_token.id, loop.nb_iterations);
     std::cout << "}" << std::endl;
   }
   loopFile.write(&loop.repeated_token, sizeof(loop.repeated_token), 1);
-  size_t size = loop.nb_iterations.size();
-  loopFile.write(&size, sizeof(size), 1);
-  if (loop.nb_iterations.size() < 10)
-    loopFile.write(loop.nb_iterations.data(), sizeof(uint), loop.nb_iterations.size());
-  else {
-    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
-    auto zstdSize = ZSTD_compressBound(originalSize);
-    auto compressedLoopIterationsArray = new byte[zstdSize];
-    zstdSize = ZSTD_compress(compressedLoopIterationsArray, zstdSize, loop.nb_iterations.data(), originalSize,
-                             pallas::parameterHandler->getZstdCompressionLevel());
-    loopFile.write(&zstdSize, sizeof(zstdSize), 1);
-    loopFile.write(compressedLoopIterationsArray, zstdSize, 1);
-    delete[] compressedLoopIterationsArray;
-  }
+  loopFile.write(&loop.nb_iterations, sizeof(loop.nb_iterations), 1);
 }
 
 static void pallasReadLoop(pallas::Loop& loop, const pallas::File& loopFile) {
   loopFile.read(&loop.repeated_token, sizeof(loop.repeated_token), 1);
-  size_t size;
-  loopFile.read(&size, sizeof(size), 1);
-  loop.nb_iterations.resize(size);
-  if (size < 10)
-    loopFile.read(loop.nb_iterations.data(), sizeof(uint), size);
-  else {
-    auto originalSize = loop.nb_iterations.size() * sizeof(uint);
-    ulong zstdSize;
-    loopFile.read(&zstdSize, sizeof(zstdSize), 1);
-    auto compressedLoopIterationsArray = new byte[zstdSize];
-    loopFile.read(compressedLoopIterationsArray, zstdSize, 1);
-    ZSTD_decompress(loop.nb_iterations.data(), originalSize, compressedLoopIterationsArray, zstdSize);
-    delete[] compressedLoopIterationsArray;
-  }
+  loopFile.read(&loop.nb_iterations, sizeof(loop.nb_iterations), 1);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-    pallas_log(pallas::DebugLevel::Debug,
-               "\tLoad loops %d {.nb_loops=%zu, .repeated_token=%d.%d, .nb_iterations: ", loop.self_id.id,
-               loop.nb_iterations.size(), loop.repeated_token.type, loop.repeated_token.id);
-    std::cout << "[";
-    for (const auto& i : loop.nb_iterations) {
-      std::cout << i << ((&i != &loop.nb_iterations.back()) ? ", " : "]");
-    }
-    std::cout << "}" << std::endl;
+    pallas_log(pallas::DebugLevel::Debug, "\tLoad loop %d {.repeated_token=%d.%d, .nb_iterations: %u\n",
+               loop.self_id.id, loop.repeated_token.type, loop.repeated_token.id, loop.nb_iterations);
   }
 }
 
@@ -1125,7 +1089,8 @@ static void pallasStoreGroups(pallas::GlobalArchive* a, pallas::File& file) {
   size_t size = a->definitions.groups.size();
   file.write(&size, sizeof(size), 1);
   for (auto& [ref, g] : a->definitions.groups) {
-    pallas_log(pallas::DebugLevel::Debug, "\tStore Group {.ref=%d, .name=%d, .nb_members=%d}\n", g.group_ref, g.name, g.numberOfMembers);
+    pallas_log(pallas::DebugLevel::Debug, "\tStore Group {.ref=%d, .name=%d, .nb_members=%d}\n", g.group_ref, g.name,
+               g.numberOfMembers);
 
     file.write(&g.group_ref, sizeof(g.group_ref), 1);
     file.write(&g.name, sizeof(g.name), 1);
@@ -1145,7 +1110,8 @@ static void pallasReadGroups(pallas::GlobalArchive* a, pallas::File& file) {
     tempGroup.members = new uint64_t[tempGroup.numberOfMembers];
     pallas_assert(tempGroup.members);
     file.read(tempGroup.members, sizeof(uint64_t), tempGroup.numberOfMembers);
-    pallas_log(pallas::DebugLevel::Debug, "\tLoad Group {.ref=%d, .name=%d, .nb_members=%d}\n", tempGroup.group_ref, tempGroup.name, tempGroup.numberOfMembers);
+    pallas_log(pallas::DebugLevel::Debug, "\tLoad Group {.ref=%d, .name=%d, .nb_members=%d}\n", tempGroup.group_ref,
+               tempGroup.name, tempGroup.numberOfMembers);
     a->definitions.groups[tempGroup.group_ref] = tempGroup;
   }
 }
@@ -1174,12 +1140,11 @@ static void pallasReadComms(pallas::GlobalArchive* a, pallas::File& file) {
   pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu comms\n", a->definitions.comms.size());
 }
 
-
 static void pallasStoreLocationGroups(pallas::GlobalArchive* a, pallas::File& file) {
   if (a->location_groups.empty())
     return;
 
-  pallas_log(pallas::DebugLevel::Debug, "\tStore %zu location groupds\n", a->location_groups.size());
+  pallas_log(pallas::DebugLevel::Debug, "\tStore %zu location groups\n", a->location_groups.size());
 
   file.write(a->location_groups.data(), sizeof(pallas::LocationGroup), a->location_groups.size());
 }
@@ -1234,6 +1199,8 @@ static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   threadFile.write(&th->nb_sequences, sizeof(th->nb_sequences), 1);
   threadFile.write(&th->nb_loops, sizeof(th->nb_loops), 1);
 
+  threadFile.write(&th->first_timestamp, sizeof(th->first_timestamp), 1);
+
   const char* eventDurationFilename = pallasGetEventDurationFilename(dir_name, th);
   pallas::File eventDurationFile = pallas::File(eventDurationFilename, "w");
   for (int i = 0; i < th->nb_events; i++) {
@@ -1284,6 +1251,8 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
   threadFile.read(&th->nb_loops, sizeof(th->nb_loops), 1);
   th->nb_allocated_loops = th->nb_loops;
   th->loops = new pallas::Loop[th->nb_allocated_loops];
+
+  threadFile.read(&th->first_timestamp, sizeof(th->first_timestamp), 1);
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %d events\n", th->nb_events);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
@@ -1368,7 +1337,7 @@ void pallasStoreArchive(pallas::Archive* archive) {
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
   pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
   while (archive->threads[archive->nb_threads - 1] == nullptr) {
-    archive->nb_threads --;
+    archive->nb_threads--;
   }
   file.write(&archive->nb_threads, sizeof(int), 1);
   file.close();
@@ -1430,8 +1399,9 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
 
   uint8_t abi_version;
   file.read(&abi_version, sizeof(abi_version), 1);
-  if(abi_version != PALLAS_ABI_VERSION) {
-    pallas_warn("This trace uses Pallas ABI version %x, but the current installation only supports version %x\n", abi_version, PALLAS_ABI_VERSION);
+  if (abi_version != PALLAS_ABI_VERSION) {
+    pallas_warn("This trace uses Pallas ABI version %x, but the current installation only supports version %x\n",
+                abi_version, PALLAS_ABI_VERSION);
   }
   pallas::parameterHandler = new pallas::ParameterHandler();
   pallas::parameterHandler->readFromFile(file.file);

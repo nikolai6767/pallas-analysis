@@ -8,8 +8,8 @@
 #include <sstream>
 
 #include "pallas/pallas.h"
-#include "pallas/pallas_log.h"
 #include "pallas/pallas_archive.h"
+#include "pallas/pallas_log.h"
 
 namespace pallas {
 void Thread::loadTimestamps() {
@@ -97,26 +97,34 @@ std::string Thread::getTokenString(Token token) const {
 pallas_duration_t Thread::getDuration() const {
   return sequences[0]->durations->at(0);
 }
-pallas_duration_t get_duration(PALLAS(Thread) *t) { return t->getDuration(); }
+pallas_duration_t get_duration(PALLAS(Thread) * t) {
+  return t->getDuration();
+}
 
 pallas_timestamp_t Thread::getFirstTimestamp() const {
-  return 0; 			// TODO: find the first timestamp
+  return first_timestamp;
 }
-pallas_timestamp_t get_first_timestamp(PALLAS(Thread) *t) { return t->getFirstTimestamp(); }
+pallas_timestamp_t get_first_timestamp(PALLAS(Thread) * t) {
+  return t->getFirstTimestamp();
+}
 
 pallas_timestamp_t Thread::getLastTimestamp() const {
   return getFirstTimestamp() + getDuration();
 }
-pallas_timestamp_t get_last_timestamp(PALLAS(Thread) *t) { return t->getLastTimestamp(); }
+pallas_timestamp_t get_last_timestamp(PALLAS(Thread) * t) {
+  return t->getLastTimestamp();
+}
 
 size_t Thread::getEventCount() const {
   size_t ret = 0;
-  for(unsigned i=0; i<this->nb_events; i++) {
+  for (unsigned i = 0; i < this->nb_events; i++) {
     ret += this->events[i].nb_occurences;
   }
   return ret;
 }
-size_t get_event_count(PALLAS(Thread) *t) { return t->getEventCount(); }
+size_t get_event_count(PALLAS(Thread) * t) {
+  return t->getEventCount();
+}
 
 void Thread::printToken(Token token) const {
   std::cout << getTokenString(token);
@@ -170,25 +178,22 @@ static inline void pop_data(Event* e, void* data, size_t data_size, byte*& curso
 const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
   const Region* region = NULL;
   byte* cursor = nullptr;
-  switch (e->record)
-    {
-    case PALLAS_EVENT_ENTER:
-      {
-	RegionRef region_ref;
-	pop_data(e, &region_ref, sizeof(region_ref), cursor);
-	region = archive->global_archive->getRegion(region_ref);
-	break;
-      }
-    case PALLAS_EVENT_LEAVE:
-      {
-	RegionRef region_ref;
-	pop_data(e, &region_ref, sizeof(region_ref), cursor);
-	region = archive->global_archive->getRegion(region_ref);
-	break;
-      }
-    default:
-      region = NULL;
-    }
+  switch (e->record) {
+  case PALLAS_EVENT_ENTER: {
+    RegionRef region_ref;
+    pop_data(e, &region_ref, sizeof(region_ref), cursor);
+    region = archive->global_archive->getRegion(region_ref);
+    break;
+  }
+  case PALLAS_EVENT_LEAVE: {
+    RegionRef region_ref;
+    pop_data(e, &region_ref, sizeof(region_ref), cursor);
+    region = archive->global_archive->getRegion(region_ref);
+    break;
+  }
+  default:
+    region = NULL;
+  }
 
   return region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
 }
@@ -199,17 +204,25 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
   case PALLAS_EVENT_ENTER: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->global_archive->getRegion(region_ref);
-    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
+    if (archive->global_archive) {
+      const Region* region = archive->global_archive->getRegion(region_ref);
+      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      snprintf(output_str, buffer_size, "Enter %d (%s)", region_ref, region_name);
+    } else {
+      snprintf(output_str, buffer_size, "Enter %d", region_ref);
+    }
     break;
   }
   case PALLAS_EVENT_LEAVE: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    const Region* region = archive->global_archive->getRegion(region_ref);
-    const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
-    snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
+    if (archive->global_archive) {
+      const Region* region = archive->global_archive->getRegion(region_ref);
+      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      snprintf(output_str, buffer_size, "Leave %d (%s)", region_ref, region_name);
+    } else {
+      snprintf(output_str, buffer_size, "Leave %d", region_ref);
+    }
     break;
   }
 
@@ -348,7 +361,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     uint32_t lockID;
     uint32_t acquisitionOrder;
     pop_data(e, &lockID, sizeof(lockID), cursor);
-    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    // pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
     snprintf(output_str, buffer_size, "OMP_ACQUIRE_LOCK(lockID=%d)", lockID);
     break;
   }
@@ -356,7 +369,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     uint32_t lockID;
     uint32_t acquisitionOrder;
     pop_data(e, &lockID, sizeof(lockID), cursor);
-    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    // pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
     snprintf(output_str, buffer_size, "THREAD_ACQUIRE_LOCK(lockID=%d)", lockID);
     break;
   }
@@ -364,7 +377,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     uint32_t lockID;
     uint32_t acquisitionOrder;
     pop_data(e, &lockID, sizeof(lockID), cursor);
-    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    // pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
     snprintf(output_str, buffer_size, "OMP_RELEASE_LOCK(lockID=%d)", lockID);
     break;
   }
@@ -372,7 +385,7 @@ void Thread::printEventToString(pallas::Event* e, char* output_str, size_t buffe
     uint32_t lockID;
     uint32_t acquisitionOrder;
     pop_data(e, &lockID, sizeof(lockID), cursor);
-    //pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
+    // pop_data(e, &acquisitionOrder, sizeof(acquisitionOrder), cursor);
     snprintf(output_str, buffer_size, "THREAD_RELEASE_LOCK(lockID=%d)", lockID);
     break;
   }
@@ -433,6 +446,8 @@ Thread::Thread() {
   loops = nullptr;
   nb_allocated_loops = 0;
   nb_loops = 0;
+
+  first_timestamp = PALLAS_TIMESTAMP_INVALID;
 }
 
 void Thread::initThread(Archive* a, ThreadId thread_id) {
@@ -491,38 +506,38 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
 };
 
 std::string Sequence::guessName(const pallas::Thread* thread) {
-  if(this->size() < 4) {
+  if (this->size() < 4) {
     Token t_start = this->tokens[0];
-    if(t_start.type == TypeEvent) {
+    if (t_start.type == TypeEvent) {
       Event* event = thread->getEvent(t_start);
       const char* event_name = thread->getRegionStringFromEvent(event);
       std::string prefix(event_name);
 
-      if(this->size() == 3) {
-	// that's probably an MPI call. To differentiate calls (eg
-	// MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the 
-	// the second token to the name
-	Token t_second = this->tokens[1];
+      if (this->size() == 3) {
+        // that's probably an MPI call. To differentiate calls (eg
+        // MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the
+        // the second token to the name
+        Token t_second = this->tokens[1];
 
-	std::string res = prefix + "_" + thread->getTokenString(t_second);
-	return res;
+        std::string res = prefix + "_" + thread->getTokenString(t_second);
+        return res;
       }
       return prefix;
     }
   }
   char buff[128];
   snprintf(buff, sizeof(buff), "Sequence_%d", this->id);
-  
+
   return std::string(buff);
 }
 
 size_t Sequence::getEventCount(const struct Thread* thread) {
-  // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops inside of it.
+  // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops
+  // inside of it.
   return 0;
   // TokenCountMap tokenCount = getTokenCount(thread);
   return tokenCount.getEventCount();
 }
-
 
 void _sequenceGetTokenCountReading(Sequence* seq,
                                    const Thread* thread,
@@ -530,50 +545,38 @@ void _sequenceGetTokenCountReading(Sequence* seq,
                                    TokenCountMap& sequenceTokenCountMap,
                                    bool isReversedOrder);
 
-
 TokenCountMap tempSeen;
 void _loopGetTokenCountReading(const Loop* loop,
                                const Thread* thread,
                                TokenCountMap& readerTokenCountMap,
                                TokenCountMap& sequenceTokenCountMap,
                                bool isReversedOrder) {
-  size_t cur_index = readerTokenCountMap.get_value(loop->self_id);
-  size_t loop_nb_iterations = loop->nb_iterations[cur_index];
+  size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
-  if (loop_sequence->contains_loops) {
-    for (size_t temp_loop_index = 0; temp_loop_index < loop_nb_iterations; temp_loop_index++) {
-      _sequenceGetTokenCountReading(loop_sequence, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
-      readerTokenCountMap[loop->repeated_token]++;
-      sequenceTokenCountMap[loop->repeated_token]++;
-    }
-  } else {
-    // This creates bug idk why ?????
-    TokenCountMap temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
-    temp *= loop_nb_iterations;
-    readerTokenCountMap += temp;
-    sequenceTokenCountMap += temp;
-    readerTokenCountMap[loop->repeated_token]+= loop_nb_iterations;
-    sequenceTokenCountMap[loop->repeated_token]+= loop_nb_iterations;
-  }
+  // This creates bug idk why ?????
+  TokenCountMap temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
+  temp *= loop_nb_iterations;
+  readerTokenCountMap += temp;
+  sequenceTokenCountMap += temp;
+  readerTokenCountMap[loop->repeated_token] += loop_nb_iterations;
+  sequenceTokenCountMap[loop->repeated_token] += loop_nb_iterations;
 }
 
-std::string Loop::guessName(const Thread *t) {
-  Sequence *s = t->getSequence(this->repeated_token);
+std::string Loop::guessName(const Thread* t) {
+  Sequence* s = t->getSequence(this->repeated_token);
   return s->guessName(t);
 }
 void _sequenceGetTokenCountReading(Sequence* seq,
-                                            const Thread* thread,
-                                            TokenCountMap& readerTokenCountMap,
-                                            TokenCountMap& sequenceTokenCountMap,
-                                            bool isReversedOrder) {
+                                   const Thread* thread,
+                                   TokenCountMap& readerTokenCountMap,
+                                   TokenCountMap& sequenceTokenCountMap,
+                                   bool isReversedOrder) {
   for (auto& token : seq->tokens) {
     if (token.type == TypeSequence) {
       auto* s = thread->getSequence(token);
       _sequenceGetTokenCountReading(s, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
-      seq->contains_loops = seq->contains_loops || s->contains_loops;
     }
     if (token.type == TypeLoop) {
-      seq->contains_loops = true;
       auto* loop = thread->getLoop(token);
       _loopGetTokenCountReading(loop, thread, readerTokenCountMap, sequenceTokenCountMap, isReversedOrder);
     }
@@ -583,17 +586,13 @@ void _sequenceGetTokenCountReading(Sequence* seq,
 }
 
 TokenCountMap Sequence::getTokenCountReading(const Thread* thread,
-                                      const TokenCountMap& threadReaderTokenCountMap,
-                                      bool isReversedOrder) {
+                                             const TokenCountMap& threadReaderTokenCountMap,
+                                             bool isReversedOrder) {
   if (tokenCount.empty()) {
     auto tokenCountMapCopy = TokenCountMap(threadReaderTokenCountMap);
     auto tempTokenCount = TokenCountMap();
     _sequenceGetTokenCountReading(this, thread, tokenCountMapCopy, tempTokenCount, isReversedOrder);
-    if (contains_loops) {
-      return tempTokenCount;
-    } else {
-      tokenCount = tempTokenCount;
-    }
+    tokenCount = tempTokenCount;
   }
   return tokenCount;
 }
@@ -601,19 +600,11 @@ TokenCountMap Sequence::getTokenCountReading(const Thread* thread,
 void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount);
 
 inline static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& reverseTokenCount) {
-  size_t cur_index = loop->nb_iterations.size() - reverseTokenCount[loop->self_id] - 1;
-  size_t loop_nb_iterations = loop->nb_iterations[cur_index];
+  size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
-  if (loop_sequence->contains_loops) {
-    for (size_t temp_loop_index = 0; temp_loop_index < loop_nb_iterations; temp_loop_index++) {
-      _sequenceGetTokenCountWriting(loop_sequence, thread, reverseTokenCount);
-      reverseTokenCount[loop->repeated_token]++;
-    }
-  } else {
-    auto temp = loop_sequence->getTokenCountWriting(thread);
-    reverseTokenCount += temp * loop_nb_iterations;
-    reverseTokenCount[loop->repeated_token] += loop_nb_iterations;
-  }
+  auto temp = loop_sequence->getTokenCountWriting(thread);
+  reverseTokenCount += temp * loop_nb_iterations;
+  reverseTokenCount[loop->repeated_token] += loop_nb_iterations;
 }
 
 void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount) {
@@ -621,10 +612,8 @@ void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCou
     if (token.type == TypeSequence) {
       auto* s = thread->getSequence(token);
       _sequenceGetTokenCountWriting(s, thread, reverseTokenCount);
-      seq->contains_loops = seq->contains_loops || s->contains_loops;
     }
     if (token.type == TypeLoop) {
-      seq->contains_loops = true;
       auto* loop = thread->getLoop(token);
       _loopGetTokenCountWriting(loop, thread, reverseTokenCount);
     }
@@ -640,13 +629,12 @@ TokenCountMap Sequence::getTokenCountWriting(const Thread* thread, const TokenCo
       updatingOffset = TokenCountMap(*offset);
     else
       updatingOffset = TokenCountMap();
-    for (int i = tokens.size() - 1; i >= 0; i --) {
+    for (int i = tokens.size() - 1; i >= 0; i--) {
       auto& token = tokens[i];
       updatingOffset[token]++;
       if (token.type == TypeSequence) {
         auto* s = thread->getSequence(token);
         _sequenceGetTokenCountWriting(s, thread, updatingOffset);
-        contains_loops = contains_loops || s->contains_loops;
       }
       if (token.type == TypeLoop) {
         canStoreTokenCount = false;
@@ -733,13 +721,6 @@ size_t pallas_sequence_get_size(pallas::Sequence* sequence) {
 pallas::Token pallas_sequence_get_token(pallas::Sequence* sequence, int index) {
   return sequence->tokens[index];
 }
-
-size_t pallas_loop_count(pallas::Loop* loop) {
-  return loop->nb_iterations.size();
-};
-size_t pallas_loop_get_count(PALLAS(Loop) * loop, size_t index) {
-  return loop->nb_iterations[index];
-};
 
 /* -*-
   mode: cpp;

@@ -19,6 +19,7 @@ bool show_timestamps = true;
 int thread_to_print = -1;
 bool flamegraph = false;
 bool csv = false;
+bool csv_bulk = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
   if (show_timestamps) {
@@ -27,7 +28,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
   }
 }
 static void _print_timestamp_header() {
-  if (show_timestamps && (!flamegraph) && (!csv) ) {
+  if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
 }
@@ -139,7 +140,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
       duration = threads_data[min_reader].callstack_duration.back();
     }   
 
-    pallas_timestamp_t first_timestamp = 0;
+    pallas_timestamp_t first_timestamp = min_reader->thread_trace->getFirstTimestamp();
     if(! threads_data[min_reader].callstack_timestamp.empty()) {
       first_timestamp = threads_data[min_reader].callstack_timestamp.back();
     }
@@ -147,20 +148,20 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
     static bool first_line = true;
     if(first_line) {
-      std::cout<<"Task,Resource,Start,Finish"<<std::endl;
+      std::cout<<"Thread,Function,Start,Finish,Duration\n";
       first_line = false;
     }
 
-    std::cout<<min_reader->thread_trace->getName()<<", ";
+    std::cout<<min_reader->thread_trace->getName()<<",";
     if(threads_data[min_reader].callstack.empty())
       std::cout<<"main";
     else
       std::cout<<threads_data[min_reader].callstack.back();
 
-    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<std::endl;
+    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<std::endl;
 
-    // Check that timestamps to not overlap
-    pallas_assert_always(threads_data[min_reader].last_timestamp >= first_timestamp);
+     // Check that timestamps to not overlap
+    pallas_assert_always(threads_data[min_reader].last_timestamp <= first_timestamp);
     threads_data[min_reader].last_timestamp = first_timestamp + duration;
   };
 
@@ -201,6 +202,35 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
   }
 }
 
+void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
+  static bool first_line = true;
+
+  for (auto & reader : readers) {
+
+    for(int i=0; i<reader.thread_trace->nb_sequences; i++) {
+      auto &s = reader.thread_trace->sequences[i];
+      const auto &seq_name = s->guessName(reader.thread_trace);
+
+      pallas_duration_t duration = s->durations->at(0);
+      pallas_timestamp_t ts = s->timestamps->at(0);
+
+
+      for(int occurence_id = 0; occurence_id < s->durations->size; occurence_id++) {
+	pallas_duration_t duration = s->durations->at(occurence_id);
+	pallas_timestamp_t ts = s->timestamps->at(occurence_id);
+
+	if(first_line) {
+	  std::cout<<"Thread,Function,Start,Finish,Duration\n";
+	  first_line = false;
+	}
+	
+	std::cout<<reader.thread_trace->getName()<<",";
+	std::cout<<seq_name<<","<<ts<<","<<ts+duration<<","<<duration<<"\n";
+      }
+    }
+  }
+}
+
 void printTrace(const pallas::GlobalArchive& trace) {
 
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
@@ -220,6 +250,11 @@ void printTrace(const pallas::GlobalArchive& trace) {
   _print_timestamp_header();
   _print_duration_header();
   std::cout << std::endl;
+
+  if(csv_bulk) {
+    printCSVBulk(readers);
+    return;
+  }
 
   while (!isReadingOver(readers)) {
     pallas::ThreadReader* min_reader = &readers[0];
@@ -340,6 +375,7 @@ void usage(const char* prog_name) {
   std::cout << "\t" << "--thread thread_id" << "\t" << "Only print thread <thread_id>" << std::endl;
   std::cout << "\t" << "-f" << "\t" << "Generate a flamegraph file" << std::endl;
   std::cout << "\t" << "-c" << "\t" << "Generate a csv file" << std::endl;
+  std::cout << "\t" << "-cb"<< "\t" << "Generate a csv file (bulk mode)" << std::endl;
 }
 
 int main(const int argc, char* argv[]) {
@@ -371,6 +407,8 @@ int main(const int argc, char* argv[]) {
       flamegraph = true;
     } else if (!strcmp(argv[nb_opts], "-c")) {
       csv = true;
+    } else if (!strcmp(argv[nb_opts], "-cb")) {
+      csv_bulk = true;
     } else if (!strcmp(argv[nb_opts], "--thread")) {
       per_thread = true;
       thread_to_print = atoi(argv[nb_opts+1]);
