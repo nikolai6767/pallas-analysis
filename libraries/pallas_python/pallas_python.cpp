@@ -45,6 +45,9 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   PYTHON_CHECK_READY(EventSummary);
   PYTHON_CHECK_READY(Event);
 
+
+  PYTHON_CHECK_READY(LocationGroup);
+  PYTHON_CHECK_READY(Location);
   PYTHON_CHECK_READY(Thread);
   PYTHON_CHECK_READY(Trace);
   PYTHON_CHECK_READY(Archive);
@@ -140,6 +143,9 @@ PyMODINIT_FUNC PyInit_pallas_python(void) {
   ADD_PYTHON_TYPE(Loop);
   ADD_PYTHON_TYPE(EventSummary);
   ADD_PYTHON_TYPE(Event);
+
+  ADD_PYTHON_TYPE(LocationGroup);
+  ADD_PYTHON_TYPE(Location);
 
   ADD_PYTHON_TYPE(Thread);
   ADD_PYTHON_TYPE(Trace);

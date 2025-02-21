@@ -109,23 +109,105 @@ PyTypeObject ArchiveType = {
   .tp_getset = Archive_getset,
 };
 
-
-PyObject* getLocation(pallas::Location& loc, pallas::GlobalArchive* trace) {
-  PyObject* dict = PyDict_New();
-  PyDict_SetItemString(dict, "id", PyLong_FromLong(loc.id));
-  PyDict_SetItemString(dict, "name", PyUnicode_FromString(trace->getString(loc.name)->str));
-  PyDict_SetItemString(dict, "parent", PyLong_FromLong(loc.parent));
-  return dict;
+LocationGroupObject* getLocationGroup(const pallas::LocationGroup* loc_group, pallas::GlobalArchive* trace) {
+  LocationGroupObject* locationObject = PyObject_New(LocationGroupObject, &LocationGroupType);
+  locationObject->locationGroup = loc_group;
+  locationObject->name = trace->definitions.getString(loc_group->name)->str;
+  if (loc_group->parent != PALLAS_LOCATION_GROUP_ID_INVALID) {
+    auto parent = trace->getLocationGroup(loc_group->parent);
+    locationObject->parent = getLocationGroup(parent, trace);
+  } else {
+    locationObject->parent = nullptr;
+  }
+  return locationObject;
 }
 
-PyObject* getLocationGroup(pallas::LocationGroup& loc_group, pallas::GlobalArchive* trace) {
-  PyObject* dict = PyDict_New();
-  PyDict_SetItemString(dict, "id", PyLong_FromLong(loc_group.id));
-  PyDict_SetItemString(dict, "name", PyUnicode_FromString(trace->getString(loc_group.name)->str));
-  PyDict_SetItemString(dict, "parent", PyLong_FromLong(loc_group.parent));
-  PyDict_SetItemString(dict, "mainLocation", PyLong_FromLong(loc_group.mainLoc));
-  return dict;
+PyObject* LocationGroup_get_id(LocationGroupObject* self, void* closure) {
+  return PyLong_FromLong(self->locationGroup->id);
 }
+PyObject* LocationGroup_get_name(LocationGroupObject* self, void* closure) {
+  return PyUnicode_FromString(self->name);
+}
+
+PyObject* Location_get_parent(LocationObject* self, void* closure) {
+  if (self->parent == nullptr) {
+    return Py_None;
+  }
+  return reinterpret_cast<PyObject*>(self->parent);
+}
+PyObject* LocationGroup_get_parent(LocationGroupObject* self, void* closure) {
+  if (self->parent == nullptr) {
+    return Py_None;
+  }
+  return reinterpret_cast<PyObject*>(self->parent);
+}
+
+PyGetSetDef LocationGroup_getset[] = {
+  {"id", (getter)LocationGroup_get_id, nullptr, "ID of that LocationGroup.", nullptr},
+  {"name", (getter)LocationGroup_get_name, nullptr, "Name of that LocationGroup.", nullptr},
+  {"parent", (getter)LocationGroup_get_parent, nullptr, "Parent group of that LocationGroup. Maybe be None.", nullptr},
+  {nullptr}  // Sentinel
+};
+
+PyObject* LocationGroup_to_string(PyObject* self) {
+  auto* trueSelf = reinterpret_cast<LocationGroupObject*>(self);
+  return PyUnicode_FromFormat("<LocationGroup id=%d, name=%s>", trueSelf->locationGroup->id, trueSelf->name);
+}
+
+// Define a new PyTypeObject
+PyTypeObject LocationGroupType = {
+  .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.LocationGroup",
+  .tp_basicsize = sizeof(LocationGroupObject),
+  .tp_repr = LocationGroup_to_string,
+  .tp_str = LocationGroup_to_string,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("A Pallas LocationGroup object."),
+  .tp_members = nullptr,
+  .tp_getset = LocationGroup_getset,
+};
+
+LocationObject* getLocation(const pallas::Location* loc, pallas::GlobalArchive* trace) {
+  LocationObject* locationObject = PyObject_New(LocationObject, &LocationType);
+  locationObject->location = loc;
+  locationObject->name = trace->definitions.getString(loc->name)->str;
+  if (loc->parent != PALLAS_LOCATION_GROUP_ID_INVALID) {
+    auto parent = trace->getLocationGroup(loc->parent);
+    locationObject->parent = getLocationGroup(parent, trace);
+  } else {
+    locationObject->parent = nullptr;
+  }
+  return locationObject;
+}
+
+PyObject* Location_get_id(LocationObject* self, void* closure) {
+  return PyLong_FromLong(self->location->id);
+}
+PyObject* Location_get_name(LocationObject* self, void* closure) {
+  return PyUnicode_FromString(self->name);
+}
+PyGetSetDef Location_getset[] = {
+  {"id", (getter)Location_get_id, nullptr, "ID of that Location.", nullptr},
+  {"name", (getter)Location_get_name, nullptr, "Name of that Location.", nullptr},
+  {"parent", (getter)Location_get_parent, nullptr, "Parent group of that location. Should not be None.", nullptr},
+  {nullptr}  // Sentinel
+};
+
+PyObject* Location_to_string(PyObject* self) {
+  auto* trueSelf = reinterpret_cast<LocationObject*>(self);
+  return PyUnicode_FromFormat("<Location id=%d, name=%s>", trueSelf->location->id, trueSelf->name);
+}
+
+// Define a new PyTypeObject
+PyTypeObject LocationType = {
+  .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.Location",
+  .tp_basicsize = sizeof(LocationObject),
+  .tp_repr = Location_to_string,
+  .tp_str = Location_to_string,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("A Pallas location object."),
+  .tp_members = nullptr,
+  .tp_getset = Location_getset,
+};
 
 // So we have to do a whole bunch of getters
 PyObject* Trace_get_dir_name(TraceObject* self, void*) {
@@ -140,21 +222,24 @@ PyObject* Trace_get_fullpath(TraceObject* self, void*) {
   return PyUnicode_FromString(self->trace->fullpath);
 }
 
-
 // Defining custom getters for the Locations / Locations Groups
 PyObject* Trace_get_locations(TraceObject* self, void* closure) {
   PyObject* dict = PyDict_New();
   for (size_t i = 0; i < self->trace->locations.size(); ++i) {
-    PyObject* loc = getLocation(self->trace->locations[i], self->trace);
-    PyDict_SetItem(dict, PyLong_FromLong(self->trace->locations[i].id), loc);
+    int j = 0;
+    auto* loc = &self->trace->locations[i];
+    LocationObject* location_object = getLocation(loc, self->trace);
+    PyDict_SetItem(dict, PyLong_FromLong(loc->id), reinterpret_cast<PyObject*>(location_object));
   }
   return dict;
 }
+
 PyObject* Trace_get_location_groups(TraceObject* self, void* closure) {
   PyObject* dict = PyDict_New();
   for (size_t i = 0; i < self->trace->location_groups.size(); ++i) {
-    PyObject* loc = getLocationGroup(self->trace->location_groups[i], self->trace);
-    PyDict_SetItem(dict, PyLong_FromLong(self->trace->location_groups[i].id), loc);
+    auto* loc = &self->trace->location_groups[i];
+    LocationGroupObject* location_object = getLocationGroup(loc, self->trace);
+    PyDict_SetItem(dict, PyLong_FromLong(loc->id), reinterpret_cast<PyObject*>(location_object));
   }
   return dict;
 }
@@ -208,8 +293,8 @@ void Trace_dealloc(TraceObject* self) {
 
 PyGetSetDef Trace_getsetters[] = {
   {"dir_name", (getter)Trace_get_dir_name, nullptr, "Directory name of the trace.", nullptr},
- {"trace_name", (getter)Trace_get_trace_name, nullptr, "Trace name of the trace.", nullptr},
- {"fullpath", (getter)Trace_get_fullpath, nullptr, "Full path of the trace.", nullptr},
+  {"trace_name", (getter)Trace_get_trace_name, nullptr, "Trace name of the trace.", nullptr},
+  {"fullpath", (getter)Trace_get_fullpath, nullptr, "Full path of the trace.", nullptr},
   {"locations", (getter)Trace_get_locations, nullptr, "List of Locations", nullptr},
   {"location_groups", (getter)Trace_get_location_groups, nullptr, "List of Location Groups", nullptr},
   {"archives", (getter)Trace_get_archives, nullptr, "List of Archives", nullptr},

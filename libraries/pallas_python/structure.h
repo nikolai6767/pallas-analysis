@@ -4,6 +4,23 @@
 #pragma once
 #include "pallas_python.h"
 
+typedef struct LocationGroupObject {
+  PyObject ob_base;
+  const pallas::LocationGroup* locationGroup;
+  const char* name;
+  struct LocationGroupObject* parent;
+} LocationGroupObject;
+extern PyTypeObject LocationGroupType;
+
+typedef struct {
+  PyObject ob_base;
+  const pallas::Location* location;
+  const char* name;
+  struct LocationGroupObject* parent;
+} LocationObject;
+extern PyTypeObject LocationType;
+
+
 typedef struct {
   PyObject ob_base;
   pallas::Thread* thread;
@@ -13,7 +30,7 @@ extern PyTypeObject ThreadType;
 // Object for the Archives
 typedef struct {
   PyObject ob_base;
-  pallas::Archive* archive;  // We're using a pointer for less memory shenanigans
+  pallas::Archive* archive;
 } ArchiveObject;
 extern PyTypeObject ArchiveType;
 
