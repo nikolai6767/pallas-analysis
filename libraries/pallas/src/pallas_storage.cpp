@@ -963,6 +963,11 @@ static void pallasStoreSequence(pallas::Sequence& sequence,
   size_t size = sequence.size();
   sequenceFile.write(&size, sizeof(size), 1);
   sequenceFile.write(sequence.tokens.data(), sizeof(sequence.tokens[0]), sequence.size());
+#ifdef DEBUG
+  for (const auto& t: sequence.tokens) {
+    pallas_assert(t.isValid());
+  }
+#endif
   if (STORE_TIMESTAMPS) {
     sequence.durations->writeToFile(sequenceFile.file, durationFile.file);
     sequence.timestamps->writeToFile(sequenceFile.file, durationFile.file);
