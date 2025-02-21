@@ -54,7 +54,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
 
   if (nb_sequences >= nb_allocated_sequences) {
     pallas_log(DebugLevel::Debug, "Doubling mem space of sequence for thread trace %p\n", this);
-    DOUBLE_MEMORY_SPACE(sequences, nb_allocated_sequences, Sequence*);
+    doubleMemorySpaceConstructor(sequences, nb_allocated_sequences);
     for (uint i = nb_allocated_sequences / 2; i < nb_allocated_sequences; i++) {
       sequences[i] = new Sequence;
       sequences[i]->durations = new LinkedDurationVector();
@@ -64,7 +64,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
 
   const auto index = nb_sequences++;
   const auto sid = PALLAS_SEQUENCE_ID(index);
-  pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: \tSequence not found. Adding it with id=S%x\n", index);
+  pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: \tSequence not found. Adding it with id=S%lu\n", index);
 
   Sequence* s = getSequence(sid);
   s->tokens.resize(array_len);
@@ -89,9 +89,9 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
   // }
   if (index == -1) {
     if (thread_trace->nb_loops >= thread_trace->nb_allocated_loops) {
-      pallas_log(DebugLevel::Debug, "Doubling mem space of loops for thread writer %p's thread trace, cur=%d\n", this,
+      pallas_log(DebugLevel::Debug, "Doubling mem space of loops for thread writer %p's thread trace, cur=%lu\n", this,
                  thread_trace->nb_allocated_loops);
-      DOUBLE_MEMORY_SPACE_CONSTRUCTOR(thread_trace->loops, thread_trace->nb_allocated_loops, Loop);
+      doubleMemorySpaceConstructor(thread_trace->loops, thread_trace->nb_allocated_loops);
     }
     index = thread_trace->nb_loops++;
     pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
@@ -136,7 +136,7 @@ void ThreadWriter::storeAttributeList(pallas::EventSummary* es,
       pallas_assert(es->attribute_buffer != nullptr);
     } else {
       pallas_log(DebugLevel::Debug, "Doubling mem space of attributes for event %u\n", es->id);
-      DOUBLE_MEMORY_SPACE(es->attribute_buffer, es->attribute_buffer_size, uint8_t);
+      doubleMemorySpaceConstructor(es->attribute_buffer, es->attribute_buffer_size);
     }
     pallas_assert(es->attribute_pos + attribute_list->struct_size < es->attribute_buffer_size);
   }
@@ -288,7 +288,7 @@ void ThreadWriter::findSequence(size_t n) {
 
       auto s = thread_trace->getSequence(seqTok);
       const pallas_duration_t sequence_duration = thread_trace->getLastSequenceDuration(s, 0);
-      addDurationToComplete(s->durations->add(sequence_duration)); 
+      addDurationToComplete(s->durations->add(sequence_duration));
       s->timestamps->add(last_timestamp);
       return;
     }
@@ -547,7 +547,7 @@ void ThreadWriter::open(Archive* archive, ThreadId thread_id) {
 void ThreadWriter::initThread(Archive* a, ThreadId thread_id) {
   pthread_mutex_lock(&a->lock);
   while (a->nb_threads >= a->nb_allocated_threads) {
-    DOUBLE_MEMORY_SPACE(a->threads, a->nb_allocated_threads, Thread*);
+    doubleMemorySpaceConstructor(a->threads, a->nb_allocated_threads);
   }
   thread_trace = new Thread;
   a->threads[a->nb_threads++] = thread_trace;
@@ -639,17 +639,7 @@ void GlobalArchive ::close() {
   pallasStoreGlobalArchive(this);
 }
 
-void EventSummary::initEventSummary(TokenId token_id, const Event& e) {
-  id = token_id;
-  nb_occurences = 0;
-  attribute_buffer = nullptr;
-  attribute_buffer_size = 0;
-  attribute_pos = 0;
-  durations = new LinkedDurationVector();
-  memcpy(&event, &e, sizeof(e));
-}
-
-TokenId Thread::getEventId(pallas::Event* e) {
+TokenId Thread::getEventId(Event* e) {
   pallas_log(DebugLevel::Max, "getEventId: Searching for event {.event_type=%d}\n", e->record);
 
   uint32_t hash = hash32(reinterpret_cast<uint8_t*>(e), sizeof(Event), SEED);
@@ -668,17 +658,17 @@ TokenId Thread::getEventId(pallas::Event* e) {
 
   if (nb_events >= nb_allocated_events) {
     pallas_log(DebugLevel::Debug, "Doubling mem space of events for thread trace %p\n", this);
-    DOUBLE_MEMORY_SPACE_CONSTRUCTOR(events, nb_allocated_events, EventSummary);
+    doubleMemorySpaceConstructor(events, nb_allocated_events);
   }
 
   TokenId index = nb_events++;
   pallas_log(DebugLevel::Max, "getEventId: \tNot found. Adding it with id=%d\n", index);
-  auto* new_event = &events[index];
-  new_event->initEventSummary(index, *e);
+  auto* new_event = new (&events[index]) EventSummary(index, *e);
   hashToEvent[hash].push_back(index);
 
   return index;
 }
+
 pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t offset) const {
   pallas_duration_t sum = 0;
   auto tokenCount = sequence->getTokenCountWriting(this);

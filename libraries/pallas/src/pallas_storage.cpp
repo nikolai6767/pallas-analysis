@@ -1187,7 +1187,7 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
 static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
 
-  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
+  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%lu, .nb_sequences=%lu, .nb_loops=%lu}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
 
   threadFile.write(&th->id, sizeof(th->id), 1);
@@ -1252,7 +1252,7 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
 
   threadFile.read(&th->first_timestamp, sizeof(th->first_timestamp), 1);
 
-  pallas_log(pallas::DebugLevel::Verbose, "Reading %d events\n", th->nb_events);
+  pallas_log(pallas::DebugLevel::Verbose, "Reading %lu events\n", th->nb_events);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
   pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename);
   fileMap[eventDurationFilename] = &eventDurationFile;
@@ -1261,7 +1261,7 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
     pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
   }
 
-  pallas_log(pallas::DebugLevel::Verbose, "Reading %d sequences\n", th->nb_sequences);
+  pallas_log(pallas::DebugLevel::Verbose, "Reading %lu sequences\n", th->nb_sequences);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(global_archive->dir_name, th);
   pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename);
   fileMap[sequenceDurationFilename] = &sequenceDurationFile;
@@ -1270,14 +1270,14 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
     pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
   }
 
-  pallas_log(pallas::DebugLevel::Verbose, "Reading %d loops\n", th->nb_loops);
+  pallas_log(pallas::DebugLevel::Verbose, "Reading %lu loops\n", th->nb_loops);
   for (int i = 0; i < th->nb_loops; i++) {
     th->loops[i].self_id = PALLAS_LOOP_ID(i);
     pallasReadLoop(th->loops[i], threadFile);
   }
   threadFile.close();
 
-  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u: {.nb_events=%d, .nb_sequences=%d, .nb_loops=%d}\n", th->id,
+  pallas_log(pallas::DebugLevel::Verbose, "\tThread %u: {.nb_events=%lu, .nb_sequences=%lu, .nb_loops=%lu}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
 }
 
@@ -1333,7 +1333,7 @@ void pallasStoreArchive(pallas::Archive* archive) {
   pallas::File file = pallas::File(fullpath, "w");
   delete[] fullpath;
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
-  pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %d threads\n", archive->id, archive->nb_threads);
+  pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %lu threads\n", archive->id, archive->nb_threads);
   while (archive->threads[archive->nb_threads - 1] == nullptr) {
     archive->nb_threads--;
   }

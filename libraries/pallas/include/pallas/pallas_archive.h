@@ -169,8 +169,8 @@ typedef struct Archive {
   /** Array of Thread.
    * The memory of each thread is handled by their reader / writer individually. */
   struct Thread** threads CXX({nullptr});
-  int nb_threads;           /**< Number of Thread in #threads. */
-  int nb_allocated_threads; /**< Size of #threads. */
+  size_t nb_threads;           /**< Number of Thread in #threads. */
+  size_t nb_allocated_threads; /**< Size of #threads. */
 #ifdef __cplusplus
   [[nodiscard]] Thread* getThread(ThreadId);
   [[nodiscard]] Thread* getThreadAt(size_t i);

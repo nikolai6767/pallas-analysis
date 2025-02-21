@@ -222,19 +222,19 @@ void info_thread(Thread* t) {
   info_thread_header();
   info_thread_summary(t);
 
-  printf("\nEvents {.nb_events: %d}\n", t->nb_events);
+  printf("\nEvents {.nb_events: %lu}\n", t->nb_events);
   info_event_header();
   for (unsigned i = 0; i < t->nb_events; i++) {
     info_event(t, i);
   }
 
-  printf("\nSequences {.nb_sequences: %d}\n", t->nb_sequences);
+  printf("\nSequences {.nb_sequences: %lu}\n", t->nb_sequences);
   info_sequence_header();
   for (unsigned i = 0; i < t->nb_sequences; i++) {
     info_sequence(t, i);
   }
   
-  printf("\nLoops {.nb_loops: %d}\n", t->nb_loops);
+  printf("\nLoops {.nb_loops: %lu}\n", t->nb_loops);
   info_loop_header();
   for (unsigned i = 0; i < t->nb_loops; i++) {
     info_loop(t, i);

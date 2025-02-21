@@ -26,10 +26,23 @@ Event* Thread::getEvent(Token token) const {
   return &getEventSummary(token)->event;
 }
 
- EventSummary::~EventSummary() {
+void EventSummary::cleanEventSummary() {
   delete durations;
   delete attribute_buffer;
+  durations = nullptr;
+  attribute_buffer = nullptr;
 }
+
+EventSummary::EventSummary(TokenId token_id, const Event& e) {
+  id = token_id;
+  nb_occurences = 0;
+  attribute_buffer = nullptr;
+  attribute_buffer_size = 0;
+  attribute_pos = 0;
+  durations = new LinkedDurationVector();
+  event = e;
+}
+
 
 
 EventSummary* Thread::getEventSummary(Token token) const {
@@ -457,6 +470,9 @@ Thread::Thread() {
 }
 
 Thread::~Thread() {
+  for (size_t i = 0; i < nb_events; i++) {
+    events[i].cleanEventSummary();
+  }
   delete[] events;
   for (size_t i = 0; i < nb_sequences; i ++) {
     delete sequences[i];

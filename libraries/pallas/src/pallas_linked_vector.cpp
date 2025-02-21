@@ -13,10 +13,7 @@ LinkedVector::LinkedVector() {
   last = first;
 }
 
-LinkedDurationVector::LinkedDurationVector() {
-  first = new SubVector(defaultSize);
-  last = first;
-}
+LinkedDurationVector::LinkedDurationVector() = default;
 
 void LinkedDurationVector::updateStats() {
   if (size > 1) {

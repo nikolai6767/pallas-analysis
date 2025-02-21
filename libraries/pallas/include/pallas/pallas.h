@@ -368,10 +368,9 @@ typedef struct EventSummary {
   size_t attribute_buffer_size; /**< Size of #attribute_buffer.*/
   size_t attribute_pos;         /**< Position of #attribute_buffer.*/
 #ifdef __cplusplus
- public:
-  /** Initialize and EventSummary */
-  void initEventSummary(TokenId, const Event&);
-  ~EventSummary();
+  EventSummary(TokenId, const Event&);
+  EventSummary() = default;
+  void cleanEventSummary();
 #endif
 } EventSummary;
 
@@ -480,12 +479,12 @@ typedef struct Thread {
   ThreadId id;             /**< Id of this Thread. */
 
   EventSummary* events;         /**< Array of events recorded in this Thread. */
-  unsigned nb_allocated_events; /**< Number of blocks of size pallas:EventSummary allocated in #events. */
-  unsigned nb_events;           /**< Number of pallas::EventSummary in #events. */
+  size_t nb_allocated_events; /**< Number of blocks of size pallas:EventSummary allocated in #events. */
+  size_t nb_events;           /**< Number of pallas::EventSummary in #events. */
 
   Sequence** sequences;            /**< Array of pallas::Sequence recorded in this Thread. */
-  unsigned nb_allocated_sequences; /**< Number of blocks of size pallas:Sequence allocated in #sequences. */
-  unsigned nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
+  size_t nb_allocated_sequences; /**< Number of blocks of size pallas:Sequence allocated in #sequences. */
+  size_t nb_sequences;           /**< Number of pallas::Sequence in #sequences. */
 
   pallas_timestamp_t first_timestamp;
   /** Map to associate the hash of the pallas::Sequence to their id.*/
@@ -497,8 +496,8 @@ typedef struct Thread {
   byte hashToEvent[UNO_MAP_SIZE];
 #endif
   Loop* loops;                 /**< Array of pallas::Loop recorded in this Thread. */
-  unsigned nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
-  unsigned nb_loops;           /**< Number of pallas::Loop in #loops. */
+  size_t nb_allocated_loops; /**< Number of blocks of size pallas:Loop allocated in #loops. */
+  size_t nb_loops;           /**< Number of pallas::Loop in #loops. */
 #ifdef __cplusplus
   void loadTimestamps(); /**< Loads all the timestamps for all the Events and Sequences. */
   /** Returns the ID corresponding to the given Event.
@@ -673,34 +672,27 @@ extern "C" {
 #ifdef __cplusplus
 };
 #endif
-
-/** Doubles the memory allocated for the given buffer. Does not call the constructor for the given objects.
- *
- * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
- * doubles the size of the buffer using realloc, or if it fails, malloc and memmove then frees the old buffer.
- * This is better than a realloc because it moves the data around, but it is also slower.
- * Checks for error at malloc.
- */
-#define DOUBLE_MEMORY_SPACE(buffer, counter, datatype)                                           \
-  do {                                                                                           \
-    buffer = (datatype*)pallas_realloc((void*)buffer, counter, (counter) * 2, sizeof(datatype)); \
-    counter = (counter) * 2;                                                                     \
-  } while (0)
-
+#ifdef __cplusplus
 /**
  * Doubles the memory allocated for the given buffer and calls the constructor for the given objects.
- *
- * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
- * creates a new buffer using C++'s new keyword, then copies the old data to that buffer, and frees the old buffer.
  */
-#define DOUBLE_MEMORY_SPACE_CONSTRUCTOR(buffer, counter, datatype) \
-  do {                                                             \
-    auto new_buffer = new datatype[counter * 2];                   \
-    std::copy(buffer, &buffer[counter], new_buffer);               \
-    counter *= 2;                                                  \
-    delete[] buffer;                                               \
-    buffer = new_buffer;                                           \
-  } while (0)
+template <typename T> void doubleMemorySpaceConstructor(T*& originalArray, size_t& counter) {
+  T* newArray = new T[counter * 2];
+  // Copy without destructing
+  std::memcpy(newArray, originalArray, counter * sizeof(T));
+
+  // Create the new objects by calling there constructors
+  for (size_t i = counter; i < counter * 2; ++i) {
+    new (&newArray[i]) T();
+  }
+
+  // Delete then replace the original array
+  delete[]originalArray;
+  originalArray = newArray;
+  counter *= 2;
+}
+#endif
+
 
 /** Increments the memory allocated for the given buffer by one.
  *
