@@ -146,6 +146,19 @@ Here are the default values for each of them:
 | zstdCompressionLevel | PALLAS_ZSTD_LVL     | 3              |
 | maxLoopLength        | PALLAS_LOOP_LENGTH  | 100            |
 
+## Reading a pallas trace from Python
+
+If pallas was configured with `ENABLE_PYTHON`, you can read pallas traces from python:
+
+```
+$ export PYTHONPATH=PATH_TO_PALLAS/lib
+$ python
+>>> import pallas_python as pallas
+>>> trace=pallas.open_trace("eztrace_log.pallas")
+...
+
+```
+
 ## Contributing
 
 Contribution to Pallas are welcome. Just send us a pull request.
