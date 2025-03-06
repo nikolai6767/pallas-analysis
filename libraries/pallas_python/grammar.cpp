@@ -96,11 +96,16 @@ PyObject* Sequence_get_id(SequenceObject* self, void*) {
   return PyLong_FromLong(self->sequence->id);
 }
 
+PyObject* Sequence_get_name(SequenceObject* self, void*) {
+  return PyUnicode_FromString(self->sequence->guessName(self->thread).c_str());
+}
+
 PyGetSetDef Sequence_getset[] = {
   {"id", (getter)Sequence_get_id, nullptr, "Token identifying that Sequence", nullptr},
   {"tokens", (getter)Sequence_get_tokens, nullptr, "List of tokens in the sequence", nullptr},
   {"durations", (getter)Sequence_get_durations, nullptr, "Numpy Array of durations of the sequence", nullptr},
   {"timestamps", (getter)Sequence_get_timestamps, nullptr, "Numpy Array of timestamps of the sequence", nullptr},
+  {"name", (getter)Sequence_get_name, nullptr, "Name of the sequence", nullptr},
   {nullptr}  // Sentinel
 };
 
@@ -151,6 +156,7 @@ PyObject* EventSummary_get_event(EventSummaryObject* self, void*) {
   auto* event = new EventObject{
     .ob_base = PyObject_HEAD_INIT(&EventType)  //
                  .event = &self->event_summary->event,
+                 .thread= self->thread,
   };
   return reinterpret_cast<PyObject*>(event);
 }
@@ -250,6 +256,7 @@ static PyObject* Event_get_data(EventObject* self, void*) {
   case pallas::PALLAS_EVENT_THREAD_FORK:
   case pallas::PALLAS_EVENT_OMP_FORK: {
     READ_LONG(uint32_t, numberOfRequestedThreads);
+    break;
   }
   case pallas::PALLAS_EVENT_MPI_SEND:
   case pallas::PALLAS_EVENT_MPI_RECV: {
@@ -310,6 +317,14 @@ static PyObject* Event_get_data(EventObject* self, void*) {
   return dict;
 }
 
+PyObject* Event_repr(PyObject* self) {
+  auto* eventObject = reinterpret_cast<EventObject*>(self);
+  size_t buffer_size=128;
+  char buffer[buffer_size];
+  eventObject->thread->printEventToString(eventObject->event, buffer, buffer_size);
+  return PyUnicode_FromString(buffer);
+}
+
 PyGetSetDef Event_getset[] = {
   {"record", (getter)Event_get_record, nullptr, "Event record", nullptr},
   {"data", (getter)Event_get_data, nullptr, "That event's data", nullptr},
@@ -319,6 +334,8 @@ PyGetSetDef Event_getset[] = {
 PyTypeObject EventType = {
   .ob_base = PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "pallas_python.Event",
   .tp_basicsize = sizeof(EventObject),
+  .tp_repr = Token_repr,
+  .tp_str = Event_repr,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = PyDoc_STR("A Pallas Event object."),
   .tp_getset = Event_getset,

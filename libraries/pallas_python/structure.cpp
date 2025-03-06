@@ -16,6 +16,7 @@ PyObject* Thread_get_event_summaries(ThreadObject* self, void*) {
     auto* eventSummary = new EventSummaryObject{
       .ob_base = PyObject_HEAD_INIT(&EventSummaryType)  //
                    .event_summary = &self->thread->events[eid],
+                   .thread = self->thread,
     };
     PyList_SET_ITEM(list, eid, reinterpret_cast<PyObject*>(eventSummary));
   }
@@ -28,6 +29,7 @@ PyObject* Thread_get_sequences(ThreadObject* self, void*) {
     auto* sequence = new SequenceObject{
       .ob_base = PyObject_HEAD_INIT(&SequenceType)  //
                    .sequence = self->thread->sequences[sid],
+                   .thread = self->thread,
     };
     PyList_SET_ITEM(list, sid, reinterpret_cast<PyObject*>(sequence));
   }
@@ -40,6 +42,7 @@ PyObject* Thread_get_loops(ThreadObject* self, void*) {
     auto* loop = new LoopObject{
       .ob_base = PyObject_HEAD_INIT(&LoopType)  //
                    .loop = &self->thread->loops[lid],
+                   .thread = self->thread,
     };
     PyList_SET_ITEM(list, lid, reinterpret_cast<PyObject*>(loop));
   }
