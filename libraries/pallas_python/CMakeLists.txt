@@ -1,11 +1,24 @@
 cmake_minimum_required(VERSION 3.14.0)
 set (CMAKE_CXX_STANDARD 20)
 
+find_package(Python3 COMPONENTS Interpreter Development NumPy)
+
+if (Python3_FOUND)
+    if (Python3_VERSION VERSION_LESS 3.11)
+        message("Python version was too low: ${Python3_VERSION} <= 3.11")
+        message("Skipping Python Library Generation")
+        return(-1)
+    endif()
+endif()
+
+find_package(pybind11 CONFIG REQUIRED)
+
+
 set(CMAKE_SHARED_MODULE_PREFIX "")  # Remove default 'lib' prefix
 set(CMAKE_SHARED_LIBRARY_SUFFIX ${Python3_SOABI}.so)  # Ensure correct suffix for Python
 
-add_library(pallas_python MODULE pallas_python.cpp grammar.cpp structure.cpp)
-set_property(TARGET pallas_python PROPERTY PUBLIC_HEADER grammar.h structure.h pallas_python.h)
+pybind11_add_module(pallas_python MODULE pallas_python.cpp)
+set_property(TARGET pallas_python PROPERTY PUBLIC_HEADER pallas_python.h)
 
 list(APPEND WARNINGS "-Wno-missing-field-initializers")
 

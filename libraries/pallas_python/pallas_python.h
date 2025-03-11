@@ -2,27 +2,21 @@
 // Created by khatharsis on 10/02/25.
 //
 #pragma once
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-// This HAS to be at the beginning of the file
-// Do NOT modify it
+#include <pybind11/pybind11.h>
 
-// Handle additional fields introduced in Python 3.13+
+namespace py = pybind11;
 
-#if PY_VERSION_HEX >= ((3 << 24) | (13 << 16))
-#define PYTYPEOBJECT_EXTRA_FIELDS \
-0,   /* tp_vectorcall */        \
-0, /* tp_watched */           \
-0  /* tp_versions_used */
-#elif PY_VERSION_HEX >= ((3 << 24) | (8 << 16))
-#define PYTYPEOBJECT_EXTRA_FIELDS 0 /* tp_vectorcall */
-#else
-#define PYTYPEOBJECT_EXTRA_FIELDS
-#endif
-#include <numpy/arrayobject.h>  // Required for NumPy integration
 #include <pallas/pallas.h>
 #include <pallas/pallas_archive.h>
 #include <pallas/pallas_storage.h>
 
-extern PyObject* tokenTypeEnum;
-extern PyObject* eventRecordEnum;
+
+namespace PYBIND11_NAMESPACE {
+namespace detail {
+template <>
+struct type_caster<pallas::String> {
+  PYBIND11_TYPE_CASTER(pallas::String, const_name("pallas::String"));
+  static handle cast(pallas::String src, return_value_policy /* policy */, handle /* parent */) { return PyUnicode_FromStringAndSize(src.str, src.length - 1); }
+};
+}  // namespace detail
+}  // namespace PYBIND11_NAMESPACE

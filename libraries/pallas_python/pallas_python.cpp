@@ -1,155 +1,381 @@
 //
 // Created by khatharsis on 23/01/25.
 //
-#define PY_ARRAY_UNIQUE_SYMBOL PallasPython
 #include "pallas_python.h"
-#include "grammar.h"
-#include "structure.h"
 
-PyObject* tokenTypeEnum;
-PyObject* eventRecordEnum;
+#include <pybind11/stl.h>
 
-PyMethodDef PallasMethods[] = {
-  {"open_trace", open_trace, METH_VARARGS, "Open a Pallas trace."},
-  {nullptr, nullptr, 0, nullptr}, /* Sentinel */
-};
+std::string Token_toString(pallas::Token t) {
+  std::string out;
+  switch (t.type) {
+  case pallas::TypeInvalid:
+    out += "U";
+    break;
+  case pallas::TypeEvent:
+    out += "E";
+    break;
+  case pallas::TypeSequence:
+    out += "S";
+    break;
+  case pallas::TypeLoop:
+    out += "L";
+    break;
+  }
+  out += std::to_string(t.id);
+  return out;
+}
 
-struct PyModuleDef pallasmodule = {
-  PyModuleDef_HEAD_INIT,
-  "pallas_python",                             /* name of module */
-  "Python API for the Pallas Tracing Library", /* module documentation, may be NULL */
-  -1,                                          /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
-  PallasMethods,
-  nullptr,
-  nullptr,
-  nullptr,
-  nullptr,
-};
+static inline void pop_data(pallas::Event* e, void* data, size_t data_size, byte*& cursor) {
+  if (cursor == nullptr) {
+    cursor = &e->event_data[0];
+  }
+  memcpy(data, cursor, data_size);
+  cursor += data_size;
+}
 
-#define PYTHON_CHECK_READY(TypeName)     \
-  if (PyType_Ready(&TypeName##Type) < 0) \
-  return nullptr
-
-#define ADD_PYTHON_TYPE(TypeName)                                            \
-  if (PyModule_AddObjectRef(m, #TypeName, (PyObject*)&TypeName##Type) < 0) { \
-    Py_DECREF(m);                                                            \
-    return nullptr;                                                          \
+#define READ(type, name)                      \
+  {                                           \
+    type name;                                \
+    pop_data(e, &name, sizeof(type), cursor); \
+    dict[#name] = name;                       \
   }
 
-PyMODINIT_FUNC PyInit_pallas_python(void) {
-  import_array();
-  PyObject* m;
-  PYTHON_CHECK_READY(Token);
-  PYTHON_CHECK_READY(Sequence);
-  PYTHON_CHECK_READY(Loop);
-  PYTHON_CHECK_READY(EventSummary);
-  PYTHON_CHECK_READY(Event);
+static py::dict& Event_get_data(pallas::Event* e) {
+  auto& dict = *new py::dict();
+  byte* cursor = nullptr;
+
+  switch (e->record) {
+  case pallas::PALLAS_EVENT_ENTER:
+  case pallas::PALLAS_EVENT_LEAVE: {
+    READ(pallas::RegionRef, region_ref);
+    break;
+  }
+  case pallas::PALLAS_EVENT_THREAD_FORK:
+  case pallas::PALLAS_EVENT_OMP_FORK: {
+    READ(uint32_t, numberOfRequestedThreads);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_SEND:
+  case pallas::PALLAS_EVENT_MPI_RECV: {
+    READ(uint32_t, receiver);
+    READ(uint32_t, communicator);
+    READ(uint32_t, msgTag);
+    READ(uint64_t, msgLength);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_ISEND:
+  case pallas::PALLAS_EVENT_MPI_IRECV: {
+    READ(uint32_t, receiver);
+    READ(uint32_t, communicator);
+    READ(uint32_t, msgTag);
+    READ(uint64_t, msgLength);
+    READ(uint64_t, requestID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_ISEND_COMPLETE:
+  case pallas::PALLAS_EVENT_MPI_IRECV_REQUEST: {
+    READ(uint64_t, requestID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_THREAD_ACQUIRE_LOCK:
+  case pallas::PALLAS_EVENT_THREAD_RELEASE_LOCK:
+  case pallas::PALLAS_EVENT_OMP_ACQUIRE_LOCK:
+  case pallas::PALLAS_EVENT_OMP_RELEASE_LOCK: {
+    READ(uint32_t, lockID);
+    READ(uint32_t, acquisitionOrder);
+    break;
+  }
+  case pallas::PALLAS_EVENT_MPI_COLLECTIVE_END: {
+    READ(uint32_t, collectiveOp);
+    READ(uint32_t, communicator);
+    READ(uint32_t, root);
+    READ(uint64_t, sizeSent);
+    READ(uint64_t, sizeReceived);
+    break;
+  }
+  case pallas::PALLAS_EVENT_OMP_TASK_CREATE:
+  case pallas::PALLAS_EVENT_OMP_TASK_SWITCH:
+  case pallas::PALLAS_EVENT_OMP_TASK_COMPLETE: {
+    READ(uint64_t, taskID);
+    break;
+  }
+  case pallas::PALLAS_EVENT_GENERIC: {
+    pallas::StringRef event_name;
+    pop_data(e, &event_name, sizeof(event_name), cursor);
+    dict["event_name"] = event_name;
+    break;
+  }
+  case pallas::PALLAS_EVENT_THREAD_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_END:
+  case pallas::PALLAS_EVENT_THREAD_TEAM_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_TEAM_END:
+  case pallas::PALLAS_EVENT_THREAD_JOIN:
+  case pallas::PALLAS_EVENT_MPI_COLLECTIVE_BEGIN:
+  case pallas::PALLAS_EVENT_THREAD_TASK_CREATE:
+  case pallas::PALLAS_EVENT_THREAD_TASK_COMPLETE:
+  case pallas::PALLAS_EVENT_THREAD_TASK_SWITCH:
+    // No additional data for these events
+  default:
+    break;
+  }
+
+  return dict;
+}
+
+void setupEnums(py::module_& m) {
+  py::enum_<pallas::TokenType>(m, "TokenType")
+    .value("INVALID", pallas::TypeInvalid)
+    .value("EVENT", pallas::TypeEvent)
+    .value("SEQUENCE", pallas::TypeSequence)
+    .value("LOOP", pallas::TypeLoop)
+    .export_values();
+
+  py::enum_<pallas::Record>(m, "Record")
+    .value("BUFFER_FLUSH", pallas::PALLAS_EVENT_BUFFER_FLUSH)
+    .value("MEASUREMENT_ON_OFF", pallas::PALLAS_EVENT_MEASUREMENT_ON_OFF)
+    .value("ENTER", pallas::PALLAS_EVENT_ENTER)
+    .value("LEAVE", pallas::PALLAS_EVENT_LEAVE)
+    .value("MPI_SEND", pallas::PALLAS_EVENT_MPI_SEND)
+    .value("MPI_ISEND", pallas::PALLAS_EVENT_MPI_ISEND)
+    .value("MPI_ISEND_COMPLETE", pallas::PALLAS_EVENT_MPI_ISEND_COMPLETE)
+    .value("MPI_IRECV_REQUEST", pallas::PALLAS_EVENT_MPI_IRECV_REQUEST)
+    .value("MPI_RECV", pallas::PALLAS_EVENT_MPI_RECV)
+    .value("MPI_IRECV", pallas::PALLAS_EVENT_MPI_IRECV)
+    .value("MPI_REQUEST_TEST", pallas::PALLAS_EVENT_MPI_REQUEST_TEST)
+    .value("MPI_REQUEST_CANCELLED", pallas::PALLAS_EVENT_MPI_REQUEST_CANCELLED)
+    .value("MPI_COLLECTIVE_BEGIN", pallas::PALLAS_EVENT_MPI_COLLECTIVE_BEGIN)
+    .value("MPI_COLLECTIVE_END", pallas::PALLAS_EVENT_MPI_COLLECTIVE_END)
+    .value("OMP_FORK", pallas::PALLAS_EVENT_OMP_FORK)
+    .value("OMP_JOIN", pallas::PALLAS_EVENT_OMP_JOIN)
+    .value("OMP_ACQUIRE_LOCK", pallas::PALLAS_EVENT_OMP_ACQUIRE_LOCK)
+    .value("OMP_RELEASE_LOCK", pallas::PALLAS_EVENT_OMP_RELEASE_LOCK)
+    .value("OMP_TASK_CREATE", pallas::PALLAS_EVENT_OMP_TASK_CREATE)
+    .value("OMP_TASK_SWITCH", pallas::PALLAS_EVENT_OMP_TASK_SWITCH)
+    .value("OMP_TASK_COMPLETE", pallas::PALLAS_EVENT_OMP_TASK_COMPLETE)
+    .value("METRIC", pallas::PALLAS_EVENT_METRIC)
+    .value("PARAMETER_STRING", pallas::PALLAS_EVENT_PARAMETER_STRING)
+    .value("PARAMETER_INT", pallas::PALLAS_EVENT_PARAMETER_INT)
+    .value("PARAMETER_UNSIGNED_INT", pallas::PALLAS_EVENT_PARAMETER_UNSIGNED_INT)
+    .value("THREAD_FORK", pallas::PALLAS_EVENT_THREAD_FORK)
+    .value("THREAD_JOIN", pallas::PALLAS_EVENT_THREAD_JOIN)
+    .value("THREAD_TEAM_BEGIN", pallas::PALLAS_EVENT_THREAD_TEAM_BEGIN)
+    .value("THREAD_TEAM_END", pallas::PALLAS_EVENT_THREAD_TEAM_END)
+    .value("THREAD_ACQUIRE_LOCK", pallas::PALLAS_EVENT_THREAD_ACQUIRE_LOCK)
+    .value("THREAD_RELEASE_LOCK", pallas::PALLAS_EVENT_THREAD_RELEASE_LOCK)
+    .value("THREAD_TASK_CREATE", pallas::PALLAS_EVENT_THREAD_TASK_CREATE)
+    .value("THREAD_TASK_SWITCH", pallas::PALLAS_EVENT_THREAD_TASK_SWITCH)
+    .value("THREAD_TASK_COMPLETE", pallas::PALLAS_EVENT_THREAD_TASK_COMPLETE)
+    .value("THREAD_CREATE", pallas::PALLAS_EVENT_THREAD_CREATE)
+    .value("THREAD_BEGIN", pallas::PALLAS_EVENT_THREAD_BEGIN)
+    .value("THREAD_WAIT", pallas::PALLAS_EVENT_THREAD_WAIT)
+    .value("THREAD_END", pallas::PALLAS_EVENT_THREAD_END)
+    .value("IO_CREATE_HANDLE", pallas::PALLAS_EVENT_IO_CREATE_HANDLE)
+    .value("IO_DESTROY_HANDLE", pallas::PALLAS_EVENT_IO_DESTROY_HANDLE)
+    .value("IO_DUPLICATE_HANDLE", pallas::PALLAS_EVENT_IO_DUPLICATE_HANDLE)
+    .value("IO_SEEK", pallas::PALLAS_EVENT_IO_SEEK)
+    .value("IO_CHANGE_STATUS_FLAGS", pallas::PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS)
+    .value("IO_DELETE_FILE", pallas::PALLAS_EVENT_IO_DELETE_FILE)
+    .value("IO_OPERATION_BEGIN", pallas::PALLAS_EVENT_IO_OPERATION_BEGIN)
+    .value("IO_OPERATION_TEST", pallas::PALLAS_EVENT_IO_OPERATION_TEST)
+    .value("IO_OPERATION_ISSUED", pallas::PALLAS_EVENT_IO_OPERATION_ISSUED)
+    .value("IO_OPERATION_COMPLETE", pallas::PALLAS_EVENT_IO_OPERATION_COMPLETE)
+    .value("IO_OPERATION_CANCELLED", pallas::PALLAS_EVENT_IO_OPERATION_CANCELLED)
+    .value("IO_ACQUIRE_LOCK", pallas::PALLAS_EVENT_IO_ACQUIRE_LOCK)
+    .value("IO_RELEASE_LOCK", pallas::PALLAS_EVENT_IO_RELEASE_LOCK)
+    .value("IO_TRY_LOCK", pallas::PALLAS_EVENT_IO_TRY_LOCK)
+    .value("PROGRAM_BEGIN", pallas::PALLAS_EVENT_PROGRAM_BEGIN)
+    .value("PROGRAM_END", pallas::PALLAS_EVENT_PROGRAM_END)
+    .value("NON_BLOCKING_COLLECTIVE_REQUEST", pallas::PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST)
+    .value("NON_BLOCKING_COLLECTIVE_COMPLETE", pallas::PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE)
+    .value("COMM_CREATE", pallas::PALLAS_EVENT_COMM_CREATE)
+    .value("COMM_DESTROY", pallas::PALLAS_EVENT_COMM_DESTROY)
+    .value("GENERIC", pallas::PALLAS_EVENT_GENERIC)
+    .export_values();
+}
 
 
-  PYTHON_CHECK_READY(LocationGroup);
-  PYTHON_CHECK_READY(Location);
-  PYTHON_CHECK_READY(Thread);
-  PYTHON_CHECK_READY(Trace);
-  PYTHON_CHECK_READY(Archive);
+std::vector<pallas::Thread*> Archive_get_threads(pallas::Archive& archive) {
+  auto vector = std::vector<pallas::Thread*>();
+  for (size_t i = 0; i < archive.nb_threads; ++i) {
+    if (archive.getThreadAt(i)) {
+      vector.push_back(archive.getThreadAt(i));
+    }
+  }
+  // This is disgusting
+  // Blame EZTrace for giving us false threads !!!
+  return vector;
+}
 
-  m = PyModule_Create(&pallasmodule);
-  if (m == nullptr)
-    return nullptr;
+struct PyLocationGroup {
+  const pallas::LocationGroup& lg;
+  const pallas::GlobalArchive& trace;
+};
+struct PyLocation {
+  pallas::Location& loc;
+  const pallas::GlobalArchive& trace;
+};
+struct PyRegion {
+  pallas::Region& reg;
+  const pallas::GlobalArchive& trace;
+};
 
-  // Import the enum module
-  PyObject* enumModule = PyImport_ImportModule("enum");
-  PyObject* enumClass = PyObject_GetAttrString(enumModule, "Enum");
+void setupLocation(py::module_& m) {
+}
 
-  // Create some enums
-  // First the TokenType
-  PyObject* tokenTypeDict = PyDict_New();
-  PyDict_SetItemString(tokenTypeDict, "INVALID", PyLong_FromLong(pallas::TypeInvalid));
-  PyDict_SetItemString(tokenTypeDict, "EVENT", PyLong_FromLong(pallas::TypeEvent));
-  PyDict_SetItemString(tokenTypeDict, "SEQUENCE", PyLong_FromLong(pallas::TypeSequence));
-  PyDict_SetItemString(tokenTypeDict, "LOOP", PyLong_FromLong(pallas::TypeLoop));
+std::map<pallas::ThreadId, PyLocation>& Trace_get_locations(pallas::GlobalArchive& trace) {
+  auto& map = *new std::map<pallas::ThreadId, PyLocation>();
+  for (auto& loc : trace.locations) {
+    map.insert(std::pair(loc.id, PyLocation{loc, trace}));
+  }
+  return map;
+}
 
-  tokenTypeEnum = PyObject_CallFunction(enumClass, "sO", "TokenType", tokenTypeDict);
-  PyModule_AddObject(m, "TokenType", tokenTypeEnum);
+std::map<pallas::LocationGroupId, PyLocationGroup>& Trace_get_location_groups(pallas::GlobalArchive& trace) {
+  auto& map = *new std::map<pallas::LocationGroupId, PyLocationGroup>();
+  for (auto& lg : trace.location_groups) {
+    map.insert(std::pair(lg.id, PyLocationGroup{lg, trace}));
+  }
+  return map;
+}
 
-  // Then the RecordType
-  // Create the Enum class for EventRecord
-  PyObject* eventRecordDict = PyDict_New();
-  PyDict_SetItemString(eventRecordDict, "BUFFER_FLUSH", PyLong_FromLong(pallas::PALLAS_EVENT_BUFFER_FLUSH));
-  PyDict_SetItemString(eventRecordDict, "MEASUREMENT_ON_OFF", PyLong_FromLong(pallas::PALLAS_EVENT_MEASUREMENT_ON_OFF));
-  PyDict_SetItemString(eventRecordDict, "ENTER", PyLong_FromLong(pallas::PALLAS_EVENT_ENTER));
-  PyDict_SetItemString(eventRecordDict, "LEAVE", PyLong_FromLong(pallas::PALLAS_EVENT_LEAVE));
-  PyDict_SetItemString(eventRecordDict, "MPI_SEND", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_SEND));
-  PyDict_SetItemString(eventRecordDict, "MPI_ISEND", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_ISEND));
-  PyDict_SetItemString(eventRecordDict, "MPI_ISEND_COMPLETE", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_ISEND_COMPLETE));
-  PyDict_SetItemString(eventRecordDict, "MPI_IRECV_REQUEST", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_IRECV_REQUEST));
-  PyDict_SetItemString(eventRecordDict, "MPI_RECV", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_RECV));
-  PyDict_SetItemString(eventRecordDict, "MPI_IRECV", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_IRECV));
-  PyDict_SetItemString(eventRecordDict, "MPI_REQUEST_TEST", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_REQUEST_TEST));
-  PyDict_SetItemString(eventRecordDict, "MPI_REQUEST_CANCELLED", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_REQUEST_CANCELLED));
-  PyDict_SetItemString(eventRecordDict, "MPI_COLLECTIVE_BEGIN", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_COLLECTIVE_BEGIN));
-  PyDict_SetItemString(eventRecordDict, "MPI_COLLECTIVE_END", PyLong_FromLong(pallas::PALLAS_EVENT_MPI_COLLECTIVE_END));
-  PyDict_SetItemString(eventRecordDict, "OMP_FORK", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_FORK));
-  PyDict_SetItemString(eventRecordDict, "OMP_JOIN", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_JOIN));
-  PyDict_SetItemString(eventRecordDict, "OMP_ACQUIRE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_ACQUIRE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "OMP_RELEASE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_RELEASE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "OMP_TASK_CREATE", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_TASK_CREATE));
-  PyDict_SetItemString(eventRecordDict, "OMP_TASK_SWITCH", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_TASK_SWITCH));
-  PyDict_SetItemString(eventRecordDict, "OMP_TASK_COMPLETE", PyLong_FromLong(pallas::PALLAS_EVENT_OMP_TASK_COMPLETE));
-  PyDict_SetItemString(eventRecordDict, "METRIC", PyLong_FromLong(pallas::PALLAS_EVENT_METRIC));
-  PyDict_SetItemString(eventRecordDict, "PARAMETER_STRING", PyLong_FromLong(pallas::PALLAS_EVENT_PARAMETER_STRING));
-  PyDict_SetItemString(eventRecordDict, "PARAMETER_INT", PyLong_FromLong(pallas::PALLAS_EVENT_PARAMETER_INT));
-  PyDict_SetItemString(eventRecordDict, "PARAMETER_UNSIGNED_INT", PyLong_FromLong(pallas::PALLAS_EVENT_PARAMETER_UNSIGNED_INT));
-  PyDict_SetItemString(eventRecordDict, "THREAD_FORK", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_FORK));
-  PyDict_SetItemString(eventRecordDict, "THREAD_JOIN", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_JOIN));
-  PyDict_SetItemString(eventRecordDict, "THREAD_TEAM_BEGIN", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_TEAM_BEGIN));
-  PyDict_SetItemString(eventRecordDict, "THREAD_TEAM_END", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_TEAM_END));
-  PyDict_SetItemString(eventRecordDict, "THREAD_ACQUIRE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_ACQUIRE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "THREAD_RELEASE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_RELEASE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "THREAD_TASK_CREATE", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_TASK_CREATE));
-  PyDict_SetItemString(eventRecordDict, "THREAD_TASK_SWITCH", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_TASK_SWITCH));
-  PyDict_SetItemString(eventRecordDict, "THREAD_TASK_COMPLETE", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_TASK_COMPLETE));
-  PyDict_SetItemString(eventRecordDict, "THREAD_CREATE", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_CREATE));
-  PyDict_SetItemString(eventRecordDict, "THREAD_BEGIN", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_BEGIN));
-  PyDict_SetItemString(eventRecordDict, "THREAD_WAIT", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_WAIT));
-  PyDict_SetItemString(eventRecordDict, "THREAD_END", PyLong_FromLong(pallas::PALLAS_EVENT_THREAD_END));
-  PyDict_SetItemString(eventRecordDict, "IO_CREATE_HANDLE", PyLong_FromLong(pallas::PALLAS_EVENT_IO_CREATE_HANDLE));
-  PyDict_SetItemString(eventRecordDict, "IO_DESTROY_HANDLE", PyLong_FromLong(pallas::PALLAS_EVENT_IO_DESTROY_HANDLE));
-  PyDict_SetItemString(eventRecordDict, "IO_DUPLICATE_HANDLE", PyLong_FromLong(pallas::PALLAS_EVENT_IO_DUPLICATE_HANDLE));
-  PyDict_SetItemString(eventRecordDict, "IO_SEEK", PyLong_FromLong(pallas::PALLAS_EVENT_IO_SEEK));
-  PyDict_SetItemString(eventRecordDict, "IO_CHANGE_STATUS_FLAGS", PyLong_FromLong(pallas::PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS));
-  PyDict_SetItemString(eventRecordDict, "IO_DELETE_FILE", PyLong_FromLong(pallas::PALLAS_EVENT_IO_DELETE_FILE));
-  PyDict_SetItemString(eventRecordDict, "IO_OPERATION_BEGIN", PyLong_FromLong(pallas::PALLAS_EVENT_IO_OPERATION_BEGIN));
-  PyDict_SetItemString(eventRecordDict, "IO_OPERATION_TEST", PyLong_FromLong(pallas::PALLAS_EVENT_IO_OPERATION_TEST));
-  PyDict_SetItemString(eventRecordDict, "IO_OPERATION_ISSUED", PyLong_FromLong(pallas::PALLAS_EVENT_IO_OPERATION_ISSUED));
-  PyDict_SetItemString(eventRecordDict, "IO_OPERATION_COMPLETE", PyLong_FromLong(pallas::PALLAS_EVENT_IO_OPERATION_COMPLETE));
-  PyDict_SetItemString(eventRecordDict, "IO_OPERATION_CANCELLED", PyLong_FromLong(pallas::PALLAS_EVENT_IO_OPERATION_CANCELLED));
-  PyDict_SetItemString(eventRecordDict, "IO_ACQUIRE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_IO_ACQUIRE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "IO_RELEASE_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_IO_RELEASE_LOCK));
-  PyDict_SetItemString(eventRecordDict, "IO_TRY_LOCK", PyLong_FromLong(pallas::PALLAS_EVENT_IO_TRY_LOCK));
-  PyDict_SetItemString(eventRecordDict, "PROGRAM_BEGIN", PyLong_FromLong(pallas::PALLAS_EVENT_PROGRAM_BEGIN));
-  PyDict_SetItemString(eventRecordDict, "PROGRAM_END", PyLong_FromLong(pallas::PALLAS_EVENT_PROGRAM_END));
-  PyDict_SetItemString(eventRecordDict, "NON_BLOCKING_COLLECTIVE_REQUEST", PyLong_FromLong(pallas::PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST));
-  PyDict_SetItemString(eventRecordDict, "NON_BLOCKING_COLLECTIVE_COMPLETE", PyLong_FromLong(pallas::PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE));
-  PyDict_SetItemString(eventRecordDict, "COMM_CREATE", PyLong_FromLong(pallas::PALLAS_EVENT_COMM_CREATE));
-  PyDict_SetItemString(eventRecordDict, "COMM_DESTROY", PyLong_FromLong(pallas::PALLAS_EVENT_COMM_DESTROY));
-  PyDict_SetItemString(eventRecordDict, "GENERIC", PyLong_FromLong(pallas::PALLAS_EVENT_GENERIC));
+std::map<pallas::RegionRef, PyRegion>& Trace_get_regions(pallas::GlobalArchive& trace) {
+  auto& map = *new std::map<pallas::RegionRef, PyRegion>();
+  for (auto& [key, r] : trace.definitions.regions) {
+    map.insert(std::pair(key, PyRegion{r, trace}));
+  }
+  return map;
+}
 
-  // Add EventRecord enum to module
-  eventRecordEnum = PyObject_CallFunction(enumClass, "sO", "EventRecord", eventRecordDict);
-  PyModule_AddObject(m, "EventRecord", eventRecordEnum);
+py::list& Trace_get_archives(pallas::GlobalArchive& trace) {
+  auto& list = *new py::list(trace.location_groups.size());
+  int i = 0;
+  for (auto& locationGroup : trace.location_groups) {
+    if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
+      list[i++] = trace.getArchive(locationGroup.id);
+    else
+      list[i++] = trace.getArchive(locationGroup.mainLoc);
+  }
 
-  ADD_PYTHON_TYPE(Token);
-  ADD_PYTHON_TYPE(Sequence);
-  ADD_PYTHON_TYPE(Loop);
-  ADD_PYTHON_TYPE(EventSummary);
-  ADD_PYTHON_TYPE(Event);
+  // This is disgusting code but that's how it works in the readGlobalArchive
+  // so I don't see why we shouldn't use it here
+  // Blame EZTrace for giving us wrongly formatted Location Groups !!!
+  return list;
+}
 
-  ADD_PYTHON_TYPE(LocationGroup);
-  ADD_PYTHON_TYPE(Location);
+pallas::GlobalArchive* open_trace(const std::string& path) {
+  auto* trace = new pallas::GlobalArchive;
+  pallasReadGlobalArchive(trace, path.c_str());
+  return trace;
+}
+void setupArchives(py::module_& m) {
+}
 
-  ADD_PYTHON_TYPE(Thread);
-  ADD_PYTHON_TYPE(Trace);
-  ADD_PYTHON_TYPE(Archive);
+PYBIND11_MODULE(pallas_python, m) {
+  m.doc() = "Python API for the Pallas library";
 
-  return m;
+  setupEnums(m);
+
+  py::class_<pallas::Token>(m, "Token", "A Pallas token")
+    .def_property_readonly("id", [](pallas::Token t) { return t.id; })
+    .def_property_readonly("type", [](pallas::Token t) { return t.type; })
+    .def("__repr__", &Token_toString);
+
+
+  py::class_<pallas::LinkedVector>(m, "LinkedVector", py::buffer_protocol())
+    .def_buffer([](pallas::LinkedVector& v) -> py::buffer_info {
+      return py::buffer_info(
+        &v.front(),
+        sizeof(uint64_t),
+        py::format_descriptor<uint64_t>::format(),
+        1,
+        { v.size },
+        { sizeof( uint64_t) }
+        );
+    });
+  py::class_<pallas::LinkedDurationVector>(m, "LinkedDuractionVector", py::buffer_protocol())
+  .def_readonly("mean", &pallas::LinkedDurationVector::mean)
+  .def_readonly("max", &pallas::LinkedDurationVector::max)
+  .def_readonly("min", &pallas::LinkedDurationVector::min)
+  .def_buffer([](pallas::LinkedDurationVector& v) -> py::buffer_info {
+      return py::buffer_info(
+        &v.front(),
+        sizeof(uint64_t),
+        py::format_descriptor<uint64_t>::format(),
+        1,
+        { v.size },
+        { sizeof( uint64_t) }
+        );
+    });;
+
+  py::class_<pallas::Sequence>(m, "Sequence", "A Pallas Sequence, ie a group of tokens.")
+    .def_readonly("id", &pallas::Sequence::id)
+    .def_readonly("tokens", &pallas::Sequence::tokens)
+    .def_readonly("timestamps", &pallas::Sequence::timestamps)
+    .def_readonly("durations", &pallas::Sequence::durations)
+    .def("guessName", [](pallas::Sequence& self, pallas::Thread* thread) { return self.guessName(thread); })
+    .def("__repr__", [](const pallas::Sequence& self) { return "<pallas_python.Sequence " + std::to_string(self.id) + ">"; });
+
+  py::class_<pallas::Loop>(m, "Loop", "A Pallas Loop, ie a repetition of a Sequence token.")
+    .def_readonly("id", &pallas::Loop::self_id)
+    .def_readonly("repeated_token", &pallas::Loop::repeated_token)
+    .def_readonly("nb_iterations", &pallas::Loop::nb_iterations)
+    .def("__repr__", [](const pallas::Loop& self) { return "<pallas_python.Loop " + std::to_string(self.self_id.id) + ">"; });
+
+  py::class_<pallas::EventSummary>(m, "EventSummary", "A Pallas Event Summary, that stores info about an event.")
+    .def_readonly("id", &pallas::EventSummary::id)
+    .def_readonly("event", &pallas::EventSummary::event)
+    .def_readonly("nb_occurences", &pallas::EventSummary::nb_occurences)
+    .def("__repr__", [](const pallas::EventSummary& self) { return "<pallas_python.EventSummary " + std::to_string(self.id) + ">"; });
+
+  py::class_<pallas::Event>(m, "Event", "A Pallas Event.").def_readonly("record", &pallas::Event::record).def_property_readonly("data", &Event_get_data);
+
+  py::class_<pallas::Thread>(m, "Thread", "A Pallas thread.")
+    .def_readonly("id", &pallas::Thread::id)
+    .def_property_readonly("events", [](pallas::Thread& self) { return std::vector(self.events, self.events + self.nb_events); })
+    .def_property_readonly("sequences", [](pallas::Thread& self) { return std::vector(self.sequences, self.sequences + self.nb_sequences); })
+    .def_property_readonly("loops", [](pallas::Thread& self) { return std::vector(self.loops, self.loops + self.nb_loops); })
+    .def("__repr__", [](const pallas::Thread& self) { return "<pallas_python.Thread " + std::to_string(self.id) + ">"; });
+
+  py::class_<PyLocationGroup>(m, "LocationGroup", "A group of Pallas locations. Usually means a process.")
+    .def_property_readonly("id", [](const PyLocationGroup& lg) { return lg.lg.id; })
+    .def_property_readonly("name", [](const PyLocationGroup& lg) { return lg.trace.definitions.getString(lg.lg.name); })
+    .def_property_readonly("parent", [](const PyLocationGroup& lg) { return lg.trace.getLocationGroup(lg.lg.parent); })
+    .def_property_readonly("main_location", [](const PyLocationGroup& lg) { return lg.trace.getLocation(lg.lg.mainLoc); })
+    .def("__repr__", [](const PyLocationGroup& self) {
+      return "<pallas_python.LocationGroup " + std::to_string(self.lg.id) + ": '" + self.trace.definitions.getString(self.lg.name)->str + "'>";
+    });
+  py::class_<PyLocation>(m, "Location", "A Pallas location. Usually means an execution thread.")
+    .def_property_readonly("id", [](const PyLocation& lg) { return lg.loc.id; })
+    .def_property_readonly("name", [](const PyLocation& lg) { return lg.trace.definitions.getString(lg.loc.name); })
+    .def_property_readonly("parent", [](const PyLocation& lg) { return lg.trace.getLocationGroup(lg.loc.parent); })
+    .def("__repr__", [](const PyLocation& self) {
+      auto name = self.trace.definitions.getString(self.loc.name);
+      return "<pallas_python.Location " + std::to_string(self.loc.id) + ": '" + name->str + "'>";
+    });
+  py::class_<PyRegion>(m, "Region", "A Pallas region.")
+    .def_property_readonly("id", [](const PyRegion& reg) { return reg.reg.region_ref; })
+    .def_property_readonly("name", [](const PyRegion& reg) { return reg.trace.definitions.getString(reg.reg.string_ref); })
+    .def("__repr__", [](const PyRegion& self) {
+      auto name = self.trace.definitions.getString(self.reg.string_ref);
+      return "<pallas_python.Region " + std::to_string(self.reg.region_ref) + ": '" + name->str + "'>";
+    });
+
+  py::class_<pallas::Archive>(m, "Archive", "A Pallas archive. If it exists, it's already been loaded.")
+    .def_readonly("dir_name", &pallas::Archive::dir_name)
+    .def_readonly("trace_name", &pallas::Archive::trace_name)
+    .def_readonly("fullpath", &pallas::Archive::fullpath)
+    .def_property_readonly("threads", &Archive_get_threads);
+
+  m.def("open_trace", &open_trace, "Open a Pallas trace");
+
+  py::class_<pallas::GlobalArchive>(m, "Trace", "A Pallas Trace file.")
+    .def(py::init(&open_trace), "Open a trace file and read its structure.")
+    .def_readonly("dir_name", &pallas::GlobalArchive::dir_name)
+    .def_readonly("trace_name", &pallas::GlobalArchive::trace_name)
+    .def_readonly("fullpath", &pallas::GlobalArchive::fullpath)
+    .def_property_readonly("locations", &Trace_get_locations)
+    .def_property_readonly("location_groups", &Trace_get_location_groups)
+    .def_property_readonly("strings", [](pallas::GlobalArchive& trace) { return trace.definitions.strings; })
+    .def_property_readonly("regions", &Trace_get_regions)
+    .def_property_readonly("archives", &Trace_get_archives);
 }

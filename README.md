@@ -17,6 +17,26 @@ which are tools made to read Pallas traces, as well as the Pallas library, and a
 If you want to enable SZ and ZFP, you should install them, and then add `-DSZ_ROOT_DIR=<your SZ installation>`
 and `-DZFP_ROOT_DIR=<your ZFP installation>` to the cmake command line. Documentation is built automatically if Doxygen is installed.
 
+## Python Library
+Pallas comes with a Python library to read your traces.
+You need to enable building it with `-DENABLE_PYTHON=ON`
+
+Its requirements are the following:
+- Python >=3.11
+- Numpy
+- pybind11
+
+You can then read it like this:
+```
+$ export PYTHONPATH=PATH_TO_PALLAS/lib
+$ python
+>>> import pallas_python as pallas
+>>> trace=pallas.open_trace("eztrace_log.pallas")
+...
+
+```
+
+Make sure these are installed (locally using a venv or globally) before building.
 ## Usage
 ### In your application
 These few lines are all you need
@@ -145,19 +165,6 @@ Here are the default values for each of them:
 | loopFindingAlgorithm | PALLAS_LOOP_FINDING | BasicTruncated |
 | zstdCompressionLevel | PALLAS_ZSTD_LVL     | 3              |
 | maxLoopLength        | PALLAS_LOOP_LENGTH  | 100            |
-
-## Reading a pallas trace from Python
-
-If pallas was configured with `ENABLE_PYTHON`, you can read pallas traces from python:
-
-```
-$ export PYTHONPATH=PATH_TO_PALLAS/lib
-$ python
->>> import pallas_python as pallas
->>> trace=pallas.open_trace("eztrace_log.pallas")
-...
-
-```
 
 ## Contributing
 
