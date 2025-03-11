@@ -219,9 +219,6 @@ struct PyRegion {
   const pallas::GlobalArchive& trace;
 };
 
-void setupLocation(py::module_& m) {
-}
-
 std::map<pallas::ThreadId, PyLocation>& Trace_get_locations(pallas::GlobalArchive& trace) {
   auto& map = *new std::map<pallas::ThreadId, PyLocation>();
   for (auto& loc : trace.locations) {
@@ -267,8 +264,7 @@ pallas::GlobalArchive* open_trace(const std::string& path) {
   pallasReadGlobalArchive(trace, path.c_str());
   return trace;
 }
-void setupArchives(py::module_& m) {
-}
+
 
 PYBIND11_MODULE(pallas_python, m) {
   m.doc() = "Python API for the Pallas library";
@@ -282,6 +278,7 @@ PYBIND11_MODULE(pallas_python, m) {
 
 
   py::class_<pallas::LinkedVector>(m, "LinkedVector", py::buffer_protocol())
+    .def("__getitem__", &pallas::LinkedVector::operator[])
     .def_buffer([](pallas::LinkedVector& v) -> py::buffer_info {
       return py::buffer_info(
         &v.front(),
@@ -296,6 +293,7 @@ PYBIND11_MODULE(pallas_python, m) {
   .def_readonly("mean", &pallas::LinkedDurationVector::mean)
   .def_readonly("max", &pallas::LinkedDurationVector::max)
   .def_readonly("min", &pallas::LinkedDurationVector::min)
+  .def("__getitem__", &pallas::LinkedVector::operator[])
   .def_buffer([](pallas::LinkedDurationVector& v) -> py::buffer_info {
       return py::buffer_info(
         &v.front(),
