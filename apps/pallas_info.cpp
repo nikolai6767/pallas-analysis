@@ -491,7 +491,9 @@ int main(int argc, char** argv) {
   }
 
   auto trace = GlobalArchive();
-  pallasReadGlobalArchive(&trace, trace_name);
+  if(pallasReadGlobalArchive(&trace, trace_name) < 0) {
+    return EXIT_FAILURE;
+  }
   info_trace(&trace);
 
   return EXIT_SUCCESS;

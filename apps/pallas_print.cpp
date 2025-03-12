@@ -462,7 +462,9 @@ int main(const int argc, char* argv[]) {
   }
 
   auto trace = pallas::GlobalArchive();
-  pallasReadGlobalArchive(&trace, trace_name);
+  int ret = pallasReadGlobalArchive(&trace, trace_name);
+  if(ret < 0)
+    return EXIT_FAILURE;
 
   if (show_structure)
     printStructure(flags, trace);

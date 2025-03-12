@@ -103,6 +103,7 @@ class File {
   FILE* file = nullptr;
   char* path = nullptr;
   bool isOpen = false;
+  bool is_open() const { return isOpen; }
   void open(const char* mode) {
     if (isOpen) {
       pallas_log(DebugLevel::Verbose, "Trying to open file that is already open: %s\n", path);
@@ -1191,6 +1192,8 @@ static pallas::File pallasGetThreadFile(const char* dir_name, pallas::Thread* th
 
 static void pallasStoreThread(const char* dir_name, pallas::Thread* th) {
   pallas::File threadFile = pallasGetThreadFile(dir_name, th, "w");
+  if(!threadFile.is_open())
+    return;
 
   pallas_log(pallas::DebugLevel::Verbose, "\tThread %u {.nb_events=%lu, .nb_sequences=%lu, .nb_loops=%lu}\n", th->id,
              th->nb_events, th->nb_sequences, th->nb_loops);
@@ -1232,7 +1235,7 @@ void pallas::Thread::finalizeThread() {
 static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thread* th, pallas::ThreadId thread_id) {
   th->id = thread_id;
   pallas::File threadFile = pallasGetThreadFile(global_archive->dir_name, th, "r");
-  if (threadFile.file == nullptr) {
+  if (! threadFile.is_open()) {
     return;
   }
   threadFile.read(&th->id, sizeof(th->id), 1);
@@ -1260,19 +1263,23 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu events\n", th->nb_events);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
   pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename);
-  fileMap[eventDurationFilename] = &eventDurationFile;
-  for (int i = 0; i < th->nb_events; i++) {
-    th->events[i].id = i;
-    pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
+  if(eventDurationFile.is_open()) {
+    fileMap[eventDurationFilename] = &eventDurationFile;
+    for (int i = 0; i < th->nb_events; i++) {
+      th->events[i].id = i;
+      pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
+    }
   }
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu sequences\n", th->nb_sequences);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(global_archive->dir_name, th);
   pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename);
-  fileMap[sequenceDurationFilename] = &sequenceDurationFile;
-  for (int i = 0; i < th->nb_sequences; i++) {
-    th->sequences[i]->id = i;
-    pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
+  if(sequenceDurationFile.is_open()) {
+    fileMap[sequenceDurationFilename] = &sequenceDurationFile;
+    for (int i = 0; i < th->nb_sequences; i++) {
+      th->sequences[i]->id = i;
+      pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
+    }
   }
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu loops\n", th->nb_loops);
@@ -1303,6 +1310,9 @@ void pallasStoreGlobalArchive(pallas::GlobalArchive* archive) {
   snprintf(fullpath, fullpath_len, "%s/%s.pallas", archive->dir_name, archive->trace_name);
 
   pallas::File file = pallas::File(fullpath, "w");
+  if(!file.is_open())
+    pallas_abort();
+
   delete[] fullpath;
   uint8_t version = PALLAS_ABI_VERSION;
   file.write(&version, sizeof(version), 1);
@@ -1336,6 +1346,8 @@ void pallasStoreArchive(pallas::Archive* archive) {
   snprintf(fullpath, fullpath_len, "%s/archive_%u/archive.pallas", archive->dir_name, archive->id);
 
   pallas::File file = pallas::File(fullpath, "w");
+  if(!file.is_open())
+    pallas_abort();
   delete[] fullpath;
   file.write(&archive->id, sizeof(pallas::LocationGroupId), 1);
   pallas_log(pallas::DebugLevel::Verbose, "Archive %d has %lu threads\n", archive->id, archive->nb_threads);
@@ -1389,7 +1401,7 @@ void pallas::ParameterHandler::readFromFile(FILE* file) {
   pallas_log(pallas::DebugLevel::Debug, "%s\n", this->to_string().c_str());
 }
 
-static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_name, char* trace_name) {
+int pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_name, char* trace_name) {
   archive->fullpath = pallas_archive_fullpath(dir_name, trace_name);
   archive->dir_name = dir_name;
   archive->trace_name = trace_name;
@@ -1399,7 +1411,8 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
              archive->trace_name);
 
   pallas::File file = pallas::File(archive->fullpath, "r");
-
+  if(! file.is_open())
+    return -1;
   uint8_t abi_version;
   file.read(&abi_version, sizeof(abi_version), 1);
   if (abi_version != PALLAS_ABI_VERSION) {
@@ -1442,6 +1455,7 @@ static void pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_na
   }
 
   file.close();
+  return 0;
 }
 
 static void pallasReadArchive(pallas::GlobalArchive* global_archive,
@@ -1457,6 +1471,8 @@ static void pallasReadArchive(pallas::GlobalArchive* global_archive,
              archive->trace_name);
 
   pallas::File file = pallas::File(archive->fullpath, "r");
+  if(! file.is_open())
+    return;
 
   file.read(&archive->id, sizeof(pallas::LocationGroupId), 1);
   file.read(&archive->nb_threads, sizeof(int), 1);
@@ -1568,13 +1584,15 @@ void pallas::Archive::freeThreadAt(size_t i) {
   }
 };
 
-void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, const char* main_filename) {
+int pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, const char* main_filename) {
   auto* temp_main_filename = strdup(main_filename);
   char* trace_name = strdup(basename(temp_main_filename));
   char* dir_name = strdup(dirname(temp_main_filename));
   free(temp_main_filename);
 
-  pallasReadGlobalArchive(globalArchive, dir_name, trace_name);
+  int ret = pallasReadGlobalArchive(globalArchive, dir_name, trace_name);
+  if(ret < 0)
+    return -1;
 
   for (auto& locationGroup : globalArchive->location_groups) {
     if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
@@ -1582,6 +1600,7 @@ void pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, const char* m
     else
       globalArchive->getArchive(locationGroup.mainLoc);
   }
+  return 0;
 }
 
 /* -*-

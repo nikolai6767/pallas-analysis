@@ -43,8 +43,9 @@ char* pallas_archive_fullpath(char* dir_name, char* trace_name);
  * Read an archive from a `main.pallas` file.
  * @param globalArchive Pointer to an allocated archive.
  * @param main_filename Path to a `main.pallas` file.
+ * @return 0 if successfull, or -1 otherwise
  */
-void pallasReadGlobalArchive(PALLAS(GlobalArchive) * globalArchive, const char* main_filename);
+int pallasReadGlobalArchive(PALLAS(GlobalArchive) * globalArchive, const char* main_filename);
 #ifdef __cplusplus
 };
 #endif
