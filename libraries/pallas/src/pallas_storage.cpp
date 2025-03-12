@@ -1263,23 +1263,19 @@ static void pallasReadThread(pallas::GlobalArchive* global_archive, pallas::Thre
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu events\n", th->nb_events);
   const char* eventDurationFilename = pallasGetEventDurationFilename(global_archive->dir_name, th);
   pallas::File& eventDurationFile = *new pallas::File(eventDurationFilename);
-  if(eventDurationFile.is_open()) {
-    fileMap[eventDurationFilename] = &eventDurationFile;
-    for (int i = 0; i < th->nb_events; i++) {
-      th->events[i].id = i;
-      pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
-    }
+  fileMap[eventDurationFilename] = &eventDurationFile;
+  for (int i = 0; i < th->nb_events; i++) {
+    th->events[i].id = i;
+    pallasReadEvent(th->events[i], threadFile, eventDurationFile, eventDurationFilename);
   }
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu sequences\n", th->nb_sequences);
   const char* sequenceDurationFilename = pallasGetSequenceDurationFilename(global_archive->dir_name, th);
   pallas::File& sequenceDurationFile = *new pallas::File(sequenceDurationFilename);
-  if(sequenceDurationFile.is_open()) {
-    fileMap[sequenceDurationFilename] = &sequenceDurationFile;
-    for (int i = 0; i < th->nb_sequences; i++) {
-      th->sequences[i]->id = i;
-      pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
-    }
+  fileMap[sequenceDurationFilename] = &sequenceDurationFile;
+  for (int i = 0; i < th->nb_sequences; i++) {
+    th->sequences[i]->id = i;
+    pallasReadSequence(*th->sequences[i], threadFile, sequenceDurationFilename);
   }
 
   pallas_log(pallas::DebugLevel::Verbose, "Reading %lu loops\n", th->nb_loops);
