@@ -4,9 +4,7 @@ stages:
 
 build:gcc:
   stage: build
-  image:
-    name: registry.gitlab.inria.fr/pallas/pallas:latest
-    pull_policy: if-not-present
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
   tags: ['ci.inria.fr', 'linux', 'small']
   script:
     # Build Pallas
@@ -21,9 +19,7 @@ build:gcc:
       - $CI_PROJECT_DIR/build
 
 build:clang:
-  image:
-    name: registry.gitlab.inria.fr/pallas/pallas:latest
-    pull_policy: if-not-present
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
   tags: ['ci.inria.fr', 'linux', 'small']
   stage: build
   script:
@@ -38,9 +34,7 @@ build:clang:
       - $CI_PROJECT_DIR/pallas
 
 build:intel-oneapi:
-  image:
-    name: registry.gitlab.inria.fr/pallas/pallas:latest
-    pull_policy: if-not-present
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
   tags: ['ci.inria.fr', 'linux', 'small']
   stage: build
   script:
@@ -55,9 +49,7 @@ build:intel-oneapi:
       - $CI_PROJECT_DIR/pallas
 
 test:unit:
-  image:
-    name: registry.gitlab.inria.fr/pallas/pallas:latest
-    pull_policy: if-not-present
+  image: registry.gitlab.inria.fr/pallas/pallas:latest
   tags: ['ci.inria.fr', 'linux', 'small']
   stage: test
   dependencies:
