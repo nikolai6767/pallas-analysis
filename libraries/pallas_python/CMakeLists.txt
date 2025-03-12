@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 3.14.0)
 set (CMAKE_CXX_STANDARD 20)
 
-find_package(Python3 COMPONENTS Interpreter Development NumPy)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 if (Python3_FOUND)
-    if (Python3_VERSION VERSION_LESS 3.11)
-        message("Python version was too low: ${Python3_VERSION} <= 3.11")
+    if (Python3_VERSION VERSION_LESS 3.10)
+        message("Python version was too low: ${Python3_VERSION} <= 3.10")
         message("Skipping Python Library Generation")
         return(-1)
     endif()
 endif()
 
+execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 find_package(pybind11 CONFIG REQUIRED)
 
 
@@ -37,7 +38,6 @@ target_link_libraries(pallas_python
         dl
         pallas
         ${Python3_LIBRARIES}
-        Python3::NumPy
 )
 
 install(TARGETS pallas_python LIBRARY DESTINATION ${INSTALL_LIBDIR})
