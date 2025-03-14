@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14.0)
 set (CMAKE_CXX_STANDARD 20)
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development NumPy)
 
 if (Python3_FOUND)
     if (Python3_VERSION VERSION_LESS 3.10)

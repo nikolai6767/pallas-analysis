@@ -3,8 +3,6 @@
 //
 #include "pallas_python.h"
 
-#include <pybind11/stl.h>
-
 std::string Token_toString(pallas::Token t) {
   std::string out;
   switch (t.type) {
@@ -122,7 +120,7 @@ static py::dict& Event_get_data(pallas::Event* e) {
   return dict;
 }
 
-void setupEnums(py::module_& m) {
+void setupEnums(const py::module_& m) {
   py::enum_<pallas::TokenType>(m, "TokenType")
     .value("INVALID", pallas::TypeInvalid)
     .value("EVENT", pallas::TypeEvent)
@@ -192,7 +190,6 @@ void setupEnums(py::module_& m) {
     .value("GENERIC", pallas::PALLAS_EVENT_GENERIC)
     .export_values();
 }
-
 
 std::vector<pallas::Thread*> Archive_get_threads(pallas::Archive& archive) {
   auto vector = std::vector<pallas::Thread*>();
@@ -265,6 +262,25 @@ pallas::GlobalArchive* open_trace(const std::string& path) {
   return trace;
 }
 
+class DataHolder {
+ private:
+  pallas::LinkedVector& data;
+
+ public:
+  DataHolder(pallas::LinkedVector& data_) : data(data_) {};
+  py::array_t<uint64_t> get_array() {
+    return py::array_t(
+      {data.size},
+      {sizeof(uint64_t)},
+      &data.front(),
+      py::capsule(this,
+        [](void* p) {
+          auto* holder = reinterpret_cast<DataHolder*>(p);
+          std::cout << "Array is being deallocated" << std::endl;
+          delete holder;
+    }));
+  }
+};
 
 PYBIND11_MODULE(pallas_python, m) {
   m.doc() = "Python API for the Pallas library";
@@ -276,39 +292,12 @@ PYBIND11_MODULE(pallas_python, m) {
     .def_property_readonly("type", [](pallas::Token t) { return t.type; })
     .def("__repr__", &Token_toString);
 
-
-  py::class_<pallas::LinkedVector>(m, "LinkedVector", py::buffer_protocol())
-    .def("__getitem__", &pallas::LinkedVector::operator[])
-    .def_buffer([](pallas::LinkedVector& v) -> py::buffer_info {
-      return py::buffer_info(
-        &v.front(),
-        sizeof(uint64_t),
-        py::format_descriptor<uint64_t>::format(),
-        1,
-        { v.size },
-        { sizeof( uint64_t) }
-        );
-    });
-  py::class_<pallas::LinkedDurationVector>(m, "LinkedDuractionVector", py::buffer_protocol())
-  .def_readonly("mean", &pallas::LinkedDurationVector::mean)
-  .def_readonly("max", &pallas::LinkedDurationVector::max)
-  .def_readonly("min", &pallas::LinkedDurationVector::min)
-  .def("__getitem__", &pallas::LinkedVector::operator[])
-  .def_buffer([](pallas::LinkedDurationVector& v) -> py::buffer_info {
-      return py::buffer_info(
-        &v.front(),
-        sizeof(uint64_t),
-        py::format_descriptor<uint64_t>::format(),
-        1,
-        { v.size },
-        { sizeof( uint64_t) }
-        );
-    });;
-
   py::class_<pallas::Sequence>(m, "Sequence", "A Pallas Sequence, ie a group of tokens.")
     .def_readonly("id", &pallas::Sequence::id)
     .def_readonly("tokens", &pallas::Sequence::tokens)
-    .def_readonly("timestamps", &pallas::Sequence::timestamps)
+    .def_property_readonly("timestamps", [](pallas::Sequence& self) {
+      return (new DataHolder(*self.timestamps))->get_array();
+    })
     .def_readonly("durations", &pallas::Sequence::durations)
     .def("guessName", [](pallas::Sequence& self, pallas::Thread* thread) { return self.guessName(thread); })
     .def("__repr__", [](const pallas::Sequence& self) { return "<pallas_python.Sequence " + std::to_string(self.id) + ">"; });
