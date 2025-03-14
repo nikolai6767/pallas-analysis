@@ -269,16 +269,12 @@ class DataHolder {
  public:
   DataHolder(pallas::LinkedVector& data_) : data(data_) {};
   py::array_t<uint64_t> get_array() {
-    return py::array_t(
-      {data.size},
-      {sizeof(uint64_t)},
-      &data.front(),
-      py::capsule(this,
-        [](void* p) {
-          auto* holder = reinterpret_cast<DataHolder*>(p);
-          std::cout << "Array is being deallocated" << std::endl;
-          delete holder;
-    }));
+    return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(), py::capsule(this, [](void* p) {
+                         auto* holder = reinterpret_cast<DataHolder*>(p);
+                         std::cout << "Array is being deallocated" << std::endl;
+                         holder->data.deleteTimestamps();
+                         delete holder;
+                       }));
   }
 };
 
@@ -295,11 +291,12 @@ PYBIND11_MODULE(pallas_python, m) {
   py::class_<pallas::Sequence>(m, "Sequence", "A Pallas Sequence, ie a group of tokens.")
     .def_readonly("id", &pallas::Sequence::id)
     .def_readonly("tokens", &pallas::Sequence::tokens)
-    .def_property_readonly("timestamps", [](pallas::Sequence& self) {
-      return (new DataHolder(*self.timestamps))->get_array();
-    })
-    .def_readonly("durations", &pallas::Sequence::durations)
-    .def("guessName", [](pallas::Sequence& self, pallas::Thread* thread) { return self.guessName(thread); })
+    .def_property_readonly("timestamps", [](const pallas::Sequence& self) { return (new DataHolder(*self.timestamps))->get_array(); })
+    .def_property_readonly("durations", [](const pallas::Sequence& self) { return (new DataHolder(*self.durations))->get_array(); })
+    .def_property_readonly("max_duration", [](const pallas::Sequence& self) { return self.durations->max; })
+    .def_property_readonly("min_duration", [](const pallas::Sequence& self) { return self.durations->min; })
+    .def_property_readonly("mean_duration", [](const pallas::Sequence& self) { return self.durations->mean; })
+    .def("guessName", [](pallas::Sequence& self, const pallas::Thread* thread) { return self.guessName(thread); })
     .def("__repr__", [](const pallas::Sequence& self) { return "<pallas_python.Sequence " + std::to_string(self.id) + ">"; });
 
   py::class_<pallas::Loop>(m, "Loop", "A Pallas Loop, ie a repetition of a Sequence token.")
@@ -312,6 +309,10 @@ PYBIND11_MODULE(pallas_python, m) {
     .def_readonly("id", &pallas::EventSummary::id)
     .def_readonly("event", &pallas::EventSummary::event)
     .def_readonly("nb_occurences", &pallas::EventSummary::nb_occurences)
+    .def_property_readonly("durations", [](const pallas::EventSummary& self) { return (new DataHolder(*self.durations))->get_array(); })
+    .def_property_readonly("max_duration", [](const pallas::EventSummary& self) { return self.durations->max; })
+    .def_property_readonly("min_duration", [](const pallas::EventSummary& self) { return self.durations->min; })
+    .def_property_readonly("mean_duration", [](const pallas::EventSummary& self) { return self.durations->mean; })
     .def("__repr__", [](const pallas::EventSummary& self) { return "<pallas_python.EventSummary " + std::to_string(self.id) + ">"; });
 
   py::class_<pallas::Event>(m, "Event", "A Pallas Event.").def_readonly("record", &pallas::Event::record).def_property_readonly("data", &Event_get_data);
