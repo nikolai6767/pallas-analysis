@@ -272,8 +272,10 @@ class DataHolder {
     return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(),  //
                        py::capsule(this, [](void* p) {
                          auto* holder = reinterpret_cast<DataHolder*>(p);
-                         if (holder->data.size > 3)
+                         if (holder->data.size > 3) {
                            holder->data.deleteTimestamps();
+                           // TODO Don't delete it, but rather use the LRU
+                         }
                          delete holder;
                        }));
   }
