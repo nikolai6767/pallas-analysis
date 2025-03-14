@@ -84,6 +84,9 @@ uint64_t& LinkedVector::back() {
 
 
 void LinkedVector::deleteTimestamps() {
+  if (first == nullptr)
+    return;
+  pallas_log(DebugLevel::Debug, "Freeing timestamps from %p\n", this);
   auto* sub = first;
   while (sub) {
     delete[] sub->array;
@@ -91,6 +94,8 @@ void LinkedVector::deleteTimestamps() {
     delete sub;
     sub = temp;
   }
+  first = nullptr;
+  last = nullptr;
 }
 void LinkedVector::print() {
   std::cout << "[";
