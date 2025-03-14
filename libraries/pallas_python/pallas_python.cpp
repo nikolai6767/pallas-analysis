@@ -267,12 +267,13 @@ class DataHolder {
   pallas::LinkedVector& data;
 
  public:
-  DataHolder(pallas::LinkedVector& data_) : data(data_) {};
+  explicit DataHolder(pallas::LinkedVector& data_) : data(data_) {};
   py::array_t<uint64_t> get_array() {
-    return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(), py::capsule(this, [](void* p) {
+    return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(),  //
+                       py::capsule(this, [](void* p) {
                          auto* holder = reinterpret_cast<DataHolder*>(p);
-                         std::cout << "Array is being deallocated" << std::endl;
-                         holder->data.deleteTimestamps();
+                         if (holder->data.size > 3)
+                           holder->data.deleteTimestamps();
                          delete holder;
                        }));
   }
