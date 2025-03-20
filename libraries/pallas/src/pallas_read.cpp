@@ -82,7 +82,7 @@ const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
   return thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
 }
 void ThreadReader::printCurToken() const {
-  thread_trace->printToken(pollCurToken());
+  std::cout << thread_trace->getTokenString(pollCurToken()) << std::endl;
 }
 const Token& ThreadReader::getCurIterable() const {
   return currentState.currentFrame->callstack_iterable;
@@ -98,7 +98,7 @@ void ThreadReader::printCallstack() const {
     auto current_token = getTokenInCallstack(i);
 
     printf("%.*s[%d] ", i * 2, "                       ", i);
-    thread_trace->printToken(current_sequence_id);
+    std::cout << thread_trace->getTokenString(current_sequence_id) << std::endl;
 
     if (current_sequence_id.type == TypeLoop) {
       auto* loop = thread_trace->getLoop(current_sequence_id);
@@ -111,9 +111,7 @@ void ThreadReader::printCallstack() const {
       pallas_assert(currentState.callstack[i].frame_index < MAX_CALLSTACK_DEPTH);
     }
 
-    printf("\t-> ");
-    thread_trace->printToken(current_token);
-    printf("\n");
+    std::cout << "\t-> " << thread_trace->getTokenString(current_token) << std::endl;
   }
 }
 EventSummary* ThreadReader::getEventSummary(Token event) const {

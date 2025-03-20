@@ -171,10 +171,11 @@ OTF2_ErrorCode OTF2_Archive_GetCompression(OTF2_Archive* archive, OTF2_Compressi
 
 int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
   int index = archive->nb_locations;
-
   if (index == 0) {
     /* TODO: hacky ! we should not have to do that ! */
-    archive->archive->id = location;
+    // Fixed in EZTrace
+    //archive->archive->id = location;
+    mpi_rank = archive->archive->id;
   }
   if (archive->archive->global_archive == NULL && archive->globalDefWriter != NULL) {
     /* TODO: even more hacky, we shouldn't have to do that !!!!*/

@@ -21,7 +21,6 @@ typedef struct ThreadWriter {
     sequence_stack; /**< Stack of all the *incomplete* sequences the writer is currently in. */
   int cur_depth;    /**< Current depth in the callstack. */
   int max_depth;    /**< Maximum depth in the callstack. */
-  int thread_rank;  /**< Rank of this thread. todo: MPI rank ? */
 
   pallas_timestamp_t last_timestamp; /**< Timestamp of the last encountered event */
 

@@ -550,6 +550,7 @@ void ThreadWriter::initThread(Archive* a, ThreadId thread_id) {
     doubleMemorySpaceConstructor(a->threads, a->nb_allocated_threads);
   }
   thread_trace = new Thread;
+  thread_rank = a->nb_threads;
   a->threads[a->nb_threads++] = thread_trace;
   thread_trace->archive = a;
   thread_trace->id = thread_id;

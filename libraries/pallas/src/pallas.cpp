@@ -10,6 +10,8 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
+__thread uint64_t thread_rank=0;
+unsigned int mpi_rank = 0;
 
 namespace pallas {
 void Thread::loadTimestamps() {
@@ -145,26 +147,19 @@ size_t get_event_count(PALLAS(Thread) * t) {
   return t->getEventCount();
 }
 
-void Thread::printToken(Token token) const {
-  std::cout << getTokenString(token);
-}
-
-void Thread::printTokenArray(const Token* array, size_t start_index, size_t len) const {
-  printf("[");
+std::string Thread::getTokenArrayString(const Token* array, size_t start_index, size_t len) const {
+  std::string out("[");
   for (int i = 0; i < len; i++) {
-    printToken(array[start_index + i]);
-    printf(" ");
+    out += getTokenString(array[start_index + i]);
+    if (i != len - 1)
+      out += ", ";
   }
-  printf("]\n");
-}
+  out += "]";
+  return out;
+};
 
 void Thread::printTokenVector(const std::vector<Token>& vector) const {
-  printf("[");
-  for (auto& token : vector) {
-    printToken(token);
-    printf(" ");
-  }
-  printf("]\n");
+  std::cout << getTokenArrayString(vector.data(), 0, vector.size()) << std::endl;
 }
 
 void Thread::printSequence(pallas::Token token) const {
@@ -678,14 +673,6 @@ const char* pallas_thread_get_name(pallas::Thread* thread) {
 
 void pallas_print_sequence(pallas::Thread* thread, pallas::Token seq_id) {
   thread->printSequence(seq_id);
-}
-
-void pallas_print_token_array(pallas::Thread* thread, pallas::Token* token_array, int index_start, int index_stop) {
-  thread->printTokenArray(token_array, index_start, index_stop);
-}
-
-void pallas_print_token(pallas::Thread* thread, pallas::Token token) {
-  thread->printToken(token);
 }
 
 void pallas_print_event(pallas::Thread* thread, pallas::Event* e) {

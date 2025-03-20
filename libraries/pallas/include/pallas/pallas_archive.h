@@ -173,7 +173,7 @@ typedef struct Archive {
   size_t nb_allocated_threads; /**< Size of #threads. */
 #ifdef __cplusplus
   [[nodiscard]] Thread* getThread(ThreadId);
-  [[nodiscard]] Thread* getThreadAt(size_t i);
+  [[nodiscard]] Thread* getThreadAt(size_t index);
   const char* getName() const;
   void freeThread(ThreadId);
   void freeThreadAt(size_t);

@@ -244,10 +244,7 @@ py::list& Trace_get_archives(pallas::GlobalArchive& trace) {
   auto& list = *new py::list(trace.location_groups.size());
   int i = 0;
   for (auto& locationGroup : trace.location_groups) {
-    if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
       list[i++] = trace.getArchive(locationGroup.id);
-    else
-      list[i++] = trace.getArchive(locationGroup.mainLoc);
   }
 
   // This is disgusting code but that's how it works in the readGlobalArchive

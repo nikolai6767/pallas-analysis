@@ -531,13 +531,12 @@ typedef struct Thread {
   size_t getEventCount() const;
 
   /**
-   * Prints the given Token, along with its id.
+   * Get the given Token, along with its id.
    * E_E, E_L, E_S indicates an Enter, Leave or Singleton Event.
    * S and L indicates a Sequence or a Loop.
    */
-  void printToken(Token) const;
   std::string getTokenString(Token) const;
-  void printTokenArray(const Token* array, size_t start_index, size_t len) const; /**< Prints an array of Tokens. */
+  std::string getTokenArrayString(const Token* array, size_t start_index, size_t len) const; /**< Returns a string for that array of Tokens */
   void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
   void printSequence(Token) const; /**< Prints the Sequence corresponding to the given Token. */
   void printEvent(Event*) const;   /**< Prints an Event. */

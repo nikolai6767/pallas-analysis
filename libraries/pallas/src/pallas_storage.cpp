@@ -1411,7 +1411,7 @@ int pallasReadGlobalArchive(pallas::GlobalArchive* archive, char* dir_name, char
   uint8_t abi_version;
   file.read(&abi_version, sizeof(abi_version), 1);
   if (abi_version != PALLAS_ABI_VERSION) {
-    pallas_warn("This trace uses Pallas ABI version %x, but the current installation only supports version %x\n",
+    pallas_warn("This trace uses Pallas ABI version %d, but the current installation only supports version %d\n",
                 abi_version, PALLAS_ABI_VERSION);
   }
   pallas::parameterHandler = new pallas::ParameterHandler();
@@ -1557,9 +1557,6 @@ pallas::Thread* pallas::Archive::getThreadAt(size_t index) {
     return nullptr;
   }
   auto lg = global_archive->getLocationGroup(id);
-  if (lg == nullptr) {
-    lg = global_archive->getLocationGroup(global_archive->getLocation(id)->parent);
-  }
   return getThread(lg->mainLoc + index);
 }
 
@@ -1590,10 +1587,7 @@ int pallasReadGlobalArchive(pallas::GlobalArchive* globalArchive, const char* ma
     return -1;
 
   for (auto& locationGroup : globalArchive->location_groups) {
-    if (locationGroup.mainLoc == PALLAS_THREAD_ID_INVALID)
       globalArchive->getArchive(locationGroup.id);
-    else
-      globalArchive->getArchive(locationGroup.mainLoc);
   }
   return 0;
 }
