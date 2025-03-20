@@ -26,7 +26,7 @@ def read_trace_pallas(filename):
                 dataset["Finish"]=dataset["Start"]+dataset["Duration"]
                 dataset["Thread"]=trace.locations[thread.id].name
                 dataset["Function"]=seq.guessName(thread)
-                dataframes_list.append(dataset);
+                dataframes_list.append(dataset)
 
     df=pd.concat(dataframes_list, axis=0, ignore_index=True) 
     df=df.sort_values(["Start", "Finish"], ascending=[True, False])
@@ -48,7 +48,7 @@ def compute_depth(df):
         t=row["Thread"]
         if not t in depth:
             # First event for this thread
-            print("first event for "+t+" at ts"+str(row["Start"]))
+            print(f"first event for {t} at ts {row['Start']}")
             depth[t]=0
             finish_ts[t]=[row["Finish"]]
             indexes[t]=[index]
@@ -62,7 +62,7 @@ def compute_depth(df):
                 depth[t]=depth[t]-1
 
             depth[t] = depth[t] + 1
-            print("sequence ["+str(row["Start"])+"-"+str(row["Finish"])+"] is in seq [?-"+str(finish_ts[t][-1])+"]")
+            print(f"sequence [{row['Start']}-{row['Finish']}] is in seq [?-{finish_ts[t][-1]}]")
 
             if row["Finish"] > finish_ts[t][-1]:
                 print("Error !")
