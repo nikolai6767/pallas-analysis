@@ -537,10 +537,9 @@ typedef struct Thread {
    */
   std::string getTokenString(Token) const;
   std::string getTokenArrayString(const Token* array, size_t start_index, size_t len) const; /**< Returns a string for that array of Tokens */
+  std::string getEventString(Event* e) const; /**< Returns a string describing that Event. */
   void printTokenVector(const std::vector<Token>&) const;                         /**< Prints a vector of Token. */
   void printSequence(Token) const; /**< Prints the Sequence corresponding to the given Token. */
-  void printEvent(Event*) const;   /**< Prints an Event. */
-  void printEventToString(pallas::Event* e, char* output_str, size_t buffer_size) const;
   void printAttribute(AttributeRef) const;    /**< Prints an Attribute. */
   void printString(StringRef) const;          /**< Prints a String (checks for validity first). */
   void printAttributeRef(AttributeRef) const; /**< Prints an AttributeRef (checks for validity first). */
@@ -622,10 +621,6 @@ extern "C" {
    */
   extern void pallas_print_token(PALLAS(Thread) * thread, PALLAS(Token) token);
 
-  /**
-   * Print an event
-   */
-  extern void pallas_print_event(PALLAS(Thread) * thread, PALLAS(Event) * e);
 
   /**
    * Return the loop whose id is loop_id

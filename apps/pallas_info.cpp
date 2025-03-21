@@ -69,12 +69,7 @@ std::string getTokenString(Thread* thread, Token t) {
   case TypeEvent:
     {
       Event* e = thread->getEvent(t);
-      size_t buffer_size = 1024;
-      char * event_name = new char[buffer_size];  
-      thread->printEventToString(e, event_name, buffer_size);
-      std::string ret(event_name);
-      delete[] event_name;
-      return ret;
+      return thread->getEventString(e);
       break;
     }
   case TypeSequence:
@@ -90,7 +85,7 @@ std::string getTokenString(Thread* thread, Token t) {
       break;
     }
   default:
-    return std::string("Unknown token");
+    return "Unknown token";
   }
 }
 
@@ -107,19 +102,14 @@ void info_event_header() {
 
 void info_event(Thread* t, int index) {
   EventSummary* e = &t->events[index];
-  size_t buffer_size = 1024;
-  char * event_name = new char[buffer_size];  
-  t->printEventToString(&e->event, event_name, buffer_size);
 
   std::cout << std::left<< "E"<<std::setw(14) <<std::left <<index;
-  std::cout << std::setw(35) << std::left<< event_name;
+  std::cout << std::setw(35) << std::left<< t->getEventString(&e->event);
   std::cout << std::setw(20) << std::right << e->durations->size;
   std::cout << std::setw(20) << std::right << (e->durations->min == UINT64_MAX? 0 : e->durations->min);
   std::cout << std::setw(20) << std::right << (e->durations->max == UINT64_MAX? 0 : e->durations->max);
   std::cout << std::setw(20) << std::right << (e->durations->mean == UINT64_MAX? 0 : e->durations->mean);
   std::cout << std::endl;
-
-  delete[](event_name);
 }
 
 void info_sequence_header() {

@@ -89,7 +89,7 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
     doubleMemorySpaceConstructor(thread_trace->loops, thread_trace->nb_allocated_loops);
   }
   size_t index = thread_trace->nb_loops++;
-  pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%d containing S%d\n", index, sid.id);
+  pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%lu containing S%d\n", index, sid.id);
 
   Loop* l = &thread_trace->loops[index];
   l->nb_iterations = 1;
@@ -363,31 +363,18 @@ void ThreadWriter::recordExitFunction() {
 
     enum Record expected_record = getMatchingRecord(first_event->record);
     if (expected_record == PALLAS_EVENT_MAX_ID) {
-      char output_str[1024];
-      size_t buffer_size = 1024;
-      thread_trace->printEventToString(first_event, output_str, buffer_size);
-      pallas_warn("Unexpected start_event record:\n");
-      pallas_warn("\t%s\n", output_str);
+      pallas_warn("Unexpected start_event record: %s\n", thread_trace->getEventString(first_event).c_str());
       pallas_abort();
     }
 
     if (last_event->record != expected_record) {
-      char start_event_string[1024];
-      char last_event_string[1024];
-      size_t buffer_size = 1024;
-      thread_trace->printEventToString(first_event, start_event_string, buffer_size);
-      thread_trace->printEventToString(last_event, last_event_string, buffer_size);
-      pallas_warn("Unexpected close event:\n");
-      pallas_warn("\tStart_sequence event: \t%s as E%d\n", start_event_string, first_token.id);
-      pallas_warn("\tEnd_sequence event: \t%s as E%d\n", last_event_string, last_token.id);
+      pallas_warn("Unexpected close event:\n\tStart_sequence event: \t%s as E%d\n\tEnd_sequence event: \t%s as E%d\n",
+        thread_trace->getEventString(first_event).c_str(), first_token.id, thread_trace->getEventString(last_event).c_str(), last_token.id);
       if (cur_depth > 1) {
         auto& underSequence = sequence_stack[cur_depth - 1];
         enum Record expected_start_record = getMatchingRecord(last_event->record);
         if (expected_start_record == PALLAS_EVENT_MAX_ID) {
-          char output_str[1024];
-          thread_trace->printEventToString(last_event, output_str, buffer_size);
-          pallas_warn("Unexpected last_event record:\n");
-          pallas_warn("\t%s\n", output_str);
+          pallas_warn("Unexpected last_event record:\n\t%s\n", thread_trace->getEventString(last_event).c_str());
           pallas_abort();
         }
         pallas_warn("Currently recorded last event is wrong by one layer, adding the correct Leave Event.\n");
@@ -398,12 +385,9 @@ void ThreadWriter::recordExitFunction() {
         memcpy(e.event_data, first_event->event_data, first_event->event_size);
         e.event_size = first_event->event_size;
         TokenId e_id = thread_trace->getEventId(&e);
-        char output_str[1024];
-        size_t buffer_size = 1024;
-        thread_trace->printEventToString(&e, output_str, buffer_size);
-        pallas_warn("\tInserting %s as E%d at end of curSequence\n", output_str, e_id);
+        pallas_warn("\tInserting %s as E%d at end of curSequence\n", thread_trace->getEventString(&e).c_str(), e_id);
         storeEvent(PALLAS_BLOCK_END, e_id, getTimestamp(), nullptr);
-        pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", last_event_string, last_token.id);
+        pallas_warn("\tInserting %s as E%d at end of layer under curSequence\n", thread_trace->getEventString(last_event).c_str(), last_token.id);
         underSequence.push_back(last_token);
         recordExitFunction();
         return;

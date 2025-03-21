@@ -56,8 +56,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   if (verbose) {
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
   }
-  std::cout << std::setw(4) << " ";
-  thread->printEvent(e.event);
+  std::cout << std::setw(4) << " " << thread->getEventString(e.event);
   thread->printEventAttribute(&e);
   std::cout << std::endl;
 }
