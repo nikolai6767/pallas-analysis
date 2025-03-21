@@ -10,16 +10,21 @@ if (Python3_FOUND)
         return(-1)
     endif()
 endif()
+option(PythonInstallLocal "Install the Python Lib locally instead of globally" ON)
+set(PythonLocalLib $ENV{HOME}/.local/lib/python3.${Python3_VERSION_MINOR}/site-packages)
+set(PythonGlobalLib ${Python3_SITELIB})
 
 execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 find_package(pybind11 CONFIG REQUIRED)
 
 
-set(CMAKE_SHARED_MODULE_PREFIX "")  # Remove default 'lib' prefix
-set(CMAKE_SHARED_LIBRARY_SUFFIX ${Python3_SOABI}.so)  # Ensure correct suffix for Python
-
 pybind11_add_module(pallas_python MODULE pallas_python.cpp)
-set_property(TARGET pallas_python PROPERTY PUBLIC_HEADER pallas_python.h)
+set_target_properties(pallas_python PROPERTIES OUTPUT_NAME "pallas")
+pybind11_extension(pallas_python)
+if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
+    # Strip unnecessary sections of the binary on Linux/macOS
+    pybind11_strip(pallas_python)
+endif()
 
 list(APPEND WARNINGS "-Wno-missing-field-initializers")
 
@@ -30,7 +35,7 @@ target_compile_options(pallas_python
         -Wall -Wextra ${WARNINGS}
 )
 
-target_include_directories(pallas_python PUBLIC ${Python3_INCLUDE_DIRS})
+target_include_directories(pallas_python PRIVATE ${Python3_INCLUDE_DIRS})
 target_link_directories(pallas_python PRIVATE ${Python3_LIBRARY_DIRS})
 
 target_link_libraries(pallas_python
@@ -40,4 +45,8 @@ target_link_libraries(pallas_python
         ${Python3_LIBRARIES}
 )
 
-install(TARGETS pallas_python LIBRARY DESTINATION ${INSTALL_LIBDIR})
+if (PythonInstallLocal)
+    install(TARGETS pallas_python DESTINATION ${PythonLocalLib})
+else()
+    install(TARGETS pallas_python DESTINATION ${PythonGlobalLib})
+endif()
