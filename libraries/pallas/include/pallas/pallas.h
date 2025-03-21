@@ -186,10 +186,10 @@ enum Record {
   PALLAS_EVENT_IO_ACQUIRE_LOCK = 49,                    /**< Marks the acquisition of an I/O lock.*/
   PALLAS_EVENT_IO_RELEASE_LOCK = 50,                    /**< Marks the release of an I/O lock.*/
   PALLAS_EVENT_IO_TRY_LOCK = 51,                        /**< Marks when an I/O lock was requested but not granted.*/
-  PALLAS_EVENT_PROGRAM_BEGIN = 52,                      /**< Marks the begin of the program.*/
+  PALLAS_EVENT_PROGRAM_BEGIN = 52,                      /**< Marks the beginning of the program.*/
   PALLAS_EVENT_PROGRAM_END = 53,                        /**< Marks the end of the program.*/
   PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_REQUEST = 54,    /**< Indicates that a non-blocking collective operation was initiated.*/
-  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55,   /**< Indicates that a non- blocking collective operation completed.*/
+  PALLAS_EVENT_NON_BLOCKING_COLLECTIVE_COMPLETE = 55,   /**< Indicates that a non-blocking collective operation completed.*/
   PALLAS_EVENT_COMM_CREATE = 56,                        /**< Denotes the creation of a communicator.*/
   PALLAS_EVENT_COMM_DESTROY = 57,                       /**< Marks the communicator for destruction at the end of the enclosing MpiCollectiveBegin and MpiCollectiveEnd event pair. */
   PALLAS_EVENT_GENERIC = 58,                            /**< Event record identifier for any other event. */
