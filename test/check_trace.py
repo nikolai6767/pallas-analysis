@@ -1,9 +1,9 @@
-import pallas_python
+import pallas
 import pandas as pd
 import numpy as np
 import sys
 import datetime
-
+print("Libraries loaded !")
 def create_empty_df():
     df=['Thread', 'Function', 'Start', 'Finish', 'Duration']
     df = pd.DataFrame({"Thread":pd.Series(dtype='str'),
@@ -14,7 +14,7 @@ def create_empty_df():
     return df
 
 def read_trace_pallas(filename):
-    trace=pallas_python.open_trace(filename)
+    trace=pallas.open_trace(filename)
     df = create_empty_df()
     dataframes_list=[]
     for archive in trace.archives:
@@ -62,7 +62,7 @@ def compute_depth(df):
                 depth[t]=depth[t]-1
 
             depth[t] = depth[t] + 1
-            print(f"sequence [{row['Start']}-{row['Finish']}] is in seq [?-{finish_ts[t][-1]}]")
+            print(f"{row['Thread']} {row['Function']}\t [{row['Start']}-{row['Finish']}]\t is in seq [?-{finish_ts[t][-1]}]")
 
             if row["Finish"] > finish_ts[t][-1]:
                 print("Error !")
