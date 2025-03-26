@@ -11,7 +11,7 @@
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
 __thread uint64_t thread_rank = 0;
-unsigned int mpi_rank = 0;
+unsigned int pallas_mpi_rank = 0;
 
 namespace pallas {
 void Thread::loadTimestamps() {

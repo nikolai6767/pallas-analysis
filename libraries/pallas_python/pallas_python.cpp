@@ -194,12 +194,8 @@ void setupEnums(const py::module_& m) {
 std::vector<pallas::Thread*> Archive_get_threads(pallas::Archive& archive) {
   auto vector = std::vector<pallas::Thread*>();
   for (size_t i = 0; i < archive.nb_threads; ++i) {
-    if (archive.getThreadAt(i)) {
-      vector.push_back(archive.getThreadAt(i));
-    }
+    vector.push_back(archive.getThreadAt(i));
   }
-  // This is disgusting
-  // Blame EZTrace for giving us false threads !!!
   return vector;
 }
 
@@ -246,10 +242,6 @@ py::list& Trace_get_archives(pallas::GlobalArchive& trace) {
   for (auto& locationGroup : trace.location_groups) {
       list[i++] = trace.getArchive(locationGroup.id);
   }
-
-  // This is disgusting code but that's how it works in the readGlobalArchive
-  // so I don't see why we shouldn't use it here
-  // Blame EZTrace for giving us wrongly formatted Location Groups !!!
   return list;
 }
 

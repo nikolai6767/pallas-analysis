@@ -687,20 +687,6 @@ template <typename T> void doubleMemorySpaceConstructor(T*& originalArray, size_
 }
 #endif
 
-
-/** Increments the memory allocated for the given buffer by one.
- *
- * Given a buffer, a counter that indicates the number of object it holds, and this object's datatype,
- * Increments the size of the buffer by 1 using realloc, or if it fails, malloc and memmove then frees the old buffer.
- * This is better than a realloc because it moves the data around, but it is also slower.
- * Checks for error at malloc.
- */
-#define INCREMENT_MEMORY_SPACE(buffer, counter, datatype)                                        \
-  do {                                                                                           \
-    buffer = (datatype*)pallas_realloc((void*)buffer, counter, (counter) + 1, sizeof(datatype)); \
-    counter = (counter) + 1;                                                                     \
-  } while (0)
-
 /**
  * Primitive for DOFOR loops
  */
