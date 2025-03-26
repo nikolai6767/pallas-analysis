@@ -30,7 +30,7 @@ You can then read it like this:
 ```
 $ export PYTHONPATH=PATH_TO_PALLAS/lib
 $ python
->>> import pallas_python as pallas
+>>> import pallas
 >>> trace=pallas.open_trace("eztrace_log.pallas")
 ...
 
