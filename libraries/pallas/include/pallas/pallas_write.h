@@ -16,7 +16,7 @@ namespace pallas {
  * Writes one thread to the Pallas trace format.
  */
 typedef struct ThreadWriter {
-  Thread* thread_trace CXX({nullptr}); /**< Thread being written. */
+  Thread* thread CXX({nullptr}); /**< Thread being written. */
   C_CXX(void, std::vector<Token>) *
     sequence_stack; /**< Stack of all the *incomplete* sequences the writer is currently in. */
   int cur_depth;    /**< Current depth in the callstack. */
@@ -42,10 +42,6 @@ typedef struct ThreadWriter {
 #ifdef __cplusplus
 
  private:
-  /**
-   * Does the initialization of the thread pointer to the provided archive's thread.
-   */
-  void initThread(Archive* a, ThreadId thread_id);
   void findLoopBasic(size_t maxLoopLength);
   /** Tries to find a Loop in the current array of tokens.  */
   void findLoop();
@@ -88,7 +84,7 @@ typedef struct ThreadWriter {
   void addDurationToComplete(pallas_duration_t* duration);
 
  public:
-  void open(Archive* archive, ThreadId thread_id);
+  ThreadWriter(Archive& archive, ThreadId thread_id);
   void threadClose();
   /** Creates the new Event and stores it. Returns the occurence index of that new Event. */
   size_t storeEvent(enum EventType event_type,
@@ -107,13 +103,8 @@ extern "C" {
  * Allocates a new ThreadWriter and returns a pointer to that allocated memory.
  * @return Pointer to ThreadWriter
  */
-extern PALLAS(ThreadWriter) * pallas_thread_writer_new(void);
-extern void pallas_write_global_archive_open(PALLAS(GlobalArchive) * archive, const char* dir_name, const char* trace_name);
+extern PALLAS(ThreadWriter) * pallas_thread_writer_new(PALLAS(Archive)* archive, PALLAS(ThreadId) thread_id);
 extern void pallas_write_global_archive_close(PALLAS(GlobalArchive) * archive);
-
-extern void pallas_write_thread_open(PALLAS(Archive) * archive,
-                                     PALLAS(ThreadWriter) * thread_writer,
-                                     PALLAS(ThreadId) thread_id);
 
 extern void pallas_write_thread_close(PALLAS(ThreadWriter) * thread_writer);
 
@@ -126,11 +117,6 @@ extern void pallas_write_define_location(PALLAS(GlobalArchive) * archive,
                                          PALLAS(ThreadId) id,
                                          PALLAS(StringRef) name,
                                          PALLAS(LocationGroupId) parent);
-
-extern void pallas_write_archive_open(PALLAS(Archive) * archive,
-                                      const char* dir_name,
-                                      const char* trace_name,
-                                      PALLAS(LocationGroupId) location_group);
 
 extern void pallas_write_archive_close(PALLAS(Archive) * archive);
 

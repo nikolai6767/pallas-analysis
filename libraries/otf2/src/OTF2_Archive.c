@@ -4,7 +4,7 @@
  */
 
 #include "otf2/OTF2_Archive.h"
-
+#include "pallas/pallas_storage.h"
 OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
                                 const char* archiveName,
                                 const OTF2_FileMode fileMode,
@@ -13,9 +13,8 @@ OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
                                 const OTF2_FileSubstrate fileSubstrate,
                                 const OTF2_Compression compression) {
   OTF2_Archive* archive = malloc(sizeof(OTF2_Archive));
-  archive->archive = pallas_archive_new();
+  archive->archive = pallas_archive_new(archivePath, archiveName, 0);
 
-  pallas_write_archive_open(archive->archive, archivePath, archiveName, 0); /* TODO: add missing archive_id_t */
 
   archive->globalDefWriter = NULL;
 
@@ -180,9 +179,7 @@ int new_location(OTF2_Archive* archive, OTF2_LocationRef location) {
   archive->def_writers[index] = malloc(sizeof(OTF2_DefWriter));
   archive->def_writers[index]->locationRef = location;
   archive->def_writers[index]->archive = archive->archive;
-  archive->def_writers[index]->thread_writer = pallas_thread_writer_new();
-
-  pallas_write_thread_open(archive->archive, archive->def_writers[index]->thread_writer, location);
+  archive->def_writers[index]->thread_writer = pallas_thread_writer_new(archive->archive, location);
 
   archive->evt_writers[index] = malloc(sizeof(OTF2_EvtWriter));
   archive->evt_writers[index]->locationRef = location;
@@ -235,10 +232,10 @@ OTF2_DefWriter* OTF2_Archive_GetDefWriter(OTF2_Archive* archive, OTF2_LocationRe
 OTF2_GlobalDefWriter* OTF2_Archive_GetGlobalDefWriter(OTF2_Archive* archive) {
   if (archive->globalDefWriter == NULL) {
     archive->globalDefWriter = malloc(sizeof(OTF2_GlobalDefWriter));
-    archive->globalDefWriter->archive = pallas_global_archive_new();
-
-    pallas_write_global_archive_open(archive->globalDefWriter->archive, archive->archive->dir_name,
-                                  archive->archive->trace_name);
+    archive->globalDefWriter->archive = pallas_global_archive_new(
+      archive->archive->dir_name,
+      archive->archive->trace_name);
+    pallas_storage_init(archive->archive->dir_name);
   }
   return archive->globalDefWriter;
 }

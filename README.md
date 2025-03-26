@@ -39,59 +39,31 @@ $ python
 Make sure these are installed (locally using a venv or globally) before building.
 ## Usage
 ### In your application
-These few lines are all you need
-```C
-// In C
-#include <pallas/pallas.h>
-#include <pallas/pallas_write.h>
+To use Pallas to log your application, you need to understand the hierarchical structure:
+- There's one *GlobalArchive* that stores global information.
+- Each *Archive* corresponds to a process / a self-contained information group.
+They're identified by LocationGroup
+- Each *Thread* refers to a group of events that are to be logged.
+They're identified by Location
 
-int main() {
-    // Setup everything
-    GlobalArchive* global_archive = pallas_global_archive_new(); // Create the main trace
-    pallas_write_global_archive_open(global_archive, "<your trace name>", "main");
-    // The Global Archive is where all the Strings, 
-    // information about Threads and Processes, and Regions are stored.
-    
-    pallas_archive_register_string(...);     // Register a String
-    pallas_write_define_location_group(<processID>); // Register a LocationGroup
-    Archive* archive = pallas_new_archive();
-    pallas_write_archive_open(global_archive, archive, <processID>);
-    // That creates an Archive, which is where you'll store local events.
-            
-    pallas_write_define_location(<threadID>);     // Register a Location
-    ThreadWriter thread_writer;
-    pallas_write_thread_open(global_archive, &thread_writer, <threadID>);
-    // A ThreadWriter is the interface made to log some events
-    
-    // Start logging
-    pallas_record_generic(&thread_writer, <custom Attribute>, <timestamp>, <name>);
-    
-    // Write the trace to file
-    pallas_write_thread_close(thread_writer);
-    pallas_write_global_archive_close(global_archive);
-}
-```
+There is a bit more nuance, but it's what you need for now.
+The following code should give you an idea of what to do to start logging your app in C++.
+There's also a C API that functions pretty much the same way, as you'd expect it to.
 ```CPP
-// In C++
 #include <pallas/pallas.h>
 #include <pallas/pallas_write.h>
 namespace pallas;
 int main() {
-    // Setup everything
-    GlobalArchive globalArchive = Archive(); // Create the main trace
-    globalArchive.openGlobal("<your trace name>", "main");
-    // The Global Archive is where all the Strings, 
-    // information about Threads and Processes, and Regions are stored.
-    
+    GlobalArchive globalArchive("<trace directory>", "<main trace file name>"); 
     globalArchive.addString(...);                   // Register a String
+    
+    // Add a process
     globalArchive.addLocationGroup(<processID>);    // Register a LocationGroup
-    Archive archive = Archive();
-    archive.open(globalArchive, <processID>);
-    // That creates an Archive, which is where you'll store local events.
+    Archive archive(globalArchive, <processID>);
 
+    // Add a Thread
     globalArchive.addLocation(<threadID>);         // Register a Location
-    ThreadWriter threadWriter;
-    threadWriter.openThread(globalArchive, <threadID>);
+    ThreadWriter threadWriter(archive, <threadID>);
     // A ThreadWriter is the interface made to log some events
 
     // Start logging
@@ -102,8 +74,6 @@ int main() {
     globalArchive.close();
 }
 ```
-
-
 
 
 ### Using EZTrace

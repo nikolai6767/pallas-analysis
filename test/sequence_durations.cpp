@@ -32,12 +32,8 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
 
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
   /* Make a dummy archive and a dummy thread writer. */
-  Archive archive;
-  archive.open("sequence_duration_trace", "sequence_duration_trace", 0);
-
-  ThreadWriter thread_writer;
-
-  thread_writer.open(&archive, 0);
+  Archive archive("sequence_duration_trace", "sequence_duration_trace", 0);
+  ThreadWriter thread_writer(archive, 0);
 
   /* Here's what we're going to do: we'll define some sequences as the following:
    * S1 = E1 E2
@@ -65,15 +61,15 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     }
   }
   pallas_record_generic(&thread_writer, nullptr, get_timestamp(), 0);
-  thread_writer.thread_trace->events[0].durations->at(0) = 0;
+  thread_writer.thread->events[0].durations->at(0) = 0;
   thread_writer.threadClose();
   archive.close();
 
   for (int sequence_number = 0; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
-    Sequence* s = thread_writer.thread_trace->sequences[sequence_number];
+    Sequence* s = thread_writer.thread->sequences[sequence_number];
     std::cout << "Information on sequence " << sequence_number << ":\n"
               << "\tNumber of tokens: " << s->tokens.size() << ": ";
-    thread_writer.thread_trace->printTokenVector(s->tokens);
+    thread_writer.thread->printTokenVector(s->tokens);
     std::cout << "\tNumber of iterations: " << s->durations->size << "\n"
               << "\tDurations: ";
     s->durations->print();

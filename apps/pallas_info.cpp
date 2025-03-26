@@ -480,11 +480,11 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  auto trace = GlobalArchive();
-  if(pallasReadGlobalArchive(&trace, trace_name) < 0) {
+  auto trace = pallas_open_trace(trace_name);
+  if ( trace == nullptr) {
     return EXIT_FAILURE;
   }
-  info_trace(&trace);
+  info_trace(trace);
 
   return EXIT_SUCCESS;
 }

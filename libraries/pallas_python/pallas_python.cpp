@@ -246,9 +246,7 @@ py::list& Trace_get_archives(pallas::GlobalArchive& trace) {
 }
 
 pallas::GlobalArchive* open_trace(const std::string& path) {
-  auto* trace = new pallas::GlobalArchive;
-  pallasReadGlobalArchive(trace, path.c_str());
-  return trace;
+  return pallas_open_trace(path.c_str());
 }
 
 class DataHolder {
@@ -343,7 +341,6 @@ PYBIND11_MODULE(pallas, m) {
   py::class_<pallas::Archive>(m, "Archive", "A Pallas archive. If it exists, it's already been loaded.")
     .def_readonly("dir_name", &pallas::Archive::dir_name)
     .def_readonly("trace_name", &pallas::Archive::trace_name)
-    .def_readonly("fullpath", &pallas::Archive::fullpath)
     .def_property_readonly("threads", &Archive_get_threads);
 
   m.def("open_trace", &open_trace, "Open a Pallas trace");

@@ -36,12 +36,9 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_log(DebugLevel::Quiet, "Starting test:\n");
 
   /* Make a dummy archive and a dummy thread writer. */
-  GlobalArchive archive = GlobalArchive();
-  archive.open(dummyTraceName.c_str(), dummyTraceName.c_str());
-  Archive a = Archive();
-  a.open(dummyTraceName.c_str(), dummyTraceName.c_str(), 0);
-  ThreadWriter thread_writer;
-  thread_writer.open(&a, 0);
+  GlobalArchive trace(dummyTraceName.c_str(), dummyTraceName.c_str());
+  Archive archive(trace, 0);
+  ThreadWriter thread_writer(archive, 0);
 
   /* Start recording some events.*/
 
@@ -50,7 +47,7 @@ int main(int argc, char** argv __attribute__((unused))) {
 #ifdef HAS_FORMAT
     archive.addString(eid, std::format("dummyEvent{}", eid).c_str());
 #else
-    archive.addString(eid, "dummyEvent");
+    trace.addString(eid, "dummyEvent");
 #endif
     pallas_record_generic(&thread_writer, nullptr, get_timestamp(), eid);
   }
@@ -72,11 +69,11 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 1);
   pallas_assert_always(thread_writer.sequence_stack[0][0].type == TypeLoop);
   /* Check that the loop is correct */
-  auto& firstLoop = thread_writer.thread_trace->loops[0];
+  auto& firstLoop = thread_writer.thread->loops[0];
   pallas_assert_always(firstLoop.nb_iterations == 2);
 
   /* Check that the sequence inside that loop is correct */
-  struct Sequence* s = thread_writer.thread_trace->getSequence(firstLoop.repeated_token);
+  struct Sequence* s = thread_writer.thread->getSequence(firstLoop.repeated_token);
 
   pallas_assert_always(s->size() == (unsigned int)MAX_EVENT);
 
@@ -99,7 +96,7 @@ int main(int argc, char** argv __attribute__((unused))) {
 #ifdef HAS_FORMAT
   archive.addString(MAX_EVENT, std::format("dummyEvent{}", MAX_EVENT).c_str());
 #else
-  archive.addString(MAX_EVENT, "dummyEvent");
+  trace.addString(MAX_EVENT, "dummyEvent");
 #endif
   pallas_record_generic(&thread_writer, nullptr, get_timestamp(), MAX_EVENT);
 
@@ -114,11 +111,11 @@ int main(int argc, char** argv __attribute__((unused))) {
   pallas_assert_always(thread_writer.sequence_stack[0].size() == 3); // L0 E L1
   pallas_assert_always(firstLoop.nb_iterations == 3);
 
-  auto& secondLoop = thread_writer.thread_trace->loops[1];
+  auto& secondLoop = thread_writer.thread->loops[1];
   pallas_assert_always(secondLoop.nb_iterations == NUM_LOOPS);
 
   thread_writer.threadClose();
-  archive.close();
+  trace.close();
   // TODO Find a way for the test to clean this trace
   //      Because somehow the following does not remove the folder
   //      Only is content
