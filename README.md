@@ -117,6 +117,13 @@ Then trace any program by running `mpirun -np N eztrace -t <your modules> <your 
 The trace file will be generated in the `<your programm>_trace` folder.
 You can then read it using `pallas_print <your programm>_trace/eztrace_log.pallas`
 
+### Visualizing Pallas traces
+
+[Blup](https://gitlab.inria.fr/blup/blup) is a web-based trace
+visualizer able to display Pallas traces. It uses Pallas Python API.
+
+![](https://gitlab.inria.fr/blup/blup/-/raw/main/doc/screenshot.png)
+
 ## About
 
 Pallas implements a subset of the [OTF2](https://www.vi-hps.org/projects/score-p) API.
