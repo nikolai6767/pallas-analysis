@@ -12,6 +12,8 @@
 
 #include "pallas.h"
 
+#define GLOBAL_ARCHIVE_DEPRECATED_LOCATION CXX([[deprecated("You should record Locations on the Archives")]])
+
 #ifdef __cplusplus
 namespace pallas {
 #endif
@@ -110,6 +112,8 @@ typedef struct GlobalArchive {
   int nb_archives;
   /**< Size of #archive_list. */
   int nb_allocated_archives;
+  /** Vector of Locations. Each location uniquely identifies a Thread. */
+  GLOBAL_ARCHIVE_DEPRECATED_LOCATION DEFINE_Vector(Location, locations);
   /** Vector of LocationGroups. Each LocationGroup uniquely identifies an Archive. */
   DEFINE_Vector(LocationGroup, location_groups);
 
@@ -180,6 +184,14 @@ typedef struct GlobalArchive {
    * Creates a new LocationGroup and adds it to that GlobalArchive.
    */
   void defineLocationGroup(LocationGroupId id, StringRef name, LocationGroupId parent);
+
+  /**
+   * Creates a new Location and adds it to that GlobalArchive. You should be doing this to an Archive.
+   */
+  GLOBAL_ARCHIVE_DEPRECATED_LOCATION void defineLocation(ThreadId id, StringRef name, LocationGroupId parent);
+  /**
+   * Close and save that GlobalArchive.
+   */
   void close();
   /**
    * Getter for a LocationGroup from its id.
@@ -309,7 +321,6 @@ typedef struct Archive {
    */
   [[nodiscard]] const Location* getLocation(ThreadId) const;
 
-
   [[nodiscard]] Thread* getThread(ThreadId);
   [[nodiscard]] Thread* getThreadAt(size_t index);
   const char* getName();
@@ -411,11 +422,17 @@ extern void pallas_global_archive_register_comm(PALLAS(GlobalArchive) * archive,
  */
 extern void pallas_global_archive_define_location_group(PALLAS(GlobalArchive) * archive, PALLAS(LocationGroupId) id, PALLAS(StringRef) name, PALLAS(LocationGroupId) parent);
 
-  /**
+/**
+ * Creates a new Location and adds it to that GlobalArchive.
+ * Locks and unlocks the mutex for that operation.
+ */
+extern void pallas_global_archive_define_location(PALLAS(GlobalArchive) * archive, PALLAS(ThreadId) id, PALLAS(StringRef) name, PALLAS(LocationGroupId) parent);
+
+/**
  * Creates a new LocationGroup and adds it to that Archive.
  * Locks and unlocks the mutex for that operation.
  */
-  extern void pallas_archive_define_location_group(PALLAS(Archive) * archive, PALLAS(LocationGroupId) id, PALLAS(StringRef) name, PALLAS(LocationGroupId) parent);
+extern void pallas_archive_define_location_group(PALLAS(Archive) * archive, PALLAS(LocationGroupId) id, PALLAS(StringRef) name, PALLAS(LocationGroupId) parent);
 /**
  * Creates a new Location and adds it to that Archive.
  * Locks and unlocks the mutex for that operation.

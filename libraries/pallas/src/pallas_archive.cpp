@@ -196,6 +196,15 @@ void GlobalArchive::defineLocationGroup(LocationGroupId lg_id, StringRef name, L
   pthread_mutex_unlock(&lock);
 }
 
+void GlobalArchive::defineLocation(ThreadId l_id, StringRef name, LocationGroupId parent) {
+  pallas_warn("Defining Location %d (%s) in GlobalArchive: You should record in it %d's Archive.\n", l_id, getString(name)->str, parent);
+  pthread_mutex_lock(&lock);
+  Location l = {.id = l_id, .name = name, .parent = parent};
+  pallas_assert(l.id != PALLAS_THREAD_ID_INVALID);
+  locations.push_back(l);
+  pthread_mutex_unlock(&lock);
+}
+
 const String* GlobalArchive::getString(StringRef string_ref) {
   pthread_mutex_lock(&lock);
   auto res = definitions.getString(string_ref);
@@ -252,11 +261,13 @@ const Location* GlobalArchive::getLocation(ThreadId location_id) {
 
 std::vector<Location> GlobalArchive::getLocationList() {
   std::vector<Location> output;
+  if (! locations.empty() ) {
+    pallas_warn("GlobalArchive has some global Locations. Pallas isn't supposed to work like that since ABI 12.\n");
+    output.insert(output.end(), locations.begin(), locations.end());
+  }
   for (auto& lg: location_groups) {
     auto a = getArchive(lg.id);
-    for (const auto& l: a->locations) {
-      output.push_back(l);
-    }
+    output.insert(output.end(), a->locations.begin(), a->locations.end());
   }
   return output;
 }
@@ -534,6 +545,10 @@ void pallas_global_archive_register_comm(pallas::GlobalArchive* archive, pallas:
 
 extern void pallas_global_archive_define_location_group(pallas::GlobalArchive* archive, pallas::LocationGroupId id, pallas::StringRef name, pallas::LocationGroupId parent) {
   archive->defineLocationGroup(id, name, parent);
+};
+
+extern void pallas_global_archive_define_location(pallas::GlobalArchive* archive, pallas::ThreadId id, pallas::StringRef name, pallas::LocationGroupId parent) {
+  archive->defineLocation(id, name, parent);
 };
 
 extern void pallas_archive_define_location_group(pallas::Archive* archive, pallas::LocationGroupId id, pallas::StringRef name, pallas::LocationGroupId parent) {

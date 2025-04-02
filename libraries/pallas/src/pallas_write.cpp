@@ -468,7 +468,7 @@ ThreadWriter::ThreadWriter(Archive& a, ThreadId thread_id) {
     return;
   pallas_recursion_shield++;
 
-  pallas_log(DebugLevel::Normal, "ThreadWriter(%ux)::open\n", thread_id);
+  pallas_log(DebugLevel::Debug, "ThreadWriter(%u)::open\n", thread_id);
 
   pthread_mutex_lock(&a.lock);
   while (a.nb_threads >= a.nb_allocated_threads) {

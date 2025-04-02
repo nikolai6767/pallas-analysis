@@ -166,8 +166,10 @@ OTF2_ErrorCode OTF2_GlobalDefWriter_WriteLocation(OTF2_GlobalDefWriter* writerHa
                                                   OTF2_LocationType locationType,
                                                   uint64_t numberOfEvents,
                                                   OTF2_LocationGroupRef locationGroup) {
-  pallas_error("Pallas does not support Locations on GlobalArchive by design !\n");
-  NOT_IMPLEMENTED;
+  ThreadId thread_id = _otf_register_location(self);
+  LocationGroupId parent_id = _otf_get_location_group_id(locationGroup);
+  pallas_global_archive_define_location(writerHandle->archive, thread_id, name, parent_id);
+  return OTF2_SUCCESS;
 }
 
 OTF2_ErrorCode OTF2_GlobalDefWriter_WriteRegion(OTF2_GlobalDefWriter* writerHandle,
