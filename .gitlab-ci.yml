@@ -42,6 +42,7 @@ build:clang:
   artifacts:
     paths:
       - $CI_PROJECT_DIR/pallas
+      - $CI_PROJECT_DIR/build
 
 build:intel-oneapi:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
@@ -62,6 +63,7 @@ build:intel-oneapi:
   artifacts:
     paths:
       - $CI_PROJECT_DIR/pallas
+      - $CI_PROJECT_DIR/build
 
 test:gcc:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
@@ -75,7 +77,7 @@ test:gcc:
   dependencies:
   - build:gcc
   script:
-    - cd build/
+    - cd $CI_PROJECT_DIR/build/
     - make
     - ctest --output-on-failure
 
@@ -91,7 +93,7 @@ test:clang:
   dependencies:
     - build:clang
   script:
-    - cd build/
+    - cd $CI_PROJECT_DIR/build/
     - make
     - ctest --output-on-failure
 
@@ -107,6 +109,6 @@ test:intel-oneapi:
   dependencies:
     - build:intel-oneapi
   script:
-    - cd build/
+    - cd $CI_PROJECT_DIR/build/
     - make
     - ctest --output-on-failure
