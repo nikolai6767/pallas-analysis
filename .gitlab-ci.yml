@@ -77,8 +77,8 @@ test:gcc:
   dependencies:
   - build:gcc
   script:
+    - export PATH="$PATH:$CI_PROJECT_DIR/pallas/bin/"
     - cd $CI_PROJECT_DIR/build/
-    - make
     - ctest --output-on-failure
 
 test:clang:
@@ -93,8 +93,8 @@ test:clang:
   dependencies:
     - build:clang
   script:
+    - export PATH="$PATH:$CI_PROJECT_DIR/pallas/bin/"
     - cd $CI_PROJECT_DIR/build/
-    - make
     - ctest --output-on-failure
 
 test:intel-oneapi:
@@ -109,6 +109,6 @@ test:intel-oneapi:
   dependencies:
     - build:intel-oneapi
   script:
+    - export PATH="$PATH:$CI_PROJECT_DIR/pallas/bin/"
     - cd $CI_PROJECT_DIR/build/
-    - make
     - ctest --output-on-failure
