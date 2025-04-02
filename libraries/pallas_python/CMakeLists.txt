@@ -10,16 +10,19 @@ if (Python3_FOUND)
         return(-1)
     endif()
 endif()
-option(PythonInstallLocal "Install the Python Lib locally instead of globally" ON)
-set(PythonLocalLib $ENV{HOME}/.local/lib/python3.${Python3_VERSION_MINOR}/site-packages)
+IF(NOT DEFINED $ENV{VENV})
+    option(PythonInstallLocal "Install the Pallas Python library locally instead of globally" ON)
+    execute_process(COMMAND ${Python3_EXECUTABLE} -m site --user-site OUTPUT_VARIABLE PythonLocalLib)
+ENDIF()
 set(PythonGlobalLib ${Python3_SITELIB})
+
 
 execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 find_package(pybind11 CONFIG REQUIRED)
 
 
 pybind11_add_module(pallas_python MODULE pallas_python.cpp)
-set_target_properties(pallas_python PROPERTIES OUTPUT_NAME "pallas")
+set_target_properties(pallas_python PROPERTIES OUTPUT_NAME "pallas_trace")
 pybind11_extension(pallas_python)
 if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
     # Strip unnecessary sections of the binary on Linux/macOS

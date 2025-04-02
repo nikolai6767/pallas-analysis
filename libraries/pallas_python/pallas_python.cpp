@@ -269,7 +269,7 @@ class DataHolder {
   }
 };
 
-PYBIND11_MODULE(pallas, m) {
+PYBIND11_MODULE(pallas_trace, m) {
   m.doc() = "Python API for the Pallas library";
 
   setupEnums(m);
