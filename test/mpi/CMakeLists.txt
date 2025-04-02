@@ -1,19 +1,8 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.9)
 
-enable_testing()
+find_package(MPI REQUIRED)
 
-
-
-#if (ENABLE_MPI)
-
-  set(CMAKE_C_COMPILER ${MPICC})
-
-  add_compile_options(-Wall -Wextra -Wpedantic)	
-  include_directories(${CMAKE_SOURCE_DIR}/src/)
-  link_libraries(pallas)
-
-  add_executable(mpi_benchmark  mpi_benchmark.c)
-  add_test(NAME mpi_benchmark COMMAND mpirun -np 2  ./mpi_benchmark)
-
-
-#endif()
+add_executable(mpi_benchmark mpi_benchmark.c)
+target_link_libraries(mpi_benchmark PUBLIC pallas MPI::MPI_C)
+target_include_directories(mpi_benchmark PUBLIC MPI::MPI_C_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/src/pallas/include)
+add_test(NAME mpi_benchmark COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ./mpi_benchmark ${MPIEXEC_POSTFLAGS})
