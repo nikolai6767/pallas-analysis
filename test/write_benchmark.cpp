@@ -85,7 +85,7 @@ void* worker(void* arg) {
   os << threadID;
   StringRef threadNameRef = registerString(*archive.global_archive, os.str());
 #endif
-  archive.global_archive->defineLocation(threadID, threadNameRef, processID);
+  archive.defineLocation(threadID, threadNameRef, processID);
   ThreadWriter threadWriter(archive, threadID);
 
   pthread_barrier_wait(&bench_start);

@@ -104,21 +104,11 @@ extern "C" {
  * @return Pointer to ThreadWriter
  */
 extern PALLAS(ThreadWriter) * pallas_thread_writer_new(PALLAS(Archive)* archive, PALLAS(ThreadId) thread_id);
-extern void pallas_write_global_archive_close(PALLAS(GlobalArchive) * archive);
+extern void pallas_global_archive_close(PALLAS(GlobalArchive) * archive);
 
-extern void pallas_write_thread_close(PALLAS(ThreadWriter) * thread_writer);
+extern void pallas_thread_writer_close(PALLAS(ThreadWriter) * thread_writer);
 
-extern void pallas_write_define_location_group(PALLAS(GlobalArchive) * archive,
-                                               PALLAS(LocationGroupId) id,
-                                               PALLAS(StringRef) name,
-                                               PALLAS(LocationGroupId) parent);
-
-extern void pallas_write_define_location(PALLAS(GlobalArchive) * archive,
-                                         PALLAS(ThreadId) id,
-                                         PALLAS(StringRef) name,
-                                         PALLAS(LocationGroupId) parent);
-
-extern void pallas_write_archive_close(PALLAS(Archive) * archive);
+extern void pallas_archive_close(PALLAS(Archive) * archive);
 
 extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
                                enum PALLAS(EventType) event_type,

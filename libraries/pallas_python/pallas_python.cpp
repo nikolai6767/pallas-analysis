@@ -214,7 +214,7 @@ struct PyRegion {
 
 std::map<pallas::ThreadId, PyLocation>& Trace_get_locations(pallas::GlobalArchive& trace) {
   auto& map = *new std::map<pallas::ThreadId, PyLocation>();
-  for (auto& loc : trace.locations) {
+  for (auto& loc : trace.getLocationList()) {
     map.insert(std::pair(loc.id, PyLocation{loc, trace}));
   }
   return map;
@@ -298,7 +298,7 @@ PYBIND11_MODULE(pallas, m) {
   py::class_<pallas::EventSummary>(m, "EventSummary", "A Pallas Event Summary, that stores info about an event.")
     .def_readonly("id", &pallas::EventSummary::id)
     .def_readonly("event", &pallas::EventSummary::event)
-    .def_readonly("nb_occurences", &pallas::EventSummary::nb_occurences)
+    .def_readonly("nb_occurrences", &pallas::EventSummary::nb_occurences)
     .def_property_readonly("durations", [](const pallas::EventSummary& self) { return (new DataHolder(*self.durations))->get_array(); })
     .def_property_readonly("max_duration", [](const pallas::EventSummary& self) { return self.durations->max; })
     .def_property_readonly("min_duration", [](const pallas::EventSummary& self) { return self.durations->min; })
@@ -318,7 +318,6 @@ PYBIND11_MODULE(pallas, m) {
     .def_property_readonly("id", [](const PyLocationGroup& lg) { return lg.lg.id; })
     .def_property_readonly("name", [](const PyLocationGroup& lg) { return lg.trace.definitions.getString(lg.lg.name); })
     .def_property_readonly("parent", [](const PyLocationGroup& lg) { return lg.trace.getLocationGroup(lg.lg.parent); })
-    .def_property_readonly("main_location", [](const PyLocationGroup& lg) { return lg.trace.getLocation(lg.lg.mainLoc); })
     .def("__repr__", [](const PyLocationGroup& self) {
       return "<pallas_python.LocationGroup " + std::to_string(self.lg.id) + ": '" + self.trace.definitions.getString(self.lg.name)->str + "'>";
     });
@@ -340,7 +339,6 @@ PYBIND11_MODULE(pallas, m) {
 
   py::class_<pallas::Archive>(m, "Archive", "A Pallas archive. If it exists, it's already been loaded.")
     .def_readonly("dir_name", &pallas::Archive::dir_name)
-    .def_readonly("trace_name", &pallas::Archive::trace_name)
     .def_property_readonly("threads", &Archive_get_threads);
 
   m.def("open_trace", &open_trace, "Open a Pallas trace");
