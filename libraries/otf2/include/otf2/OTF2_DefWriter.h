@@ -229,7 +229,7 @@ OTF2_ErrorCode OTF2_DefWriter_WriteLocation(OTF2_DefWriter* writer,
                                             OTF2_StringRef name,
                                             OTF2_LocationType locationType,
                                             uint64_t numberOfEvents,
-                                            OTF2_LocationGroupRef locationGroup);
+                                            OTF2_LocationGroupRef locationGroup) __attribute__((deprecated("Locations should be defined locally, not globally.")));
 
 /** @brief Writes a Region definition record into the DefWriter.
  *
