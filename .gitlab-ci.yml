@@ -55,7 +55,6 @@ test:unit:
   dependencies:
   - build:gcc
   script:
-    # Run tests for ompt module
-    - export PATH="$PATH:$CI_PROJECT_DIR/pallas/bin/"
     - cd $CI_PROJECT_DIR/build/
+    - make
     - ctest --output-on-failure
