@@ -1,6 +1,8 @@
-//
-// Created by khatharsis on 10/02/25.
-//
+/*
+ * Copyright (C) Telecom SudParis
+ * See LICENSE in top-level directory.
+ */
+
 #pragma once
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -20,3 +22,12 @@ struct type_caster<pallas::String> {
 };
 }  // namespace detail
 }  // namespace PYBIND11_NAMESPACE
+
+
+/* -*-
+   mode: c;
+   c-file-style: "k&r";
+   c-basic-offset 2;
+   tab-width 2 ;
+   indent-tabs-mode nil
+   -*- */

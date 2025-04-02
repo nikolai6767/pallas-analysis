@@ -1,6 +1,7 @@
-//
-// Created by khatharsis on 23/01/25.
-//
+/*
+ * Copyright (C) Telecom SudParis
+ * See LICENSE in top-level directory.
+ */
 #include "pallas_python.h"
 
 std::string Token_toString(pallas::Token t) {
@@ -354,3 +355,12 @@ PYBIND11_MODULE(pallas, m) {
     .def_property_readonly("regions", &Trace_get_regions)
     .def_property_readonly("archives", &Trace_get_archives);
 }
+
+
+/* -*-
+   mode: c;
+   c-file-style: "k&r";
+   c-basic-offset 2;
+   tab-width 2 ;
+   indent-tabs-mode nil
+   -*- */
