@@ -248,11 +248,14 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
 void printTrace(pallas::GlobalArchive& trace) {
   if (per_thread) {
     for (auto thread : trace.getThreadList()) {
+      size_t last_timestamp = 0;
         if(thread_to_print >= 0 && thread->id != thread_to_print) continue;
         auto reader = pallas::ThreadReader(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
         _print_timestamp_header();
         _print_duration_header();
         do {
+          pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
+          last_timestamp = reader.currentState.currentFrame->referential_timestamp;
           auto token = reader.pollCurToken();
           if (token.type == pallas::TypeEvent) {
             printEvent(reader.thread_trace, token, reader.getEventOccurence(token, reader.currentState.currentFrame->tokenCount[token]));
