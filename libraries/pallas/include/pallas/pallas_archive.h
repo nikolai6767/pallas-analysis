@@ -341,11 +341,17 @@ extern "C" {
 /** Constructor for an Archive. In C, always use this to create a new Archive. */
 extern PALLAS(Archive) * pallas_archive_new(const char* dir_name, PALLAS(LocationGroupId) location_group);
 
+/** Destructor for an Archive. */
+extern void pallas_archive_delete(PALLAS(Archive*));
+
 /** Opens a GlobalArchive. In C, always use this to create a new GlobalArchive.
  * @param dirname Path to the file.
  * @param given_trace_name Name of the trace.
  */
 extern PALLAS(GlobalArchive) * pallas_global_archive_new(const char* dirname, const char* given_trace_name);
+
+/** Destructor for a Global Archive. */
+extern void pallas_global_archive_delete(PALLAS(GlobalArchive*));
 /**
  * Getter for a Thread from its id.
  * @returns First Thread matching the given pallas::ThreadId, or nullptr if it doesn't have a match.

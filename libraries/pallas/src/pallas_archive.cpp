@@ -482,9 +482,16 @@ const char* Archive::getName() {
 pallas::Archive* pallas_archive_new(const char* dir_name, pallas::LocationGroupId location_group) {
   return new pallas::Archive(dir_name, location_group);
 }
+void pallas_archive_delete(pallas::Archive* archive) {
+  delete archive;
+}
 
 pallas::GlobalArchive* pallas_global_archive_new(const char* dirname, const char* trace_name) {
   return new pallas::GlobalArchive(dirname, trace_name);
+}
+
+void pallas_global_archive_delete(pallas::GlobalArchive* archive) {
+  delete archive;
 }
 
 pallas::Thread* pallas_archive_get_thread(pallas::Archive* archive, pallas::ThreadId thread_id) {
