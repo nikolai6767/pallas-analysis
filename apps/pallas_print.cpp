@@ -248,7 +248,7 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
 void printTrace(pallas::GlobalArchive& trace) {
   if (per_thread) {
     for (auto thread : trace.getThreadList()) {
-        if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
+        if(thread_to_print >= 0 && thread->id != thread_to_print) continue;
         auto reader = pallas::ThreadReader(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
         _print_timestamp_header();
         _print_duration_header();
@@ -368,21 +368,15 @@ void printThreadStructure(pallas::ThreadReader& tr) {
   }
 }
 
-void printStructure(const int flags, const pallas::GlobalArchive& trace) {
-  for (int i = 0; i < trace.nb_archives; i++) {
-    for (int j = 0; j < trace.archive_list[i]->nb_threads; j++) {
-      auto thread = trace.archive_list[i]->getThreadAt(j);
-      if (thread == nullptr)
-        continue;
-      if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
-    	continue;
-      pallas::ThreadReader tr = pallas::ThreadReader(
-        trace.archive_list[i],
+void printStructure(const int flags, pallas::GlobalArchive& trace) {
+  for (auto * thread: trace.getThreadList()) {
+      if(thread_to_print >= 0 && thread->id != thread_to_print) continue;
+      auto tr = pallas::ThreadReader(
+        thread->archive,
         thread->id,
         flags
         );
       printThreadStructure(tr);
-    }
   }
 }
 
