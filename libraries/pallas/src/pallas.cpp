@@ -536,58 +536,35 @@ TokenCountMap Sequence::getTokenCountReading(const Thread* thread, const TokenCo
   return tokenCount;
 }
 
-void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount);
-
-inline static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& reverseTokenCount) {
+static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& tokenCount) {
   size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
   auto temp = loop_sequence->getTokenCountWriting(thread);
-  reverseTokenCount += temp * loop_nb_iterations;
-  reverseTokenCount[loop->repeated_token] += loop_nb_iterations;
-}
-
-void _sequenceGetTokenCountWriting(Sequence* seq, const Thread* thread, TokenCountMap& reverseTokenCount) {
-  for (auto& token : seq->tokens) {
-    if (token.type == TypeSequence) {
-      auto* s = thread->getSequence(token);
-      _sequenceGetTokenCountWriting(s, thread, reverseTokenCount);
-    }
-    if (token.type == TypeLoop) {
-      auto* loop = thread->getLoop(token);
-      _loopGetTokenCountWriting(loop, thread, reverseTokenCount);
-    }
-    reverseTokenCount[token]++;
+  DOFOR(i, loop->nb_iterations) {
+    tokenCount += temp;
   }
+  if ( tokenCount.find(loop->repeated_token) == tokenCount.end() ) {
+    tokenCount[loop->repeated_token] = 0;
+  }
+  tokenCount[loop->repeated_token] += loop_nb_iterations;
 }
 
-TokenCountMap Sequence::getTokenCountWriting(const Thread* thread, const TokenCountMap* offset) {
-  bool canStoreTokenCount = true;
-  if (tokenCount.empty()) {
-    TokenCountMap updatingOffset;
-    if (offset)
-      updatingOffset = TokenCountMap(*offset);
-    else
-      updatingOffset = TokenCountMap();
-    for (int i = tokens.size() - 1; i >= 0; i--) {
-      auto& token = tokens[i];
-      updatingOffset[token]++;
+TokenCountMap Sequence::getTokenCountWriting(const Thread* thread) {
+   if (tokenCount.empty()) {
+    for (auto& token : tokens) {
+      if (tokenCount.find(token) == tokenCount.end()) {
+        tokenCount[token] = 0;
+      }
+      tokenCount[token]++;
       if (token.type == TypeSequence) {
         auto* s = thread->getSequence(token);
-        _sequenceGetTokenCountWriting(s, thread, updatingOffset);
+        tokenCount += s->getTokenCountWriting(thread);
       }
       if (token.type == TypeLoop) {
-        canStoreTokenCount = false;
-        auto* loop = thread->getLoop(token);
-        _loopGetTokenCountWriting(loop, thread, updatingOffset);
+        const auto* loop = thread->getLoop(token);
+        _loopGetTokenCountWriting(loop, thread, tokenCount);
       }
     }
-
-    if (offset)
-      updatingOffset -= *offset;
-    if (!canStoreTokenCount) {
-      return updatingOffset;
-    }
-    tokenCount = updatingOffset;
   }
   return tokenCount;
 }

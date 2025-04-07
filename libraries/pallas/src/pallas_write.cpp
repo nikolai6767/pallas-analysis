@@ -30,11 +30,6 @@ static inline bool _pallas_arrays_equal(Token* array1, size_t size1, Token* arra
 }
 
 Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_len) {
-  if (array_len == 1 && token_array[0].type == TypeSequence) {
-    pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=1} containing sequence token\n");
-    return token_array[0];
-  }
-
   uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
   pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len, hash);
   auto& sequencesWithSameHash = hashToSequence[hash];
@@ -73,10 +68,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
   return sid;
 }
 
-Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
-  auto& curTokenSeq = getCurrentTokenSequence();
-  const Token sid = thread->getSequenceIdFromArray(&curTokenSeq[start_index], loop_len);
-
+Loop* ThreadWriter::createLoop(Token sequence_id) {
   // for (int i = 0; i < thread_trace->nb_loops; i++) {
   //   if (thread_trace->loops[i].repeated_token.id == sid.id) {
   //     index = i;
@@ -89,11 +81,11 @@ Loop* ThreadWriter::createLoop(size_t start_index, size_t loop_len) {
     doubleMemorySpaceConstructor(thread->loops, thread->nb_allocated_loops);
   }
   size_t index = thread->nb_loops++;
-  pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%lu containing S%d\n", index, sid.id);
+  pallas_log(DebugLevel::Debug, "createLoop:\tLoop not found. Adding it with id=L%lu containing S%d\n", index, sequence_id.id);
 
   Loop* l = &thread->loops[index];
   l->nb_iterations = 1;
-  l->repeated_token = sid;
+  l->repeated_token = sequence_id;
   l->self_id = PALLAS_LOOP_ID(index);
   return l;
 }
@@ -161,10 +153,19 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     index_first_iteration = tmp;
   }
 
-  Loop* loop = createLoop(index_first_iteration, loop_len);
   auto& curTokenSeq = getCurrentTokenSequence();
+  bool sequence_existed = false;
+  Token sid;
+  if (loop_len == 1 && curTokenSeq[index_first_iteration].type == TypeSequence) {
+    sequence_existed = true;
+    sid = curTokenSeq[index_first_iteration];
+  }
+  else {
+    sid = thread->getSequenceIdFromArray(&curTokenSeq[index_first_iteration], loop_len);
+  }
+  Loop* loop = createLoop(sid);
 
-  if (loop_len > 1 || curTokenSeq[index_first_iteration].type != TypeSequence) {
+  if (! sequence_existed ) {
     // We need to go back in the current sequence in order to correctly calculate our durations
     // But only if those are new sequences
     Sequence* loop_seq = thread->getSequence(loop->repeated_token);
@@ -181,9 +182,10 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     // And add that timestamp to the vectors
     loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
     loop_seq->timestamps->add(last_timestamp - duration_second_iteration);
+
+    // The current sequence last_timestamp does not need to be updated
   }
 
-  // The current sequence last_timestamp does not need to be updated
 
   curTokenSeq.resize(index_first_iteration);
   curTokenSeq.push_back(loop->self_id);
@@ -217,19 +219,46 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
         pallas_log(DebugLevel::Debug, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
         return;
       }
-      // We need to find a way to tell if the Loop at [curIndex - 1] is finalized
-      auto* s = thread->getSequence(l->repeated_token);
-      if (s->getTokenCountWriting(thread)[curTokenSeq[curIndex]] == 0) {
-        for (int i = 0; i < l->self_id.id; i++) {
-          if (thread->loops[i].repeated_token == l->repeated_token && thread->loops[i].nb_iterations == l->nb_iterations) {
-            curTokenSeq[curIndex - 1] = l->repeated_token;
+      // We are checking to see if the loop at cur_index-1 could be extended
+      // For that, we check if the current token could be the start of a new loop
+      // If not, we check if the loop could be written another way.
+      Token first_loop_token = l->repeated_token;
+      while (first_loop_token.type != TypeEvent) {
+        if (first_loop_token.type == TypeSequence) {
+          first_loop_token = thread->getSequence(first_loop_token)->tokens[0];
+        } else {
+          first_loop_token = thread->getLoop(first_loop_token)->repeated_token;
+        }
+      }
+      Token first_cur_token = curTokenSeq[curIndex];
+      while (first_cur_token.type != TypeEvent) {
+        if (first_cur_token.type == TypeSequence) {
+          first_cur_token = thread->getSequence(first_cur_token)->tokens[0];
+        } else {
+          first_cur_token = thread->getLoop(first_cur_token)->repeated_token;
+        }
+      }
+      if (first_cur_token != first_loop_token) {
+        // That means we're sure we're not in another iteration of our loop
+        for (TokenId lid = 0; lid < l->self_id.id; lid ++ ) {
+          if (thread->loops[lid].repeated_token == l->repeated_token && thread->loops[lid].nb_iterations == l->nb_iterations) {
+            // We just found a loop that's the same as this one !
+            // And it's not going to be edited
+            curTokenSeq[curIndex - 1] = thread->loops[lid].self_id;
+            // thread->nb_loops--;
+            pallas_log(DebugLevel::Debug, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
+            pallas_log(DebugLevel::Debug, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
             if (l->self_id.id == thread->nb_loops - 1) {
-              thread->nb_loops--;
+              pallas_log(DebugLevel::Debug, "findLoopBasic: Remove last loop\n");
+              // thread->nb_loops--;
+              // TODO: We should delete unused loops for cleanliness's sake
             }
-            break;
           }
         }
       }
+
+
+
     }
   }
   for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= curIndex; loopLength++) {
@@ -288,7 +317,7 @@ void ThreadWriter::findLoop() {
   if (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
     return;
   }
-
+  auto& tokenSeq = getCurrentTokenSequence();
   size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated) ? parameterHandler->getMaxLoopLength() : SIZE_MAX;
   // First we check if the last tokens are of a Sequence we already know
   findSequence(maxLoopLength);
@@ -404,6 +433,10 @@ void ThreadWriter::recordExitFunction() {
   auto* seq = thread->sequences[seq_id.id];
 
   const pallas_timestamp_t sequence_duration = last_timestamp - sequence_start_timestamp[cur_depth];
+#ifdef DEBUG
+  const pallas_timestamp_t computed_duration = thread->getLastSequenceDuration(seq, 0);
+  pallas_assert(computed_duration == sequence_duration);
+#endif
   addDurationToComplete(seq->durations->add(sequence_duration));
   seq->timestamps->add(sequence_start_timestamp[cur_depth]);
 
@@ -574,19 +607,16 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
       if (token.type == TokenType::TypeSequence) {
         auto* seq = getSequence(token);
         token = seq->tokens.back();
-        continue;
       } else {
         auto* loop = getLoop(token);
         auto* loop_seq = getSequence(loop->repeated_token);
         token = loop_seq->tokens.back();
-        continue;
       }
     }
     auto* event = getEventSummary(token);
     sum -= event->durations->back();
   } else {
-    auto secondTokenCount = sequence->getTokenCountWriting(this, &tokenCount);
-    for (const auto& [token, count] : secondTokenCount) {
+    for (const auto& [token, count] : tokenCount) {
       if (token.type == TokenType::TypeEvent) {
         auto* event = getEventSummary(token);
         DOFOR(i, count) {

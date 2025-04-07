@@ -49,10 +49,9 @@ typedef struct ThreadWriter {
   void findSequence(size_t n);
   /** Creates a Loop in the trace, and returns a pointer to it.
    * Does not change the current array of tokens.
-   * @param start_index Starting index of the loop (first token in the loop).
-   * @param loop_len Lenght of the sequence repeated in the loop.
+   * @sequence_id ID of the sequence being repeated.
    * */
-  Loop* createLoop(size_t start_index, size_t loop_len);
+  Loop* createLoop(Token sequence_id);
   /** Create a Loop and change the current array of token to reflect that.
    *
    * For example, replaces `[E1, E2, E3, E4, E1, E2, E3, E4]` with `[L1]`,
