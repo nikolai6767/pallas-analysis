@@ -27,6 +27,8 @@
 #include "pallas/pallas_parameter_handler.h"
 #include "pallas/pallas_storage.h"
 
+#include <algorithm>
+
 short STORE_TIMESTAMPS = 1;
 static short STORE_HASHING = 0;
 void pallas_storage_option_init() {
@@ -1173,7 +1175,7 @@ static void pallasReadLocationGroups(std::vector<pallas::LocationGroup>& locatio
     return;
 
   file.read(location_groups.data(), sizeof(pallas::LocationGroup), location_groups.size());
-
+  std::sort(location_groups.begin(), location_groups.end(), [](pallas::LocationGroup a, pallas::LocationGroup b) { return a.id < b.id; });
   pallas_log(pallas::DebugLevel::Debug, "\tLoad %zu location_groups\n", location_groups.size());
 }
 
@@ -1194,6 +1196,7 @@ static void pallasReadLocations(std::vector<pallas::Location>& locations, File& 
   if (locations.empty())
     return;
   file.read(locations.data(), sizeof(pallas::Location), locations.size());
+  std::sort(locations.begin(), locations.end(), [](pallas::Location a, pallas::Location b) { return a.id < b.id; });
   pallas_log(pallas::DebugLevel::Debug, "\tLoad %lu locations\n", locations.size());
 }
 

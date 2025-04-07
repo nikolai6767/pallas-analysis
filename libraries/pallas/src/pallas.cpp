@@ -187,20 +187,20 @@ const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
   case PALLAS_EVENT_ENTER: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    region = archive->global_archive->getRegion(region_ref);
+    region = archive->getRegion(region_ref);
     break;
   }
   case PALLAS_EVENT_LEAVE: {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
-    region = archive->global_archive->getRegion(region_ref);
+    region = archive->getRegion(region_ref);
     break;
   }
   default:
     region = NULL;
   }
 
-  return region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+  return region ? archive->getString(region->string_ref)->str : "INVALID";
 }
 std::string Thread::getEventString(Event* e) const {
   byte* cursor = nullptr;
@@ -209,8 +209,8 @@ std::string Thread::getEventString(Event* e) const {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
     if (archive->global_archive) {
-      const Region* region = archive->global_archive->getRegion(region_ref);
-      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      const Region* region = archive->getRegion(region_ref);
+      const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
       return "Enter " + std::to_string(region_ref) + "(" + region_name + ")";
     } else {
       return "Enter" + std::to_string(region_ref);
@@ -220,8 +220,8 @@ std::string Thread::getEventString(Event* e) const {
     RegionRef region_ref;
     pop_data(e, &region_ref, sizeof(region_ref), cursor);
     if (archive->global_archive) {
-      const Region* region = archive->global_archive->getRegion(region_ref);
-      const char* region_name = region ? archive->global_archive->getString(region->string_ref)->str : "INVALID";
+      const Region* region = archive->getRegion(region_ref);
+      const char* region_name = region ? archive->getString(region->string_ref)->str : "INVALID";
       return "Leave " + std::to_string(region_ref) + "(" + region_name + ")";
     } else {
       return "Leave " + std::to_string(region_ref);
@@ -406,7 +406,7 @@ std::string Thread::getEventString(Event* e) const {
   case PALLAS_EVENT_GENERIC: {
     StringRef eventNameRef;
     pop_data(e, &eventNameRef, sizeof(eventNameRef), cursor);
-    auto eventName = archive->global_archive->getString(eventNameRef);
+    auto eventName = archive->getString(eventNameRef);
     return eventName->str;
   }
   default:
@@ -446,7 +446,7 @@ Thread::~Thread() {
 }
 
 const char* Thread::getName() const {
-  return archive->global_archive->getString(archive->global_archive->getLocation(id)->name)->str;
+  return archive->getString(archive->getLocation(id)->name)->str;
 }
 
 bool Sequence::isFunctionSequence(const struct Thread* thread) const {
