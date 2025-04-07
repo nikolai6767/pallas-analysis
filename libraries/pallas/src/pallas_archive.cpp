@@ -261,10 +261,6 @@ const Location* GlobalArchive::getLocation(ThreadId location_id) {
 
 std::vector<Location> GlobalArchive::getLocationList() {
   std::vector<Location> output;
-  if (! locations.empty() ) {
-    pallas_warn("GlobalArchive has some global Locations. Pallas isn't supposed to work like that since ABI 12.\n");
-    output.insert(output.end(), locations.begin(), locations.end());
-  }
   for (auto& lg: location_groups) {
     auto a = getArchive(lg.id);
     output.insert(output.end(), a->locations.begin(), a->locations.end());

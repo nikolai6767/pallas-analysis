@@ -1554,8 +1554,14 @@ pallas::GlobalArchive* pallas_open_trace(const char* trace_filename) {
   file.close();
 
   for (auto& locationGroup : trace->location_groups) {
-    trace->getArchive(locationGroup.id);
+    auto archive = trace->getArchive(locationGroup.id);
+    std::copy_if(trace->locations.begin(), trace->locations.end(),
+      std::back_inserter(archive->locations), [locationGroup](pallas::Location l) {
+        return l.parent == locationGroup.id;
+      });
   }
+  trace->locations.clear();
+  // This weird bit of code with the location is just to make sure that they stay local
 
   return trace;
 }
