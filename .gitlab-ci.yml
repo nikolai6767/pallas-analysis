@@ -17,7 +17,6 @@ build:gcc:
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=gcc
     - make
-    - make install
 
 build:clang:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
@@ -34,7 +33,6 @@ build:clang:
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=clang
     - make
-    - make install
 
 build:intel-oneapi:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
@@ -51,7 +49,6 @@ build:intel-oneapi:
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=icx
     - make
-    - make install
 
 test:gcc:
   image: registry.gitlab.inria.fr/pallas/pallas:latest
@@ -65,16 +62,13 @@ test:gcc:
   dependencies:
   - build:gcc
   script:
-    - cd $CI_PROJECT_DIR/build/
     - mkdir build
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=gcc
     - make
-    - make install
     - ctest --output-on-failure
   artifacts:
     paths:
-    - $CI_PROJECT_DIR/pallas
     - $CI_PROJECT_DIR/build
 
 test:clang:
@@ -89,16 +83,13 @@ test:clang:
   dependencies:
     - build:clang
   script:
-    - cd $CI_PROJECT_DIR/build/
     - mkdir build
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=gcc
     - make
-    - make install
     - ctest --output-on-failure
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/pallas
       - $CI_PROJECT_DIR/build
 
 test:intel-oneapi:
@@ -113,14 +104,11 @@ test:intel-oneapi:
   dependencies:
     - build:intel-oneapi
   script:
-    - cd $CI_PROJECT_DIR/build/
     - mkdir build
     - cd build/
     - cmake .. -DENABLE_OTF2=ON -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/pallas -DCMAKE_C_COMPILER=gcc
     - make
-    - make install
     - ctest --output-on-failure
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/pallas
       - $CI_PROJECT_DIR/build
