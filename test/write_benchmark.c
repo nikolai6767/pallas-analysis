@@ -50,12 +50,6 @@ static StringRef _register_string(char* str) {
   return ref;
 }
 
-static LocationGroupId _new_location_group(void) {
-  LocationGroupId id = thread_id++;
-  return id;
-}
-
-
 static ThreadId _new_thread(void) {
   ThreadId id = thread_id++;
   return id;
@@ -180,7 +174,7 @@ int main(int argc, char** argv) {
   pthread_barrier_init(&thread_ready, NULL, 2);
   pthread_barrier_init(&bench_start, NULL, nb_threads + 1);
   pthread_barrier_init(&bench_stop, NULL, nb_threads + 1);
-  thread_writers = malloc(sizeof(struct pallas_thread_writer*) * nb_threads);
+  thread_writers = calloc(nb_threads, sizeof(ThreadWriter*));
 
   printf("nb_iter = %d\n", nb_iter);
   printf("nb_functions = %d\n", nb_functions);
@@ -190,7 +184,7 @@ int main(int argc, char** argv) {
 
   trace = pallas_global_archive_new("write_benchmark_trace", "main");
   archive = pallas_archive_new("write_benchmark_trace", 0);
-  process_id = _new_location_group();
+  process_id = 0; // main process
   process_name = _register_string("Process");
 
 

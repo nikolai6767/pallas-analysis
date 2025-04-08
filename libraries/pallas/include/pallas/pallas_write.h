@@ -90,6 +90,7 @@ typedef struct ThreadWriter {
                     TokenId event_id,
                     pallas_timestamp_t ts,
                     struct AttributeList* attribute_list);
+  ~ThreadWriter();
 #endif
 } ThreadWriter;
 #ifdef __cplusplus
@@ -106,7 +107,7 @@ extern PALLAS(ThreadWriter) * pallas_thread_writer_new(PALLAS(Archive)* archive,
 extern void pallas_global_archive_close(PALLAS(GlobalArchive) * archive);
 
 extern void pallas_thread_writer_close(PALLAS(ThreadWriter) * thread_writer);
-
+extern void pallas_thread_writer_delete(PALLAS(ThreadWriter) * thread_writer);
 extern void pallas_archive_close(PALLAS(Archive) * archive);
 
 extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,

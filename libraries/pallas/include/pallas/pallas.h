@@ -408,6 +408,7 @@ typedef struct String {
   StringRef string_ref; /**< Id of that String.*/
   char* str;            /**< Actual C String */
   int length;           /**< Length of #str.*/
+  CXX(~String();)
 } String;
 
 /** Reference for a pallas::Region */
@@ -452,6 +453,7 @@ typedef struct Group {
   StringRef name;
   uint32_t numberOfMembers;
   uint64_t* members;
+  CXX(~Group();)
 } Group;
 
 /** Reference for a pallas::Comm */

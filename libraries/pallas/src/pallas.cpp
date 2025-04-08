@@ -437,11 +437,11 @@ Thread::Thread() {
 }
 
 Thread::~Thread() {
-  for (size_t i = 0; i < nb_events; i++) {
+  for (size_t i = 0; i < nb_allocated_events; i++) {
     events[i].cleanEventSummary();
   }
   delete[] events;
-  for (size_t i = 0; i < nb_sequences; i++) {
+  for (size_t i = 0; i < nb_allocated_sequences; i++) {
     delete sequences[i];
   }
   delete[] sequences;
@@ -460,6 +460,14 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
   }
   return false;
 };
+
+ Group::~Group() {
+  delete[] this->members;
+}
+ String::~String() {
+  free(this->str);
+}
+
 
 std::string Sequence::guessName(const pallas::Thread* thread) {
   if (this->size() < 4) {

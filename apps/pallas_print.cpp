@@ -457,6 +457,7 @@ int main(const int argc, char* argv[]) {
   else
     printTrace(*trace);
 
+  delete trace;
   return EXIT_SUCCESS;
 }
 

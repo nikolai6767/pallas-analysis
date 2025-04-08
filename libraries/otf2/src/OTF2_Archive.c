@@ -33,6 +33,10 @@ OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
 
 OTF2_ErrorCode OTF2_Archive_Close(OTF2_Archive* archive) {
   pallas_archive_close(archive->archive);
+  if (archive->archive->global_archive == NULL) {
+    pallas_archive_delete(archive->archive);
+    archive->archive = NULL;
+  }
   return OTF2_SUCCESS;
 }
 
@@ -294,6 +298,8 @@ OTF2_MarkerReader* OTF2_Archive_GetMarkerReader(OTF2_Archive* archive) {
 OTF2_ErrorCode OTF2_Archive_CloseEvtWriter(OTF2_Archive* archive, OTF2_EvtWriter* writer) {
   //  NOT_IMPLEMENTED;
   pallas_thread_writer_close(writer->thread_writer);
+  pallas_thread_writer_delete(writer->thread_writer);
+  writer->thread_writer = NULL;
   return OTF2_SUCCESS;
 }
 
@@ -314,6 +320,8 @@ OTF2_ErrorCode OTF2_Archive_CloseSnapWriter(OTF2_Archive* archive, OTF2_SnapWrit
 
 OTF2_ErrorCode OTF2_Archive_CloseGlobalDefWriter(OTF2_Archive* archive, OTF2_GlobalDefWriter* writer) {
   pallas_global_archive_close(writer->archive);
+  pallas_global_archive_delete(writer->archive);
+  writer->archive = NULL;
   return OTF2_SUCCESS;
 }
 

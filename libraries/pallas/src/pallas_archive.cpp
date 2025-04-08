@@ -33,12 +33,11 @@ void Definition::addString(StringRef string_ref, const char* string) {
     pallas_error("Given string_ref was already in use.\n");
   }
 
-  auto s = String();
+  auto& s = strings[string_ref];
   s.string_ref = string_ref;
   s.length = strlen(string) + 1;
-  s.str = new char[s.length];
+  s.str = (char*) calloc(sizeof(char), s.length);
   strncpy(s.str, string, s.length);
-  strings[string_ref] = s;
 
   pallas_log(DebugLevel::Verbose, "Register string #%zu{.ref=%d, .length=%d, .str='%s'}\n", strings.size() - 1, s.string_ref, s.length, s.str);
 }
@@ -62,10 +61,9 @@ void Definition::addRegion(RegionRef region_ref, StringRef string_ref) {
     pallas_error("Given region_ref was already in use.\n");
   }
 
-  auto r = Region();
+  auto& r = regions[region_ref];
   r.region_ref = region_ref;
   r.string_ref = string_ref;
-  regions[region_ref] = r;
 
   pallas_log(DebugLevel::Verbose, "Register region #%zu{.ref=%d, .str=%d}\n", regions.size() - 1, r.region_ref, r.string_ref);
 }
@@ -87,12 +85,11 @@ void Definition::addAttribute(AttributeRef attribute_ref, StringRef name_ref, St
   if (getAttribute(attribute_ref)) {
     pallas_error("Given attribute_ref was already in use.\n");
   }
-  auto a = Attribute();
+  auto& a= attributes[attribute_ref];
   a.attribute_ref = attribute_ref;
   a.name = name_ref;
   a.description = description_ref;
   a.type = type;
-  attributes[attribute_ref] = (a);
 
   pallas_log(DebugLevel::Verbose, "Register attribute #%zu{.ref=%d, .name=%d, .description=%d, .type=%d}\n", attributes.size() - 1, a.attribute_ref, a.name, a.description, a.type);
 }
@@ -116,15 +113,13 @@ void Definition::addGroup(GroupRef group_ref, StringRef name, uint32_t number_of
     pallas_error("Given group_ref was already in use.\n");
   }
 
-  auto g = Group();
+  auto& g = groups[group_ref];
   g.group_ref = group_ref;
   g.name = name;
   g.numberOfMembers = number_of_members;
   g.members = new uint64_t[number_of_members];
   for (uint32_t i = 0; i < number_of_members; i++)
     g.members[i] = members[i];
-
-  groups[group_ref] = g;
 
   pallas_log(DebugLevel::Verbose, "Register group #%zu{.ref=%d, .str=%d, .nbMembers=%d}\n", groups.size() - 1, g.group_ref, g.name, g.numberOfMembers);
 }
@@ -148,13 +143,11 @@ void Definition::addComm(CommRef comm_ref, StringRef name, GroupRef group, CommR
     pallas_error("Given comm_ref was already in use.\n");
   }
 
-  auto c = Comm();
+  auto& c = comms[comm_ref];
   c.comm_ref = comm_ref;
   c.name = name;
   c.group = group;
   c.parent = parent;
-
-  comms[comm_ref] = c;
 
   pallas_log(DebugLevel::Verbose, "Register comm #%zu{.ref=%d, .str=%d, .group=%d, .parent=%d}\n", comms.size() - 1, c.comm_ref, c.name, c.group, c.parent);
 }
@@ -320,8 +313,8 @@ void GlobalArchive::addComm(CommRef comm_ref, StringRef name, GroupRef group, Co
 }
 
 GlobalArchive::~GlobalArchive() {
-  delete[] dir_name;
-  delete[] trace_name;
+  free(dir_name);
+  free(trace_name);
   delete[] fullpath;
   for (size_t i = 0; i < nb_archives; i++) {
     delete archive_list[i];

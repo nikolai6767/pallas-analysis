@@ -509,6 +509,7 @@ int main(int argc, char** argv) {
   }
   info_trace(trace);
 
+  delete trace;
   return EXIT_SUCCESS;
 }
 

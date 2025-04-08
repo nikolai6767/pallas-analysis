@@ -51,12 +51,6 @@ static StringRef registerString(GlobalArchive& trace, const std::string& str) {
   return ref;
 }
 
-static LocationGroupId newLocationGroup() {
-  static std::atomic<LocationGroupId> next_id = 0;
-  LocationGroupId id = next_id++;
-  return id;
-}
-
 static ThreadId newThread() {
   static std::atomic<ThreadId> next_id = 0;
   ThreadId id = next_id++;
@@ -200,7 +194,7 @@ int main(int argc, char** argv) {
 
   GlobalArchive globalArchive("write_benchmark_CPP_trace", "main");
 
-  processID = newLocationGroup();
+  processID = 0;
   processName = registerString(globalArchive, "Main process");
   globalArchive.defineLocationGroup(processID, processName, processID);
   Archive mainProcess(globalArchive, 0);

@@ -288,12 +288,14 @@ void ThreadWriter::findSequence(size_t n) {
   for (int array_len = 1; array_len <= n; array_len++) {
     auto token_array = &curTokenSeq[currentIndex - array_len + 1];
     uint32_t hash = hash32(reinterpret_cast<uint8_t*>(token_array), array_len * sizeof(Token), SEED);
-    auto sequencesWithSameHash = thread->hashToSequence[hash];
-    if (!sequencesWithSameHash.empty()) {
-      for (const auto sid : sequencesWithSameHash) {
-        if (_pallas_arrays_equal(token_array, array_len, thread->sequences[sid]->tokens.data(), thread->sequences[sid]->size())) {
-          found_sequence_id = sid;
-          break;
+    if (thread->hashToSequence.find(hash) != thread->hashToSequence.end()){
+      auto& sequencesWithSameHash = thread->hashToSequence[hash];
+      if (!sequencesWithSameHash.empty()) {
+        for (const auto sid : sequencesWithSameHash) {
+          if (_pallas_arrays_equal(token_array, array_len, thread->sequences[sid]->tokens.data(), thread->sequences[sid]->size())) {
+            found_sequence_id = sid;
+            break;
+          }
         }
       }
     }
@@ -496,6 +498,10 @@ void ThreadWriter::threadClose() {
   mainSequence->timestamps->add(thread->first_timestamp);
   thread->finalizeThread();
 }
+ThreadWriter::~ThreadWriter() {
+  delete[] this->sequence_stack;
+  delete[] sequence_start_timestamp;
+}
 
 ThreadWriter::ThreadWriter(Archive& a, ThreadId thread_id) {
   if (pallas_recursion_shield)
@@ -524,7 +530,7 @@ ThreadWriter::ThreadWriter(Archive& a, ThreadId thread_id) {
   for (int i = 0; i < thread->nb_allocated_sequences; i++) {
     thread->sequences[i] = new Sequence();
     thread->sequences[i]->durations = new LinkedDurationVector();
-    thread->sequences[i]->timestamps = new LinkedDurationVector();
+    thread->sequences[i]->timestamps = new LinkedVector();
   }
 
   thread->hashToSequence = std::unordered_map<uint32_t, std::vector<TokenId>>();
@@ -655,7 +661,9 @@ extern void pallas_store_event(PALLAS(ThreadWriter) * thread_writer,
                                PALLAS(AttributeList) * attribute_list) {
   thread_writer->storeEvent(event_type, id, ts, attribute_list);
 };
-
+extern void pallas_thread_writer_delete(PALLAS(ThreadWriter) * thread_writer) {
+  delete thread_writer;
+};
 /* -*-
    mode: c;
    c-file-style: "k&r";
