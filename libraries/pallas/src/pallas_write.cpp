@@ -164,6 +164,8 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     sid = thread->getSequenceIdFromArray(&curTokenSeq[index_first_iteration], loop_len);
   }
   Loop* loop = createLoop(sid);
+  pallas_assert(loop->repeated_token.isValid());
+  pallas_assert(loop->self_id.isValid());
 
   if (! sequence_existed ) {
     // We need to go back in the current sequence in order to correctly calculate our durations
@@ -193,6 +195,18 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
   loop->addIteration();
 }
 
+
+static Token getFirstToken(Token t, Thread* thread) {
+  while (t.type != TypeEvent) {
+    if (t.type == TypeSequence) {
+      t = thread->getSequence(t)->tokens[0];
+    } else {
+      t = thread->getLoop(t)->repeated_token;
+    }
+  }
+  return t;
+}
+
 /**
  * Finds a Loop in the current Sequence using a basic quadratic algorithm.
  *
@@ -211,7 +225,6 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
   if (curIndex >= 1) {
     if (curTokenSeq[curIndex - 1].type == TypeLoop) {
       auto l = thread->getLoop(curTokenSeq[curIndex - 1]);
-      pallas_assert(l);
       if (l->repeated_token == curTokenSeq[curIndex]) {
         pallas_log(DebugLevel::Debug, "findLoopBasic: Last token was the sequence from L%d: S%d\n", l->self_id.id, l->repeated_token.id);
         l->addIteration();
@@ -222,43 +235,31 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
       // We are checking to see if the loop at cur_index-1 could be extended
       // For that, we check if the current token could be the start of a new loop
       // If not, we check if the loop could be written another way.
-      Token first_loop_token = l->repeated_token;
-      while (first_loop_token.type != TypeEvent) {
-        if (first_loop_token.type == TypeSequence) {
-          first_loop_token = thread->getSequence(first_loop_token)->tokens[0];
-        } else {
-          first_loop_token = thread->getLoop(first_loop_token)->repeated_token;
-        }
-      }
-      Token first_cur_token = curTokenSeq[curIndex];
-      while (first_cur_token.type != TypeEvent) {
-        if (first_cur_token.type == TypeSequence) {
-          first_cur_token = thread->getSequence(first_cur_token)->tokens[0];
-        } else {
-          first_cur_token = thread->getLoop(first_cur_token)->repeated_token;
-        }
-      }
+      Token first_loop_token = getFirstToken(l->repeated_token, thread);
+      Token first_cur_token = getFirstToken(curTokenSeq[curIndex], thread);
       if (first_cur_token != first_loop_token) {
         // That means we're sure we're not in another iteration of our loop
-        for (TokenId lid = 0; lid < l->self_id.id; lid ++ ) {
+        for (TokenId lid = 0; lid < l->self_id.id && lid < thread->nb_loops; lid++) {
           if (thread->loops[lid].repeated_token == l->repeated_token && thread->loops[lid].nb_iterations == l->nb_iterations) {
             // We just found a loop that's the same as this one !
             // And it's not going to be edited
             curTokenSeq[curIndex - 1] = thread->loops[lid].self_id;
-            // thread->nb_loops--;
+            l->nb_iterations = 0;
             pallas_log(DebugLevel::Debug, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
             pallas_log(DebugLevel::Debug, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
             if (l->self_id.id == thread->nb_loops - 1) {
-              pallas_log(DebugLevel::Debug, "findLoopBasic: Remove last loop\n");
-              // thread->nb_loops--;
+              pallas_log(DebugLevel::Debug, "findLoopBasic: Remove last loop L%d ( S%d )\n", l->self_id.id, l->repeated_token.id);
+              thread->nb_loops--;
               // TODO: We should delete unused loops for cleanliness's sake
+            } else {
+              pallas_log(DebugLevel::Error, "findLoopBasic: Couldn't remove duplicated loop L%d ( S%d ). It will stay in the grammar.\n", l->self_id.id, l->repeated_token.id);
             }
+            l->repeated_token = {TypeInvalid, PALLAS_TOKEN_ID_INVALID};
+            l->self_id = {TypeInvalid, PALLAS_TOKEN_ID_INVALID};
+            return;
           }
         }
       }
-
-
-
     }
   }
   for (int loopLength = 1; loopLength < maxLoopLength && loopLength <= curIndex; loopLength++) {

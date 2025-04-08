@@ -62,16 +62,19 @@ Sequence* Thread::getSequence(Token token) const {
 }
 
 Loop* Thread::getLoop(Token token) const {
-  if (token.type != TokenType::TypeLoop) {
+  if (token.type != TypeLoop) {
     pallas_error("Trying to getLoop of (%c%d)\n", PALLAS_TOKEN_TYPE_C(token), token.id);
   }
   pallas_assert(token.id < this->nb_loops);
-  return &this->loops[token.id];
+  auto* l = &this->loops[token.id];
+  pallas_assert(l->repeated_token.isValid());
+  pallas_assert(l->self_id.isValid());
+  return l;
 }
 
 Token& Thread::getToken(Token sequenceToken, int index) const {
   if (sequenceToken.type == TypeSequence) {
-    auto sequence = getSequence(sequenceToken);
+    auto* sequence = getSequence(sequenceToken);
     if (!sequence) {
       pallas_error("Invalid sequence ID: %d\n", sequenceToken.id);
     }
@@ -80,7 +83,7 @@ Token& Thread::getToken(Token sequenceToken, int index) const {
     }
     return sequence->tokens[index];
   } else if (sequenceToken.type == TypeLoop) {
-    auto loop = getLoop(sequenceToken);
+    auto* loop = getLoop(sequenceToken);
     if (!loop) {
       pallas_error("Invalid loop ID: %d\n", sequenceToken.id);
     }
