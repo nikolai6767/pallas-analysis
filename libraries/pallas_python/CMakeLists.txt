@@ -11,14 +11,7 @@ if (Python3_FOUND)
     endif()
 endif()
 
-option(Python3_INSTALL_LOCALLY "Install the Pallas Python library locally instead of globally" OFF)
-IF (NOT DEFINED ENV{VIRTUAL_ENV})
-    set(Python3_INSTALL_LOCALLY ON)
-    execute_process(COMMAND ${Python3_EXECUTABLE} -m site --user-site OUTPUT_VARIABLE Python3_USERSITELIB OUTPUT_STRIP_TRAILING_WHITESPACE)
-ELSE ()
-    message( "VENV detected, installing Pallas in VENV site-libs" )
-ENDIF()
-
+option(Python3_INSTALL_LOCALLY "Install the Pallas Python library in the user local directory instead of system-wide" ON)
 
 execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 find_package(pybind11 CONFIG REQUIRED)
@@ -52,9 +45,11 @@ target_link_libraries(pallas_python
 )
 
 if (Python3_INSTALL_LOCALLY)
+    execute_process(COMMAND ${Python3_EXECUTABLE} -m site --user-site OUTPUT_VARIABLE Python3_USERSITELIB OUTPUT_STRIP_TRAILING_WHITESPACE)
     message("Installing Python library locally to ${Python3_USERSITELIB}")
     install(TARGETS pallas_python DESTINATION ${Python3_USERSITELIB})
 else()
+    execute_process(COMMAND ${Python3_EXECUTABLE}  -c "import site; print(site.getsitepackages()[0])" OUTPUT_VARIABLE Python3_USERSITELIB OUTPUT_STRIP_TRAILING_WHITESPACE)
     message("Installing Python library globally to ${Python3_SITELIB}")
     install(TARGETS pallas_python DESTINATION ${Python3_SITELIB})
 endif()
