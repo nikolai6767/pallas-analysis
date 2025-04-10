@@ -24,10 +24,6 @@ std::string Token_toString(pallas::Token t) {
   return out;
 }
 
-std::string PallasString_toString(const pallas::String* s) {
-  return s->str;
-}
-
 static inline void pop_data(pallas::Event* e, void* data, size_t data_size, byte*& cursor) {
   if (cursor == nullptr) {
     cursor = &e->event_data[0];
@@ -221,10 +217,19 @@ struct PyRegion {
   const std::string name;
 };
 
+
+std::map<pallas::StringRef, std::string>& Archive_get_strings(pallas::Archive& archive) {
+  auto& map = *new std::map<pallas::StringRef, std::string>();
+  for (auto& [key, r] : archive.definitions.strings) {
+    map.insert(std::pair(key, archive.getString(r.string_ref)->str));
+  }
+  return map;
+}
+
 std::map<pallas::ThreadId, PyLocation>& Archive_get_locations(pallas::Archive& archive) {
   auto& map = *new std::map<pallas::ThreadId, PyLocation>();
   for (auto& loc : archive.locations) {
-    map.insert(std::pair(loc.id, PyLocation{loc.id, PallasString_toString(archive.getString(loc.name)), archive.getLocationGroup(loc.parent)}));
+    map.insert(std::pair(loc.id, PyLocation{loc.id, archive.getString(loc.name)->str, archive.getLocationGroup(loc.parent)}));
   }
   return map;
 }
@@ -232,7 +237,7 @@ std::map<pallas::ThreadId, PyLocation>& Archive_get_locations(pallas::Archive& a
 std::map<pallas::RegionRef, PyRegion>& Archive_get_regions(pallas::Archive& archive) {
   auto& map = *new std::map<pallas::RegionRef, PyRegion>();
   for (auto& [key, r] : archive.definitions.regions) {
-    map.insert(std::pair(key, PyRegion{r.region_ref, PallasString_toString(archive.getString(r.string_ref))}));
+    map.insert(std::pair(key, PyRegion{r.region_ref, archive.getString(r.string_ref)->str}));
   }
   return map;
 }
@@ -251,7 +256,15 @@ std::map<pallas::ThreadId, PyLocation>& Trace_get_locations(pallas::GlobalArchiv
 std::map<pallas::LocationGroupId, PyLocationGroup>& Trace_get_location_groups(pallas::GlobalArchive& trace) {
   auto& map = *new std::map<pallas::LocationGroupId, PyLocationGroup>();
   for (auto& lg : trace.location_groups) {
-    map.insert(std::pair(lg.id, PyLocationGroup{lg.id, PallasString_toString(trace.getString(lg.name)), trace.getLocationGroup(lg.parent)}));
+    map.insert(std::pair(lg.id, PyLocationGroup{lg.id, trace.getString(lg.name)->str, trace.getLocationGroup(lg.parent)}));
+  }
+  return map;
+}
+
+std::map<pallas::StringRef, std::string>& Trace_get_strings(pallas::GlobalArchive& trace) {
+  auto& map = *new std::map<pallas::StringRef, std::string>();
+  for (auto& [key, r] : trace.definitions.strings) {
+    map.insert(std::pair(key, trace.getString(r.string_ref)->str));
   }
   return map;
 }
@@ -259,7 +272,7 @@ std::map<pallas::LocationGroupId, PyLocationGroup>& Trace_get_location_groups(pa
 std::map<pallas::RegionRef, PyRegion>& Trace_get_regions(pallas::GlobalArchive& trace) {
   auto& map = *new std::map<pallas::RegionRef, PyRegion>();
   for (auto& [key, r] : trace.definitions.regions) {
-    map.insert(std::pair(key, PyRegion{r.region_ref, PallasString_toString(trace.getString(r.string_ref))}));
+    map.insert(std::pair(key, PyRegion{r.region_ref, trace.getString(r.string_ref)->str}));
   }
   return map;
 }
@@ -367,6 +380,9 @@ PYBIND11_MODULE(pallas_trace, m) {
 
   py::class_<pallas::Archive>(m, "Archive", "A Pallas archive. If it exists, it's already been loaded.")
     .def_readonly("dir_name", &pallas::Archive::dir_name)
+  .def_property_readonly("locations", &Archive_get_locations)
+  .def_property_readonly("strings", &Archive_get_strings)
+  .def_property_readonly("regions", &Archive_get_regions)
     .def_property_readonly("threads", &Archive_get_threads);
 
   m.def("open_trace", &open_trace, "Open a Pallas trace");
@@ -378,7 +394,7 @@ PYBIND11_MODULE(pallas_trace, m) {
     .def_readonly("fullpath", &pallas::GlobalArchive::fullpath)
     .def_property_readonly("locations", &Trace_get_locations)
     .def_property_readonly("location_groups", &Trace_get_location_groups)
-    .def_property_readonly("strings", [](pallas::GlobalArchive& trace) { return trace.definitions.strings; })
+    .def_property_readonly("strings", &Trace_get_strings)
     .def_property_readonly("regions", &Trace_get_regions)
     .def_property_readonly("archives", &Trace_get_archives);
 }
