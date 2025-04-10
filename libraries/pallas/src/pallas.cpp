@@ -470,27 +470,18 @@ bool Sequence::isFunctionSequence(const struct Thread* thread) const {
 
 
 std::string Sequence::guessName(const pallas::Thread* thread) {
-  if (this->size() < 4) {
-    Token t_start = this->tokens[0];
-    if (t_start.type == TypeEvent) {
-      Event* event = thread->getEvent(t_start);
-      if (event->record == PALLAS_EVENT_ENTER) {
-        const char* event_name = thread->getRegionStringFromEvent(event);
-        std::string prefix(event_name);
-
-        if (this->size() == 3) {
-          // that's probably an MPI call. To differentiate calls (eg
-          // MPI_Send(dest=5) vs MPI_Send(dest=0)), we can add the
-          // the second token to the name
-          Token t_second = this->tokens[1];
-
-          std::string res = prefix + "_" + thread->getTokenString(t_second);
-          return res;
-        }
-        return prefix;
-      }
+  Token t_start = this->tokens[0];
+  if (t_start.type == TypeEvent) {
+    Event* event = thread->getEvent(t_start);
+    if (event->record == PALLAS_EVENT_ENTER) {
+      const char* event_name = thread->getRegionStringFromEvent(event);
+      return std::string(event_name);
+    } else if (event->record == PALLAS_EVENT_THREAD_TEAM_BEGIN ||
+	       event->record == PALLAS_EVENT_THREAD_BEGIN) {
+      return std::string("thread");
     }
   }
+
   char buff[128];
   snprintf(buff, sizeof(buff), "Sequence_%d", this->id);
 
