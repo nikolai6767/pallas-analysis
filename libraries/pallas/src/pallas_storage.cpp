@@ -757,6 +757,7 @@ void pallas::LinkedDurationVector::writeToFile(FILE* vectorFile, FILE* valueFile
     pallas_assert(cur_index == size);
     _pallas_compress_write(buffer, size, valueFile);
     delete[] buffer;
+    deleteTimestamps();
   }
 }
 

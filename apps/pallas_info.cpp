@@ -9,6 +9,8 @@
 #include <format>
 #define HAS_FORMAT
 #endif
+#include <pallas/pallas_parameter_handler.h>
+
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
@@ -271,16 +273,23 @@ void info_global_archive(GlobalArchive* archive) {
   printf("Main archive:\n");
 
   if (cmd & show_archive_details) {
-    printf("\tdir_name:   %s\n", archive->dir_name);
-    printf("\ttrace_name: %s\n", archive->trace_name);
+    printf("\tDirectory name:   %s\n", archive->dir_name);
+    printf("\tTrace name: %s\n", archive->trace_name);
   }
 
-  printf("\tfullpath:    %s\n", archive->fullpath);
-  printf("\tnb_archives: %d\n", archive->nb_archives);
-  printf("\tnb_process: %lu\n", archive->location_groups.size());
-  if (archive->nb_archives)
-    printf("\tArchives {.nb_archives: %d}\n", archive->nb_archives);
-  // printf("\tnb_threads: %lu\n", archive->locations.size());
+  printf("\tFullpath:    %s\n", archive->fullpath);
+  printf("\t# Processes: %lu\n", archive->location_groups.size());
+  if (archive->nb_archives) {
+    printf("\t# Archives: %d\n", archive->nb_archives);
+  }
+
+  std::cout << "\nConfiguration:\n"
+            << "\tCompression Algorithm: " << toString(parameterHandler->compressionAlgorithm) << "\n"
+            << "\tEncoding algorithm: " << toString(parameterHandler->encodingAlgorithm) << "\n"
+            << "\tLoop-finding algorithm: " << toString(parameterHandler->loopFindingAlgorithm) << "\n"
+            << "\tMax loop length: " << parameterHandler->maxLoopLength << "\n"
+            << "\tZSTD compression level: " << parameterHandler->zstdCompressionLevel << "\n"
+            << "\tTimestamp storage: " << toString(parameterHandler->timestampStorage) << "\n";
 
   if (cmd & show_definitions) {
     info_definitions(archive->definitions);
@@ -327,10 +336,10 @@ void info_archive(Archive* archive) {
     return;
   }
 
-    std::cout << std::setw(15) << std::left << archive->id;
-    std::cout << std::setw(20) << std::left << archive->getName();
-    std::cout << std::setw(15) << std::right << archive->nb_threads;
-    std::cout << std::endl;
+  std::cout << std::setw(15) << std::left << archive->id;
+  std::cout << std::setw(20) << std::left << archive->getName();
+  std::cout << std::setw(15) << std::right << archive->nb_threads;
+  std::cout << std::endl;
 }
 
 void info_archive_definition(Archive* archive) {
