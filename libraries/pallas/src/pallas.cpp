@@ -477,17 +477,17 @@ std::string Sequence::guessName(const pallas::Thread* thread) {
     Event* event = thread->getEvent(t_start);
     if (event->record == PALLAS_EVENT_ENTER) {
       const char* event_name = thread->getRegionStringFromEvent(event);
-      return std::string(event_name);
+      return event_name;
     } else if (event->record == PALLAS_EVENT_THREAD_TEAM_BEGIN ||
 	       event->record == PALLAS_EVENT_THREAD_BEGIN) {
-      return std::string("thread");
+      return "thread";
     }
   }
 
   char buff[128];
   snprintf(buff, sizeof(buff), "Sequence_%d", this->id);
 
-  return std::string(buff);
+  return buff;
 }
 
 size_t Sequence::getEventCount(const struct Thread* thread) {
