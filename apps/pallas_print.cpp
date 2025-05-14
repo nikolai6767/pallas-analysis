@@ -267,7 +267,9 @@ void printTrace(pallas::GlobalArchive& trace) {
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
   auto readers = std::vector<pallas::ThreadReader>();
-  for (auto * thread: trace.getThreadList()) {
+    auto thread_list = trace.getThreadList();
+  for (auto * thread: thread_list) {
+      std::cout <<thread->id << std::endl;
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
@@ -310,6 +312,7 @@ void printTrace(pallas::GlobalArchive& trace) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
+
 }
 
 static std::string structure_indent[MAX_CALLSTACK_DEPTH];

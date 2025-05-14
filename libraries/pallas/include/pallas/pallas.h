@@ -291,11 +291,16 @@ struct TokenCountMap : public std::map<Token, size_t> {
  * Structure to store a sequence in PALLAS format.
  */
 typedef struct Sequence {
-  TokenId id CXX({PALLAS_TOKEN_ID_INVALID});         /**< ID of that sequence. */
-  LinkedDurationVector* durations; /**< Vector of durations for these type of sequences. */
+  /** ID of that sequence. */
+  TokenId id CXX({PALLAS_TOKEN_ID_INVALID});
+  /** Vector of the durations of each sequence. */
+  LinkedDurationVector* durations;
+  /** Vector of the timestamps of each sequence. */
   LinkedVector* timestamps;
-  uint32_t hash CXX({0});                            /**< Hash value according to the hash32 function.*/
-  DEFINE_Vector(Token, tokens);                      /**< Vector of Token to store the sequence of tokens */
+  /** Hash value according to the hash32 function.*/
+  uint32_t hash CXX({0});
+  /** Vector of Token to store the sequence of tokens */
+  DEFINE_Vector(Token, tokens);
   CXX(private:)
   /**
    * A TokenCountMap counting each token in this Sequence (recursively).

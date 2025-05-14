@@ -57,30 +57,28 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
       // Doing all the L_i containing the S_i
       for (int loop = 0; loop < INNER_LOOP_SIZE; loop++) {
         // Finally, doing the sequence
-        for (int eid = 0; eid <= sequence_number; eid++)
-          pallas_record_generic(&thread_writer, nullptr, get_timestamp(), sequence_number * MAX_SUBSEQUENCE_NUMBER + eid);
-      }
+        for (int eid = 0; eid <= sequence_number; eid++) {
+            pallas_record_generic(&thread_writer, nullptr, get_timestamp(), sequence_number * MAX_SUBSEQUENCE_NUMBER + eid);
+        }}
     }
   }
   pallas_record_generic(&thread_writer, nullptr, get_timestamp(), 0);
   thread_writer.thread->events[0].durations->at(0) = 0;
-  thread_writer.threadClose();
-  archive.close();
 
   for (int sequence_number = 0; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
     Sequence* s = thread_writer.thread->sequences[sequence_number];
+      s->durations->final_update_statistics();
     std::cout << "Information on sequence " << sequence_number << ":\n"
               << "\tNumber of tokens: " << s->tokens.size() << ": ";
     thread_writer.thread->printTokenVector(s->tokens);
     std::cout << "\tNumber of iterations: " << s->durations->size << "\n"
-              << "\tDurations: ";
-    s->durations->print();
-    std::cout << std::endl;
+              << "\tDurations: " << s->durations->to_string() << std::endl;
 
     if (sequence_number > 0) {
       pallas_assert_always(s->tokens.size() == sequence_number + 1);
       pallas_assert_always(s->durations->size == INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
-      for (auto t : *s->durations) {
+      for (size_t i = 0; i < s->durations->size; i ++) {
+        auto& t = s->durations->at(i);
         pallas_assert_always(t == s->size());
       }
     } else {

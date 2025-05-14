@@ -290,18 +290,18 @@ pallas::GlobalArchive* open_trace(const std::string& path) {
   return pallas_open_trace(path.c_str());
 }
 
-class DataHolder {
+template<class VectorType> class DataHolder {
  private:
-  pallas::LinkedVector& data;
+  VectorType& data;
 
  public:
-  explicit DataHolder(pallas::LinkedVector& data_) : data(data_) {};
+  explicit DataHolder(VectorType& data_) : data(data_) {};
   py::array_t<uint64_t> get_array() {
     return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(),  //
                        py::capsule(this, [](void* p) {
                          auto* holder = reinterpret_cast<DataHolder*>(p);
                          if (holder->data.size > 3) {
-                           holder->data.deleteTimestamps();
+                           holder->data.free_data();
                            // TODO Don't delete it, but rather use the LRU
                          }
                          delete holder;

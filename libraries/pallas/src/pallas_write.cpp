@@ -51,7 +51,7 @@ Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_le
     for (uint i = nb_allocated_sequences / 2; i < nb_allocated_sequences; i++) {
       sequences[i] = new Sequence;
       sequences[i]->durations = new LinkedDurationVector();
-      sequences[i]->timestamps = new LinkedDurationVector();
+      sequences[i]->timestamps = new LinkedVector();
     }
   }
 

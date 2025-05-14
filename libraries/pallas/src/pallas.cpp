@@ -437,9 +437,11 @@ Thread::Thread() {
 }
 
 Thread::~Thread() {
+    std::cout << "Freeing thread " << this->id << std::endl;
   for (size_t i = 0; i < nb_allocated_events; i++) {
     events[i].cleanEventSummary();
   }
+    std::cout << "\tDeleting " << events << std::endl;
   delete[] events;
   for (size_t i = 0; i < nb_allocated_sequences; i++) {
     delete sequences[i];

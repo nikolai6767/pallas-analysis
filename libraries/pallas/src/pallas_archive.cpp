@@ -266,7 +266,9 @@ std::vector<Thread*> GlobalArchive::getThreadList() {
   for (auto& lg: location_groups) {
     auto a = getArchive(lg.id);
     for (const auto& l : a->locations) {
-      output.push_back(a->getThread(l.id));
+        auto* t = a->getThread(l.id);
+      output.push_back(t);
+        std::cout << a->id << "->" << t->id << " @ " << t << std::endl;
     }
   }
   return output;
