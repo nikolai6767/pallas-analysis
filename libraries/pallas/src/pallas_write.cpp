@@ -317,25 +317,26 @@ void ThreadWriter::findSequence(size_t n) {
 }
 
 void ThreadWriter::findLoop() {
-  if (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
-    return;
-  }
-  auto& tokenSeq = getCurrentTokenSequence();
-  size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated) ? parameterHandler->getMaxLoopLength() : SIZE_MAX;
-  // First we check if the last tokens are of a Sequence we already know
-  findSequence(maxLoopLength);
+    if (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
+        return;
+    }
+    // TODO Calculer la duration à partir de la 1ere séquence dans la Boucle
+    auto& tokenSeq = getCurrentTokenSequence();
+    size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated) ? parameterHandler->getMaxLoopLength() : SIZE_MAX;
+    // First we check if the last tokens are of a Sequence we already know
+    findSequence(maxLoopLength);
 
-  // Then we check for loops we haven't found yet
-  switch (parameterHandler->getLoopFindingAlgorithm()) {
-  case LoopFindingAlgorithm::None:
-    return;
-  case LoopFindingAlgorithm::Basic:
-  case LoopFindingAlgorithm::BasicTruncated: {
-    findLoopBasic(maxLoopLength);
-  } break;
-  default:
-    pallas_error("Invalid LoopFinding algorithm\n");
-  }
+    // Then we check for loops we haven't found yet
+    switch (parameterHandler->getLoopFindingAlgorithm()) {
+    case LoopFindingAlgorithm::None:
+        return;
+    case LoopFindingAlgorithm::Basic:
+    case LoopFindingAlgorithm::BasicTruncated: {
+        findLoopBasic(maxLoopLength);
+    } break;
+    default:
+        pallas_error("Invalid LoopFinding algorithm\n");
+    }
 }
 
 void ThreadWriter::recordEnterFunction() {
