@@ -21,8 +21,8 @@
 #include <vector>
 /** Default size for creating Vectors and SubVectors.*/
 #define DEFAULT_VECTOR_SIZE 1000
-namespace pallas {
 
+namespace pallas {
 /**
  * Classic linked array list. Sub-arrays are implemented as a subclass
  */
@@ -37,6 +37,7 @@ class LinkedVector {
      * @return Reference to the new element.
      */
     uint64_t* add(uint64_t val);
+
     /**
      * Returns a reference to the element at specified location `pos`, with bounds checking.
      * Loads the vector from the file if needed.
@@ -44,6 +45,7 @@ class LinkedVector {
      * @return Reference to the requested element.
      */
     [[nodiscard]] uint64_t& at(size_t pos);
+
     /**
      * Returns a reference to the element at specified location `pos`, without bounds checking.
      * Loads the vector from the file if needed.
@@ -51,20 +53,19 @@ class LinkedVector {
      * @return Reference to the requested element.
      */
     [[nodiscard]] uint64_t& operator[](size_t pos);
+
     /**
      * Returns a reference to the first element in the vector.
      * @return Reference to the first element.
      */
     [[nodiscard]] uint64_t& front();
+
     /**
      * Returns a reference to the last element in the vector.
      * @return Reference to the last element.
      */
     [[nodiscard]] uint64_t& back();
-    /**
-     * Loads the timestamps / durations from filePath.
-     */
-    void load_timestamps();
+
     /**
      * Frees the data contained in the vector, but keeps the references needed to load them again.
      */
@@ -74,6 +75,7 @@ class LinkedVector {
      * Returns a representation of the vector as a string, for example: "[10, 10000, 3141]"
      */
     std::string to_string();
+
     /**
      * Writes the vector to the given files.
      * @param infoFile File where information about the vector is stored.
@@ -84,8 +86,6 @@ class LinkedVector {
    private:
     /** Path to the file storing this vector. */
     const char* filePath = nullptr;
-    /** Offset in the file. */
-    long offset = 0;
     /**
      * A fixed-sized array functioning as a node in a linked array list.
      */
@@ -108,7 +108,12 @@ class LinkedVector {
 
         /** Starting index of this SubVector. */
         size_t starting_index = 0;
-
+        /** Value of the first element of that sub-array.*/
+        uint64_t first_value = 0;
+        /** Value of the last element of that sub-array.*/
+        uint64_t last_value = 0;
+        /** Offset where data is written. */
+        size_t offset = 0;
         /**
          * Adds a new element at the end of the vector, after its current last element.
          *
@@ -136,6 +141,14 @@ class LinkedVector {
          * @param given_array An allocated array of correct size.
          */
         void copy_to_array(uint64_t* given_array) const;
+
+        /**
+         * Writes the content of this array to the file at the current offset.
+         * Specifically, the first sizeof(size_t) bytes written will be the size of the data, then the data.
+         * Then, sets up the "offset" field accordingly.
+         */
+        void write_to_file(FILE* file);
+
         ~SubArray();
 
         /**
@@ -144,13 +157,12 @@ class LinkedVector {
          * @param previous Previous SubArray.
          */
         explicit SubArray(size_t size, SubArray* previous = nullptr);
-
         /**
-         * Construct a SubArray from a given already allocated array, and its size.
-         * @param size: Size of `array`.
-         * @param array Allocated array of values.
+         * Load a SubArray's metadata from a file. Doesn't load the data.
+         * @param file File where the metadata is stored.
+         * @param previous Previous SubArray.
          */
-        SubArray(size_t size, uint64_t* array);
+        SubArray(FILE* file, SubArray* previous = nullptr);
     };
 
     /** First array list in the linked array list structure.*/
@@ -158,11 +170,17 @@ class LinkedVector {
     /** Last array list in the linked array list structure.*/
     SubArray* last;
 
+    /**
+     * Loads the timestamps from filePath.
+     */
+    void load_data(SubArray* sub);
+
    public:
     /**
      * Creates a new LinkedVector.
      */
     LinkedVector();
+
     /** Creates a new LinkedVector from a file. Doesn't actually load it until and element is accessed. */
     LinkedVector(FILE* vectorFile, const char* valueFilePath);
 
@@ -185,6 +203,7 @@ class LinkedDurationVector {
      * @return Pointer to the new element.
      */
     uint64_t* add(uint64_t val);
+
     /**
      * Returns a reference to the element at specified location `pos`, with bounds checking.
      * Loads the vector from the file if needed.
@@ -192,6 +211,7 @@ class LinkedDurationVector {
      * @return Reference to the requested element.
      */
     [[nodiscard]] uint64_t& at(size_t pos);
+
     /**
      * Returns a reference to the element at specified location `pos`, without bounds checking.
      * Loads the vector from the file if needed.
@@ -199,20 +219,19 @@ class LinkedDurationVector {
      * @return Reference to the requested element.
      */
     [[nodiscard]] uint64_t& operator[](size_t pos);
+
     /**
      * Returns a reference to the first element in the vector.
      * @return Reference to the first element.
      */
     [[nodiscard]] uint64_t& front();
+
     /**
      * Returns a reference to the last element in the vector.
      * @return Reference to the last element.
      */
     [[nodiscard]] uint64_t& back();
-    /**
-     * Loads the timestamps / durations from filePath.
-     */
-    void load_timestamps();
+
     /**
      * Frees the data contained in the vector, but keeps the references needed to load them again.
      */
@@ -238,8 +257,6 @@ class LinkedDurationVector {
    private:
     /** Path to the file storing this vector. */
     const char* filePath = nullptr;
-    /** Offset in the file. */
-    long offset = 0;
     /**
      * A fixed-sized array functioning as a node in a linked array list.
      */
@@ -262,6 +279,9 @@ class LinkedDurationVector {
 
         /** Starting index of this SubVector. */
         size_t starting_index = 0;
+
+        /** Offset where data is written. */
+        size_t offset = 0;
 
         /**
          * Updates the min/max/mean, taking into account all the items from 0 to size-1.
@@ -311,6 +331,14 @@ class LinkedDurationVector {
          * @param given_array An allocated array of correct size.
          */
         void copy_to_array(uint64_t* given_array) const;
+
+        /**
+         * Writes the content of this array to the file at the current offset.
+         * Specifically, the first sizeof(size_t) bytes written will be the size of the data, then the data.
+         * Then, sets up the "offset" field accordingly.
+         */
+        void write_to_file(FILE* file);
+
         ~SubArray();
 
         /**
@@ -321,17 +349,22 @@ class LinkedDurationVector {
         explicit SubArray(size_t size, SubArray* previous = nullptr);
 
         /**
-         * Construct a SubArray from a given already allocated array, and its size.
-         * @param size: Size of `array`.
-         * @param array Allocated array of values.
+         * Load a SubArray's metadata from a file. Doesn't load the data.
+         * @param file File where the metadata is stored.
+         * @param previous Previous SubArray.
          */
-        SubArray(size_t size, uint64_t* array);
+        SubArray(FILE* file, SubArray* previous = nullptr);
     };
 
     /** First array list in the linked array list structure.*/
     SubArray* first;
     /** Last array list in the linked array list structure.*/
     SubArray* last;
+
+    /**
+     * Loads the durations from filePath.
+     */
+    void load_data(SubArray* sub);
     /**
      * Updates the min/max/mean, taking into account all the items from 0 to size-1.
      *
@@ -342,7 +375,9 @@ class LinkedDurationVector {
    public:
     /** Does the final calculation for updating the statistics in that vector.*/
     void final_update_statistics();
+
     ~LinkedDurationVector();
+
     /** Max element stored in the vector. */
     uint64_t min = UINT64_MAX;
     /** Min element stored in the vector. */

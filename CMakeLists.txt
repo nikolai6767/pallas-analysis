@@ -69,6 +69,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Wno-unused-parameter
             -Wno-string-plus-int
             -Wno-return-type-c-linkage
+            -Wno-deprecated-declarations
+            -Wno-gnu-empty-struct
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(WARNINGS

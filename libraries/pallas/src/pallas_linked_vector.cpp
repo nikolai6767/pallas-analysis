@@ -99,15 +99,6 @@ LinkedDurationVector::SubArray::SubArray(size_t size, LinkedDurationVector::SubA
     array = new uint64_t[size];
 }
 
-SAME_FOR_BOTH_VECTORS(
-  ,
-  SubArray::SubArray(size_t size, uint64_t* array) {
-      previous = nullptr;
-      starting_index = 0;
-      allocated = size;
-      this->size = size;
-      this->array = array;
-  })
 
 SAME_FOR_BOTH_VECTORS(, SubArray::~SubArray() { delete[] array; })
 
@@ -173,12 +164,12 @@ SAME_FOR_BOTH_VECTORS(
       if (pos >= size) {
           pallas_error("Getting an element whose index (%lu) is bigger than LinkedVector size (%lu)\n", pos, size);
       }
-      if (first == nullptr) {
-          load_timestamps();
-      }
       SubArray* correct_sub = last;
       while (pos < correct_sub->starting_index) {
           correct_sub = correct_sub->previous;
+      }
+      if (correct_sub->array == nullptr) {
+          load_data(correct_sub);
       }
       return correct_sub->at(pos);
   })
@@ -186,12 +177,12 @@ SAME_FOR_BOTH_VECTORS(
 SAME_FOR_BOTH_VECTORS(
   uint64_t&,
   operator[](size_t pos) {
-      if (first == nullptr) {
-          load_timestamps();
-      }
       SubArray* correct_sub = last;
       while (pos < correct_sub->starting_index) {
           correct_sub = correct_sub->previous;
+      }
+      if (correct_sub->array == nullptr) {
+          load_data(correct_sub);
       }
       return (*correct_sub)[pos];
   })
