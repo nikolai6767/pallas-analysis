@@ -24,8 +24,8 @@ typedef struct ThreadWriter {
 
   pallas_timestamp_t last_timestamp; /**< Timestamp of the last encountered event */
 
-  pallas_duration_t* last_duration; /**< Pointer to the last event duration (to be updated when the timestamp of the
-                                    next event is known) */
+  // pallas_duration_t* last_duration; /**< Pointer to the last event duration (to be updated when the timestamp of the
+  //                                   next event is known) */
 
   pallas_timestamp_t*
     sequence_start_timestamp; /**< Start date of each ongoing sequence (used for computing the sequence duration) */
@@ -77,10 +77,12 @@ typedef struct ThreadWriter {
   pallas_timestamp_t getTimestamp();
   /** Returns t if it's valid, of the current timestamp. */
   pallas_timestamp_t timestamp(pallas_timestamp_t t);
-  /** Adds the given duration to all the stored addresses to complete.*/
-  void completeDurations(pallas_duration_t duration);
-  /** Adds the given address to a list of duration to complete. */
-  void addDurationToComplete(pallas_duration_t* duration);
+
+  // See pallas_timestamp.cpp for why these were deleted.
+  // /** Adds the given duration to all the stored addresses to complete.*/
+  // void completeDurations(pallas_duration_t duration);
+  // /** Adds the given address to a list of duration to complete. */
+  // void addDurationToComplete(pallas_duration_t* duration);
 
  public:
   ThreadWriter(Archive& archive, ThreadId thread_id);

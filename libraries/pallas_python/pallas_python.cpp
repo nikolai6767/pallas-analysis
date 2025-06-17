@@ -340,10 +340,7 @@ PYBIND11_MODULE(pallas_trace, m) {
     .def_readonly("id", &pallas::EventSummary::id)
     .def_readonly("event", &pallas::EventSummary::event)
     .def_readonly("nb_occurrences", &pallas::EventSummary::nb_occurences)
-    .def_property_readonly("durations", [](const pallas::EventSummary& self) { return (new DataHolder(*self.durations))->get_array(); })
-    .def_property_readonly("max_duration", [](const pallas::EventSummary& self) { return self.durations->max; })
-    .def_property_readonly("min_duration", [](const pallas::EventSummary& self) { return self.durations->min; })
-    .def_property_readonly("mean_duration", [](const pallas::EventSummary& self) { return self.durations->mean; })
+    .def_property_readonly("timestamps", [](const pallas::EventSummary& self) { return (new DataHolder(*self.timestamps))->get_array(); })
     .def("__repr__", [](const pallas::EventSummary& self) { return "<pallas_python.EventSummary " + std::to_string(self.id) + ">"; });
 
   py::class_<pallas::Event>(m, "Event", "A Pallas Event.").def_readonly("record", &pallas::Event::record).def_property_readonly("data", &Event_get_data);

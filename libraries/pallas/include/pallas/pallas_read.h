@@ -32,7 +32,6 @@ namespace pallas {
 typedef struct EventOccurence {
   struct Event* event;          /**< Pointer to the Event.*/
   pallas_timestamp_t timestamp; /**< Timestamp for that occurence.*/
-  pallas_duration_t duration;   /**< Duration of that occurence.*/
   AttributeList* attributes;    /**< Attributes for that occurence.*/
 } EventOccurence;
 

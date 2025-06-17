@@ -103,10 +103,7 @@ void info_event(Thread* t, int index) {
 
   std::cout << std::left << "E" << std::setw(14) << std::left << index;
   std::cout << std::setw(35) << std::left << t->getEventString(&e->event);
-  std::cout << std::setw(20) << std::right << e->durations->size;
-  std::cout << std::setw(20) << std::right << (e->durations->min == UINT64_MAX ? 0 : e->durations->min);
-  std::cout << std::setw(20) << std::right << (e->durations->max == UINT64_MAX ? 0 : e->durations->max);
-  std::cout << std::setw(20) << std::right << (e->durations->mean == UINT64_MAX ? 0 : e->durations->mean);
+  std::cout << std::setw(20) << std::right << e->timestamps->size;
   std::cout << std::endl;
 }
 

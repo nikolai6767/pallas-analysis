@@ -49,7 +49,6 @@ static void _print_duration_header() {
 /* Print one event */
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
   _print_timestamp(e.timestamp);
-  _print_duration(e.duration);
 
   if (!per_thread)
     std::cout << std::right << std::setw(10) << thread->getName();
@@ -104,7 +103,8 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
 
     // Start a new callstack duration
     threads_data[min_reader].callstack.emplace_back(std::string(function_name));
-    threads_data[min_reader].callstack_duration.emplace_back(e.duration);
+    // FIXME THIS SHOULD BE e.durations but it doesn't work yet
+    threads_data[min_reader].callstack_duration.emplace_back(0);
 
   } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
     // End a frame
@@ -116,13 +116,17 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
 
     threads_data[min_reader].callstack.pop_back();
     threads_data[min_reader].callstack_duration.pop_back();
-    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
-    threads_data[min_reader].callstack_duration.back() = e.duration; // reset the counter
+    if(threads_data[min_reader].callstack_duration.empty()) {
+        threads_data[min_reader].callstack_duration.push_back(0);
+    }
+    // FIXME this should be e.duration
+    threads_data[min_reader].callstack_duration.back() = 0; // reset the counter
 
   } else {
     // Accumulate duration in the current frame
     if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
-    threads_data[min_reader].callstack_duration.back() += e.duration;
+    // FIXME this should be e.duration
+    threads_data[min_reader].callstack_duration.back() += 0;
   }
 
 
@@ -173,7 +177,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
 
     // Start a new callstack duration
     threads_data[min_reader].callstack.emplace_back(std::string(function_name));
-    threads_data[min_reader].callstack_duration.emplace_back(e.duration);
+    // FIXME this should be e.duration
+    threads_data[min_reader].callstack_duration.emplace_back(0);
     threads_data[min_reader].callstack_timestamp.emplace_back(e.timestamp);
 
   } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
@@ -187,7 +192,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     threads_data[min_reader].callstack.pop_back();
     threads_data[min_reader].callstack_duration.pop_back();
     if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
-    threads_data[min_reader].callstack_duration.back() = e.duration; // reset the counter
+    // FIXME this should be e.duration
+    threads_data[min_reader].callstack_duration.back() = 0; // reset the counter
 
     threads_data[min_reader].callstack_timestamp.pop_back();
     if(threads_data[min_reader].callstack_timestamp.empty()) threads_data[min_reader].callstack_timestamp.push_back(0);
@@ -196,7 +202,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
   } else {
     // Accumulate duration in the current frame
     if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
-    threads_data[min_reader].callstack_duration.back() += e.duration;
+    // FIXME this should be e.duration
+    threads_data[min_reader].callstack_duration.back() += 0;
 
   }
 }

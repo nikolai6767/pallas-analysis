@@ -61,9 +61,9 @@ uint64_t* LinkedVector::SubArray::add(uint64_t val) {
 }
 
 uint64_t* LinkedDurationVector::SubArray::add(uint64_t val) {
-    array[size] = val;
+    array[size++] = val;
     update_statistics();
-    return &array[size++];
+    return &array[size-1];
 }
 
 SAME_FOR_BOTH_VECTORS(
@@ -105,49 +105,28 @@ SAME_FOR_BOTH_VECTORS(, SubArray::~SubArray() { delete[] array; })
 SAME_FOR_BOTH_VECTORS(void, SubArray::copy_to_array(uint64_t* given_array) const { memcpy(given_array, array, size * sizeof(uint64_t)); })
 
 void LinkedDurationVector::update_statistics() {
-    if (size > 1) {
-        auto& val = at(size - 2);
-        max = std::max(max, val);
-        min = std::min(min, val);
-        mean += val;
-    }
+    auto& val = at(size - 1);
+    max = std::max(max, val);
+    min = std::min(min, val);
+    mean += val;
 }
 
 void LinkedDurationVector::SubArray::update_statistics() {
-    if (size > 1) {
-        auto& val = at(size - 2);
+    auto& val = at(size - 1);
         max = std::max(max, val);
         min = std::min(min, val);
         mean += val;
-    }
-}
-void LinkedDurationVector::SubArray::final_update_statistics() {
-    if (size > 0) {
-        auto& val = at(size-1);
-        max = std::max(max, val);
-        min = std::min(min, val);
-        mean = (mean + val) / size;
-    }
-}
-
-void LinkedDurationVector::final_update_statistics() {
-    last->final_update_statistics();
-    if (size > 0) {
-        auto& val = back();
-        max = std::max(max, val);
-        min = std::min(min, val);
-        mean = (mean + val) / size;
-    }
 }
 
 uint64_t* LinkedDurationVector::add(uint64_t val) {
     if (this->last->size >= this->last->allocated) {
-        last->final_update_statistics();
+        last->final_update_mean();
         last = new SubArray(DEFAULT_VECTOR_SIZE, last);
     }
     size++;
+    auto* out = last->add(val);
     update_statistics();
-    return last->add(val);
+    return out;
 }
 
 uint64_t* LinkedVector::add(uint64_t val) {
@@ -159,8 +138,8 @@ uint64_t* LinkedVector::add(uint64_t val) {
 }
 
 SAME_FOR_BOTH_VECTORS(
-  uint64_t&,
-  at(size_t pos) {
+    uint64_t&,
+    at(size_t pos) {
       if (pos >= size) {
           pallas_error("Getting an element whose index (%lu) is bigger than LinkedVector size (%lu)\n", pos, size);
       }

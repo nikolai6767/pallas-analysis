@@ -291,6 +291,8 @@ class LinkedDurationVector {
         void update_statistics();
 
        public:
+      /** Replace the sum (being stored in the mean) by the actual mean. */
+      void final_update_mean() { mean /= size;}
         /** Max element stored in the array. */
         uint64_t min = UINT64_MAX;
 
@@ -309,8 +311,6 @@ class LinkedDurationVector {
          */
         uint64_t* add(uint64_t val);
 
-        /** Does the final calculation for updating the statistics in that vector.*/
-        void final_update_statistics();
 
         /**
          * Returns a reference to the element at specified location `pos`, with bounds checking.
@@ -366,15 +366,14 @@ class LinkedDurationVector {
      */
     void load_data(SubArray* sub);
     /**
-     * Updates the min/max/mean, taking into account all the items from 0 to size-1.
-     *
-     * This is because we assume the last element isn't a duration, but a timestamp.
+     * Updates the min/max/mean.
      */
     void update_statistics();
 
    public:
-    /** Does the final calculation for updating the statistics in that vector.*/
-    void final_update_statistics();
+
+    /** Replace the sum (being stored in the mean) by the actual mean. */
+    void final_update_mean() { mean /= size;}
 
     ~LinkedDurationVector();
 

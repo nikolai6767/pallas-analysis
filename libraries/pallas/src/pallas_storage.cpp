@@ -779,7 +779,7 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
     _pallas_fwrite(&size, sizeof(size), 1, vectorFile);
     if (size == 0)
         return;
-    final_update_statistics();
+    final_update_mean();
     // Write the statistics to the vectorFile
     _pallas_fwrite(&min, sizeof(min), 1, vectorFile);
     _pallas_fwrite(&max, sizeof(max), 1, vectorFile);
@@ -941,9 +941,9 @@ static void _pallas_read_attribute_values(pallas::EventSummary* e, const File& f
 static void pallasStoreEvent(pallas::EventSummary& event,
                              const File& eventFile,
                              const File& durationFile) {
-  pallas_log(pallas::DebugLevel::Debug, "\tStore event %d {.nb_events=%zu}\n", event.id, event.durations->size);
+  pallas_log(pallas::DebugLevel::Debug, "\tStore event %d {.nb_events=%zu}\n", event.id, event.timestamps->size);
   if (pallas::debugLevel >= pallas::DebugLevel::Debug) {
-      std::cout << event.durations->to_string() << std::endl;
+      std::cout << event.timestamps->to_string() << std::endl;
   }
   eventFile.write(&event.event, sizeof(pallas::Event), 1);
   eventFile.write(&event.attribute_pos, sizeof(event.attribute_pos), 1);
@@ -952,7 +952,7 @@ static void pallasStoreEvent(pallas::EventSummary& event,
     eventFile.write(event.attribute_buffer, sizeof(byte), event.attribute_pos);
   }
   if (STORE_TIMESTAMPS) {
-    event.durations->write_to_file(eventFile.file, durationFile.file);
+    event.timestamps->write_to_file(eventFile.file, durationFile.file);
   }
 }
 
@@ -968,9 +968,9 @@ static void pallasReadEvent(pallas::EventSummary& event,
     event.attribute_buffer = new byte[event.attribute_buffer_size];
     eventFile.read(event.attribute_buffer, sizeof(byte), event.attribute_buffer_size);
   }
-  event.durations = new pallas::LinkedDurationVector(eventFile.file, durationFileName);
-  event.nb_occurences = event.durations->size;
-    pallas_log(pallas::DebugLevel::Debug, "\tLoaded event %d {.nb_events=%zu}\n", event.id, event.durations->size);
+  event.timestamps = new pallas::LinkedVector(eventFile.file, durationFileName);
+  event.nb_occurences = event.timestamps->size;
+    pallas_log(pallas::DebugLevel::Debug, "\tLoaded event %d {.nb_events=%zu}\n", event.id, event.timestamps->size);
 }
 
 static const char* pallasGetSequenceDurationFilename(const char* base_dirname, pallas::Thread* th) {

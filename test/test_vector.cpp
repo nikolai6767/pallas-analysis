@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   for (size_t i = 0; i < TEST_SIZE; i++) {
     vector.add(i);
   }
-  vector.final_update_statistics();
+  vector.final_update_mean();
   pallas_assert_always(vector.size == TEST_SIZE);
   pallas_assert_always(vector.min == 0);
   pallas_assert_always(vector.max == TEST_SIZE - 1);
