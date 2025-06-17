@@ -140,13 +140,13 @@ enum Record {
   PALLAS_EVENT_LEAVE = 3,                               /**< Indicates that the program leaves a code region. */
   PALLAS_EVENT_MPI_SEND = 4,                            /**< Indicates that an MPI send operation was initiated (MPI_SEND).  */
   PALLAS_EVENT_MPI_ISEND = 5,                           /**< Indicates that a non-blocking MPI send operation was initiated (MPI_ISEND). */
-  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,                  /**< Indicates the completion of a non- blocking MPI send operation.  */
+  PALLAS_EVENT_MPI_ISEND_COMPLETE = 6,                  /**< Indicates the completion of a non-blocking MPI send operation.  */
   PALLAS_EVENT_MPI_IRECV_REQUEST = 7,                   /**< Indicates that a non-blocking MPI receive operation was initiated (MPI_IRECV). */
   PALLAS_EVENT_MPI_RECV = 8,                            /**< Indicates that an MPI message was received (MPI_RECV).   */
   PALLAS_EVENT_MPI_IRECV = 9,                           /**< Indicates the completion of a non-blocking MPI receive operation completed (MPI_IRECV).  */
-  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                   /**< This events appears if the program tests if a request has already completed but the test failed. */
-  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,              /**< This events appears if the program canceled a request. */
-  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,               /**< An MpiCollectiveBegin record marks the begin of an MPI collective operation (MPI_GATHER, MPI_SCATTER etc.). */
+  PALLAS_EVENT_MPI_REQUEST_TEST = 10,                   /**< This event appears if the program tests if a request has already completed but the test failed. */
+  PALLAS_EVENT_MPI_REQUEST_CANCELLED = 11,              /**< This event appears if the program canceled a request. */
+  PALLAS_EVENT_MPI_COLLECTIVE_BEGIN = 12,               /**< An MpiCollectiveBegin record marks the start of an MPI collective operation (MPI_GATHER, MPI_SCATTER etc.). */
   PALLAS_EVENT_MPI_COLLECTIVE_END = 13,                 /**< Marks the end of an MPI collective */
   PALLAS_EVENT_OMP_FORK = 14,                           /**< Marks that an OpenMP Thread forks a thread team. */
   PALLAS_EVENT_OMP_JOIN = 15,                           /**< Marks that a team of threads is joint and only the master thread continues execution. */
@@ -169,7 +169,7 @@ enum Record {
   PALLAS_EVENT_THREAD_TASK_SWITCH = 32,                 /**< Indicates that the execution of the current task will be suspended and another task starts/restarts its execution. Please note that this may change the current call stack of the executing location. */
   PALLAS_EVENT_THREAD_TASK_COMPLETE = 33,               /**< Indicates that the execution of an OpenMP task has finished. */
   PALLAS_EVENT_THREAD_CREATE = 34,                      /**< The location created successfully a new thread. */
-  PALLAS_EVENT_THREAD_BEGIN = 35,                       /**< Marks the begin of a thread created by another thread. */
+  PALLAS_EVENT_THREAD_BEGIN = 35,                       /**< Marks the beginning of a thread created by another thread. */
   PALLAS_EVENT_THREAD_WAIT = 36,                        /**< The location waits for the completion of another thread. */
   PALLAS_EVENT_THREAD_END = 37,                         /**< Marks the end of a thread. */
   PALLAS_EVENT_IO_CREATE_HANDLE = 38,                   /**< Marks the creation of a new active I/O handle that can be used by subsequent I/O operation events.*/
@@ -177,7 +177,7 @@ enum Record {
   PALLAS_EVENT_IO_SEEK = 41,                            /**< Marks a change of the position, e.g., within a file.*/
   PALLAS_EVENT_IO_CHANGE_STATUS_FLAGS = 42,             /**< Marks a change to the status flags associated with an active I/O handle.*/
   PALLAS_EVENT_IO_DELETE_FILE = 43,                     /**< Marks the deletion of an I/O file.*/
-  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,                 /**< Marks the begin of a file operation (read, write, etc.).*/
+  PALLAS_EVENT_IO_OPERATION_BEGIN = 44,                 /**< Marks the beginning of a file operation (read, write, etc.).*/
   PALLAS_EVENT_IO_DUPLICATE_HANDLE = 40,                /**< Marks the duplication of an already existing active I/O handle.*/
   PALLAS_EVENT_IO_OPERATION_TEST = 45,                  /**< Marks an unsuccessful test whether an I/O operation has already finished.*/
   PALLAS_EVENT_IO_OPERATION_ISSUED = 46,                /**< Marks the successful initiation of a non-blocking operation (read, write, etc.) on an active I/O handle.*/
