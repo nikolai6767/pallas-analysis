@@ -268,7 +268,6 @@ std::vector<Thread*> GlobalArchive::getThreadList() {
     for (const auto& l : a->locations) {
         auto* t = a->getThread(l.id);
       output.push_back(t);
-        std::cout << a->id << "->" << t->id << " @ " << t << std::endl;
     }
   }
   return output;

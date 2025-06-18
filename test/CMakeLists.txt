@@ -23,7 +23,8 @@ SET(TRACE_NAME ${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_trace/main.pallas)
 SET(CPP_TRACE_NAME ${CMAKE_CURRENT_BINARY_DIR}/write_benchmark_CPP_trace/main.pallas)
 
 SET(N_THREADS 4)
-SET(N_ITER 40)
+SET(N_ITER 2000)
+# Twice the size of linked-vectors
 
 add_test(NAME write_benchmark COMMAND write_benchmark -n ${N_ITER} -t ${N_THREADS})
 
