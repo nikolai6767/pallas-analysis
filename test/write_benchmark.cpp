@@ -22,7 +22,7 @@ using namespace pallas;
 static LocationGroupId processID;
 static StringRef processName;
 
-static int nb_iter_default = 100000;
+static int nb_iter_default = 2000;
 static int nb_functions_default = 2;
 static int nb_threads_default = 4;
 static int pattern_default = 0;
