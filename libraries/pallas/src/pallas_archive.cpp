@@ -463,7 +463,7 @@ const Location* Archive::getLocation(ThreadId location_id) const {
 }
 
 const char* Archive::getName() {
-  return getString(global_archive->getLocationGroup(id)->name)->str;
+  return global_archive->getString(global_archive->getLocationGroup(id)->name)->str;
 }
 
 } /* namespace pallas*/
