@@ -94,6 +94,26 @@ typedef struct Definition {
   void addComm(CommRef, StringRef, GroupRef, CommRef);
 #endif
 } Definition;
+
+#ifdef __cplusplus
+
+template <class content_type>
+struct AdditionalContent {
+  content_type* content = nullptr;
+  size_t (*write_content)(content_type*, FILE*) = nullptr;
+  size_t (*read_content)(content_type*, FILE*) = nullptr;
+  /* Next node in the linked-list structure.*/
+  AdditionalContent<void>* next = nullptr;
+};
+#else
+typedef struct AdditionalContent {
+  struct AdditionalContent* next;
+  void* content;
+  size_t (*write_content)(void*, FILE*);
+  size_t (*read_content)(void*, FILE*);
+} AdditionalContent;
+#endif
+
 /**
  * A GlobalArchive represents a program as a whole.
  */
@@ -117,7 +137,27 @@ typedef struct GlobalArchive {
   /** Vector of LocationGroups. Each LocationGroup uniquely identifies an Archive. */
   DEFINE_Vector(LocationGroup, location_groups);
 
+  /** LinkedList of additional_content we want to add to the archive. */
+  AdditionalContent CXX(<void>)* additional_content CXX( = nullptr);
+
 #ifdef __cplusplus
+  /* Adds an additional content node.  */
+  template <typename T>
+  void add_content(AdditionalContent<T>* o) {
+    pthread_mutex_lock(&lock);
+    auto* void_o = reinterpret_cast<AdditionalContent<void>*>(o);
+    if (additional_content == nullptr) {
+      additional_content = void_o;
+    } else {
+      auto old_next = additional_content->next;
+      additional_content->next = void_o;
+      while (void_o->next != nullptr) {
+        void_o = void_o->next;
+      }
+      void_o->next = old_next;
+    }
+    pthread_mutex_unlock(&lock);
+  };
   /**
    * Getter for a String from its id.
    * @returns First String matching the given pallas::StringRef in this GlobalArchive. Nullptr if none was found.
@@ -207,7 +247,7 @@ typedef struct GlobalArchive {
    * Aggregates a list of the locations of all the Archives.
    */
   std::vector<Location> getLocationList();
-  /**
+  /**r example, the std::vector template has a default argument for the allocator:
    * Aggregates a list of the Threads of all the Archives.
    */
   std::vector<Thread*> getThreadList();
@@ -245,7 +285,27 @@ typedef struct Archive {
   DEFINE_Vector(Location, locations);
   /** Vector of LocationGroups. Each LocationGroup uniquely identifies an Archive. */
   DEFINE_Vector(LocationGroup, location_groups);
+  /** LinkedList of additional_content we want to add to the archive. */
+  AdditionalContent CXX(<void>)* additional_content CXX( = nullptr);
 #ifdef __cplusplus
+
+  /* Adds an additional content node.  */
+  template <typename T>
+  void add_content(AdditionalContent<T>* o) {
+    pthread_mutex_lock(&lock);
+    auto* void_o = reinterpret_cast<AdditionalContent<void>*>(o);
+    if (additional_content == nullptr) {
+      additional_content = void_o;
+    } else {
+      auto old_next = additional_content->next;
+      additional_content->next = void_o;
+      while (void_o->next != nullptr) {
+        void_o = void_o->next;
+      }
+      void_o->next = old_next;
+    }
+    pthread_mutex_unlock(&lock);
+  };
   /**
    * Getter for a String from its id.
    * @returns First String matching the given pallas::StringRef in this archive, then global_archive. Nullptr if none was found.

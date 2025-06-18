@@ -67,6 +67,16 @@ static pallas_timestamp_t get_timestamp() {
   return res;
 }
 
+struct example_data {
+    std::string name;
+    size_t random_number;
+};
+
+size_t write_example_data(example_data* d, FILE* file) {
+    return fwrite(d, sizeof(example_data), 1, file);
+}
+
+
 void* worker(void* arg) {
   ThreadId threadID = newThread();
   auto& archive = *static_cast<Archive*>(arg);
@@ -75,11 +85,15 @@ void* worker(void* arg) {
 #ifdef HAS_FORMAT
   StringRef threadNameRef = registerString(std::format("thread_{}", threadID));
 #else
-  std::ostringstream os("thread_");
-  os << threadID;
+  std::ostringstream os;
+    os << "thread_" << threadID;
   StringRef threadNameRef = registerString(*archive.global_archive, os.str());
 #endif
   archive.defineLocation(threadID, threadNameRef, processID);
+  example_data data{"ThreadTest", 42};
+  AdditionalContent<example_data> content{&data, &write_example_data};
+  archive.add_content(&content);
+
   ThreadWriter threadWriter(archive, threadID);
 
   pthread_barrier_wait(&bench_start);
@@ -120,8 +134,9 @@ void* worker(void* arg) {
   int nb_events = nb_iter * nb_event_per_iter;
   auto duration_per_event = duration / nb_events;
 
-  std::cout << "T#" << threadID << ": " << nb_events << " events in " << duration << "s -> " << duration_per_event * 1e9 << " ns per event" << std::endl;
-
+    pthread_mutex_lock(&archive.lock);
+ std::cout << "T#" << threadID << ": "<< nb_events << " events in " << duration/1e9<< "s -> "<< duration_per_event << " ns per event" << std::endl;
+    pthread_mutex_unlock(&archive.lock);
   threadWriter.threadClose();
   return nullptr;
 }

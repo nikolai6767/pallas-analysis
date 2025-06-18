@@ -183,6 +183,7 @@ static void pallasStoreRegions(pallas::Definition& definitions, File& file);
 static void pallasStoreAttributes(pallas::Definition& definitions, File& file);
 static void pallasStoreGroups(pallas::Definition& definitions, File& file);
 static void pallasStoreComms(pallas::Definition& definitions, File& file);
+static void pallasStoreAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file);
 
 static void pallasStoreLocationGroups(std::vector<pallas::LocationGroup>& location_groups, File& file);
 static void pallasStoreLocations(std::vector<pallas::Location>& locations, File& file);
@@ -200,7 +201,7 @@ static void pallasReadGroups(pallas::Definition& definitions, File& file);
 static void pallasReadComms(pallas::Definition& definitions, File& file);
 static void pallasReadLocationGroups(std::vector<pallas::LocationGroup>& location_groups, File& file);
 static void pallasReadLocations(std::vector<pallas::Location>& locations, File& file);
-
+static void pallasReadAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file);
 void pallasLoadThread(pallas::Archive* globalArchive, pallas::ThreadId thread_id);
 
 static pallas::Archive* pallasGetArchive(pallas::GlobalArchive* global_archive,
@@ -1232,6 +1233,55 @@ static void pallasReadLocations(std::vector<pallas::Location>& locations, File& 
   pallas_log(pallas::DebugLevel::Debug, "\tLoad %lu locations\n", locations.size());
 }
 
+static void pallasStoreAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file) {
+    pallas_log(pallas::DebugLevel::Normal, "\tStoring additional content.\n");
+    // We have to start by leaving enough space to later write the number of content and bytes we wrote
+    size_t original_position = ftell(file.file);
+    fseek(file.file, sizeof(size_t) * 2, SEEK_CUR);
+    size_t sum = 0;
+    size_t count = 0;
+    while (additional_content != nullptr) {
+        size_t before_position = ftell(file.file);
+        size_t n_bytes_written = additional_content->write_content(additional_content->content, file.file);
+        size_t actual_bytes_written = ftell( file.file ) - before_position;
+        if (n_bytes_written == actual_bytes_written) {
+            pallas_warn("Mismatch in # of bytes written and # of bytes user write_content returns: %lu != %lu\n", n_bytes_written, actual_bytes_written);
+        }
+        sum += actual_bytes_written;
+        count ++;
+        additional_content = additional_content->next;
+    }
+    // Then go back to the start to write the data.
+    fseek(file.file, original_position, SEEK_SET);
+    file.write(&sum, sizeof(size_t), 1);
+    file.write(&count, sizeof(size_t), 1);
+    fseek(file.file, sum, SEEK_CUR);
+    pallas_log(pallas::DebugLevel::Normal, "\tStored %lu additional contents for %lu bytes + %lu for padding\n", count, sum, 2* sizeof(size_t));
+}
+
+static void pallasReadAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file) {
+    pallas_log(pallas::DebugLevel::Normal, "\tReading additional content\n");
+    size_t original_position = ftell(file.file);
+    size_t theo_sum;
+    size_t theo_count;
+    file.read(&theo_sum, sizeof(size_t), 1);
+    file.read(&theo_count, sizeof(size_t), 1);
+    size_t sum = 0;
+    size_t count = 0;
+    while (additional_content != nullptr && (sum < theo_sum && count < theo_count)) {
+        sum += additional_content->read_content(additional_content->content, file.file);
+        count ++;
+    }
+    if (theo_count != count) {
+        pallas_warn("Mismatch in # of data and # of data user described: %lu != %lu\n", theo_count, count);
+    }
+    if (theo_sum != sum) {
+        pallas_warn("Mismatch in # of data written and # of data user defined read_content returns: %lu != %lu\n", theo_sum, sum);
+    }
+    fseek(file.file, original_position + sizeof(size_t) * 2 + theo_sum, SEEK_SET);
+    pallas_log(pallas::DebugLevel::Normal, "\tRead %lu additional contents for %lu bytes\n", count, sum);
+}
+
 static File pallasGetThreadFile(const char* dir_name, pallas::Thread* thread, const char* mode) {
   char filename[1024];
   const char* threadPath = getThreadPath(thread);
@@ -1404,6 +1454,7 @@ void pallasStoreArchive(pallas::Archive* archive) {
   pallasStoreDefinitions(archive->definitions, file);
   pallasStoreLocationGroups(archive->location_groups, file);
   pallasStoreLocations(archive->locations, file);
+    pallasStoreAdditionalContent(archive->additional_content, file);
   file.close();
 }
 
@@ -1480,6 +1531,7 @@ pallas::Archive* pallas::GlobalArchive::getArchive(pallas::LocationGroupId archi
   pallasReadDefinitions(archive->definitions, file);
   pallasReadLocationGroups(archive->location_groups, file);
   pallasReadLocations(archive->locations, file);
+  pallasReadAdditionalContent(archive->additional_content, file);
   file.close();
 
   int index = 0;

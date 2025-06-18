@@ -115,7 +115,8 @@ void* worker(void* arg __attribute__((unused))) {
   int nb_events = nb_iter * nb_event_per_iter;
   double duration_per_event = duration / nb_events;
 
-  printf("T#%u: %d events in %lf s -> %lf ns per event\n", thread_id, nb_events, duration, duration_per_event * 1e9);
+  printf("T#%u: %d events in %lf s -> %lf ns per event\n",
+  thread_id, nb_events, duration, duration_per_event * 1e9);
 
   pallas_thread_writer_close(thread_writer);
   return NULL;
@@ -222,7 +223,8 @@ int main(int argc, char** argv) {
   int nb_events = nb_iter * nb_event_per_iter * nb_threads;
   double events_per_second = nb_events / duration;
 
-  printf("TOTAL: %d events in %lf s -> %lf Me/s \n", nb_events, duration, events_per_second / 1e6);
+  printf("TOTAL: %d events in %lf s -> %lf Me/s \n",
+  nb_events, duration, events_per_second / 1e6);
 
   pallas_archive_close(archive);
   pallas_global_archive_close(trace);
