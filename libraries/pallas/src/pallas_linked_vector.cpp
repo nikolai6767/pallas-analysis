@@ -112,7 +112,7 @@ void LinkedDurationVector::update_statistics() {
 }
 
 void LinkedDurationVector::SubArray::update_statistics() {
-    auto& val = at(size - 1);
+    auto& val = at(size - 1 + starting_index);
         max = std::max(max, val);
         min = std::min(min, val);
         mean += val;
