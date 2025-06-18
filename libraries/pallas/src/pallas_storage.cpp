@@ -1234,7 +1234,7 @@ static void pallasReadLocations(std::vector<pallas::Location>& locations, File& 
 }
 
 static void pallasStoreAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file) {
-    pallas_log(pallas::DebugLevel::Normal, "\tStoring additional content.\n");
+    pallas_log(pallas::DebugLevel::Debug, "\tStoring additional content.\n");
     // We have to start by leaving enough space to later write the number of content and bytes we wrote
     size_t original_position = ftell(file.file);
     fseek(file.file, sizeof(size_t) * 2, SEEK_CUR);
@@ -1256,7 +1256,7 @@ static void pallasStoreAdditionalContent(pallas::AdditionalContent<void> *additi
     file.write(&sum, sizeof(size_t), 1);
     file.write(&count, sizeof(size_t), 1);
     fseek(file.file, sum, SEEK_CUR);
-    pallas_log(pallas::DebugLevel::Normal, "\tStored %lu additional contents for %lu bytes + %lu for padding\n", count, sum, 2* sizeof(size_t));
+    pallas_log(pallas::DebugLevel::Debug, "\tStored %lu additional contents for %lu bytes + %lu for padding\n", count, sum, 2* sizeof(size_t));
 }
 
 static void pallasReadAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file) {
@@ -1421,6 +1421,7 @@ void pallasStoreGlobalArchive(pallas::GlobalArchive* archive) {
   pallasStoreDefinitions(archive->definitions, file);
   pallasStoreLocationGroups(archive->location_groups, file);
   pallasStoreLocations(archive->locations, file);
+    pallasStoreAdditionalContent(archive->additional_content, file);
 
   file.close();
 }
@@ -1634,6 +1635,7 @@ pallas::GlobalArchive* pallas_open_trace(const char* trace_filename) {
   pallasReadDefinitions(trace->definitions, file);
   pallasReadLocationGroups(trace->location_groups, file);
   pallasReadLocations(trace->locations, file);
+    pallasReadAdditionalContent(trace->additional_content, file);
   trace->nb_archives = trace->location_groups.size();
   trace->nb_allocated_archives = trace->location_groups.size();
   if (trace->location_groups.size()) {
