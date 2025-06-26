@@ -11,6 +11,50 @@
 #include "pallas/pallas_log.h"
 #include "pallas/pallas_read.h"
 #include "pallas/pallas_storage.h"
+#include <time.h>
+#include <fstream>
+#include <float.h>
+
+typedef struct {
+	double total_d;
+	double min_d;
+	double max_d;
+	int count;
+} Duration;
+
+void duration_init(Duration* d) {
+	d->total_d = 0.0;
+	d->min_d = DBL_MAX;
+	d->max_d = 0.0;
+	d-> count = 0;
+}
+
+void update_duration(Duration* d, struct timespec t1, struct timespec t2){
+	long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
+	d->total_d += time;
+	if (time < d ->min_d) d->min_d = time;
+	if (time > d -> max_d) d-> max_d = time;
+	d->count++;
+}
+
+void duration_write_csv(const char* filename, const Duration* d) {
+    std::ofstream file(std::string(filename) + ".csv");
+    file << "calls,total_us,min_us,max_us,average_us\n";
+    file << d->count << "," << d->total_d << "," << d->min_d << "," << d->max_d << ",";
+    file << (d->count ? d->total_d / d->count : 0) << "\n";
+}
+
+#define NB_FUNCTIONS 12
+Duration durations[NB_FUNCTIONS];
+
+
+enum FunctionIndex {
+    PRINT_TIMESTAMP,
+    PRINT_TIMESTAMP_HEADER,
+    PRINT_DURATION,
+    PRINT_DURATION_HEADER,
+
+};
 
 bool verbose = false;
 bool per_thread = false;
@@ -22,11 +66,16 @@ bool csv = false;
 bool csv_bulk = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
+	struct timespec t1, t2;
+	clock_gettime(CLOCK_MONOTONIC, &t1);
   if (show_timestamps) {
     std::cout.precision(9);
     std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
   }
+	clock_gettime(CLOCK_MONOTONIC, &t2);
+	update_duration(&durations[PRINT_TIMESTAMP], t1, t2);
 }
+
 static void _print_timestamp_header() {
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
@@ -466,6 +515,9 @@ int main(const int argc, char* argv[]) {
     printStructure(flags, *trace);
   else
     printTrace(*trace);
+
+
+    duration_write_csv("test", &durations[0]);
 
   delete trace;
   return EXIT_SUCCESS;
