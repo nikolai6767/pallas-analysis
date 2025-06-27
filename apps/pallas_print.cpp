@@ -117,6 +117,7 @@ static void _print_timestamp_header() {
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_TIMESTAMP_HEADER], t1, t2);
 
 }
@@ -128,6 +129,7 @@ static void _print_duration(pallas_timestamp_t d) {
     std::cout.precision(9);
     std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_DURATION], t1, t2);
 
 }
@@ -138,6 +140,8 @@ static void _print_duration_header() {
   if (show_durations && (!flamegraph) && (!csv)) {
     std::cout << std::right << std::setw(21) << "Duration";
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_DURATION_HEADER], t1, t2);
 
 }
@@ -158,6 +162,8 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
   thread->printEventAttribute(&e);
   std::cout << std::endl;
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_EVENT], t1, t2);
 
 }
@@ -233,6 +239,7 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
     // FIXME this should be e.duration
     threads_data[min_reader].callstack_duration.back() += 0;
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_FLAME], t1, t2);
 
@@ -314,6 +321,8 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     threads_data[min_reader].callstack_duration.back() += 0;
 
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_CSV], t1, t2);
 
 }
@@ -362,6 +371,8 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
       }
     }
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_CSV_BULK], t1, t2);
 
 }
@@ -435,6 +446,8 @@ void printTrace(pallas::GlobalArchive& trace) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_TRACE], t1, t2);
 
 }
@@ -466,6 +479,8 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
     }
     structure_indent[tr.currentState.current_frame_index - 2] = isLastOfSeq ? " " : "│";
     return current_indent;
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[GET_CURRENT_INDEX], t1, t2);
 
 }
@@ -502,6 +517,8 @@ void printThreadStructure(pallas::ThreadReader& tr) {
       break;
     current_token = next_token;
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_THREAD_STRUCTURE], t1, t2);
 
 }
@@ -518,6 +535,8 @@ void printStructure(const int flags, pallas::GlobalArchive& trace) {
         );
       printThreadStructure(tr);
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_STRUCTURE], t1, t2);
 
 }
