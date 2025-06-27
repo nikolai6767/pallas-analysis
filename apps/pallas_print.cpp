@@ -558,6 +558,12 @@ void usage(const char* prog_name) {
 }
 
 int main(const int argc, char* argv[]) {
+
+  for (int i = 0; i<NB_FUNCTIONS; i++){
+    duration_init(duration[i]);
+  }
+
+
   int flags = PALLAS_READ_FLAG_UNROLL_ALL;
   bool show_structure = false;
   char* trace_name = nullptr;
