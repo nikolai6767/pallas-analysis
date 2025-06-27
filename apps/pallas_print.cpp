@@ -169,7 +169,6 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
     }
   }
   return true;
-  update_duration(&durations[PRINT_TIMESTAMP], t1, t2);
 
 }
 
@@ -597,8 +596,8 @@ int main(const int argc, char* argv[]) {
   else
     printTrace(*trace);
 
-
-    duration_write_csv("test", &durations[0]);
+  
+  duration_write_all_csv("test");
 
   delete trace;
   return EXIT_SUCCESS;
