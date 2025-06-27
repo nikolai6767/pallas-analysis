@@ -560,7 +560,7 @@ void usage(const char* prog_name) {
 int main(const int argc, char* argv[]) {
 
   for (int i = 0; i<NB_FUNCTIONS; i++){
-    duration_init(duration[i]);
+    duration_init(&durations[i]);
   }
 
 
