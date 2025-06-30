@@ -321,6 +321,7 @@ void pallasLoadCheckpoint(ThreadReader *thread_reader, Cursor *checkpoint);
 }; /* namespace pallas */
 #endif
 
+
 /* -*-
    mode: c;
    c-file-style: "k&r";
