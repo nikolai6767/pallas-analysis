@@ -366,7 +366,6 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
 
 void printTrace(pallas::GlobalArchive& trace) {
   	struct timespec t1, t2;
-    struct timespec t5, t6;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
   if (per_thread) {
     for (auto thread : trace.getThreadList()) {
@@ -383,11 +382,8 @@ void printTrace(pallas::GlobalArchive& trace) {
             printEvent(reader.thread_trace, token, reader.getEventOccurence(token, reader.currentState.currentFrame->tokenCount[token]));
           }
         } 
-        clock_gettime(CLOCK_MONOTONIC, &t5);
 
         while (reader.getNextToken().isValid());
-      	clock_gettime(CLOCK_MONOTONIC, &t6);
-        update_duration(&durations[GET_NEXT_TOKEN], t5, t6);
 
 
     }
