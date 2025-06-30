@@ -318,7 +318,6 @@ void ThreadWriter::findLoop() {
     if (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::None) {
         return;
     }
-    // TODO Calculer la duration à partir de la 1ere séquence dans la Boucle
     auto& tokenSeq = getCurrentTokenSequence();
     size_t maxLoopLength = (parameterHandler->getLoopFindingAlgorithm() == LoopFindingAlgorithm::BasicTruncated) ? parameterHandler->getMaxLoopLength() : SIZE_MAX;
     // First we check if the last tokens are of a Sequence we already know
