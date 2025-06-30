@@ -14,83 +14,8 @@
 #include <time.h>
 #include <fstream>
 #include <float.h>
-
-typedef struct {
-	double total_d;
-	double min_d;
-	double max_d;
-	int count;
-} Duration;
-
-void duration_init(Duration* d) {
-	d->total_d = 0.0;
-	d->min_d = DBL_MAX;
-	d->max_d = 0.0;
-	d-> count = 0;
-}
-
-void update_duration(Duration* d, struct timespec t1, struct timespec t2){
-	long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
-	d->total_d += time;
-	if (time < d ->min_d) d->min_d = time;
-	if (time > d -> max_d) d-> max_d = time;
-	d->count++;
-}
-
-void duration_write_csv(const char* filename, const Duration* d) {
-    std::ofstream file(std::string(filename) + ".csv");
-    file << "calls,total_us,min_us,max_us,average_us\n";
-    file << d->count << "," << d->total_d << "," << d->min_d << "," << d->max_d << ",";
-    file << (d->count ? d->total_d / d->count : 0) << "\n";
-}
-
-
-
-enum FunctionIndex {
-  PRINT_TIMESTAMP,
-  PRINT_TIMESTAMP_HEADER,
-  PRINT_DURATION,
-  PRINT_DURATION_HEADER,
-  PRINT_EVENT,
-  PRINT_FLAME,
-  PRINT_CSV,
-  PRINT_CSV_BULK,
-  PRINT_TRACE,
-  GET_CURRENT_INDEX, 
-  PRINT_THREAD_STRUCTURE,
-  PRINT_STRUCTURE,
-  NB_FUNCTIONS
-};
-
-
-Duration durations[NB_FUNCTIONS];
-
-
-void duration_write_all_csv(const char* filename) {
-  std::ofstream file(std::string(filename) + ".csv");
-  file << "function,calls,total,min,max,average\n";
-
-  const char* function_names[NB_FUNCTIONS] = {
-  "PRINT_TIMESTAMP",
-  "PRINT_TIMESTAMP_HEADER",
-  "PRINT_DURATION",
-  "PRINT_DURATION_HEADER",
-  "PRINT_EVENT",
-  "PRINT_FLAME",
-  "PRINT_CSV",
-  "PRINT_CSV_BULK",
-  "PRINT_TRACE",
-  "GET_CURRENT_INDEX", 
-  "PRINT_THREAD_STRUCTURE",
-  "PRINT_STRUCTURE"
-  };
-
-  for (int i = 0; i < NB_FUNCTIONS; ++i) {
-    const Duration& d = durations[i];
-    double avg = d.count ? d.total_d / d.count : 0.0;
-    file << function_names[i] << "," << d.count << "," << d.total_d << "," << d.min_d << "," << d.max_d << "," << avg << "\n";
-  }
-}
+#include "pallas/nikolai.h"
+   
 
 
 bool verbose = false;
@@ -138,156 +63,6 @@ static void _print_duration(pallas_timestamp_t d) {
 
 static void _print_duration_header() {
   	struct timespec t1, t2;
-	clock_gettime(CLOCK_MONOTONIC, &t1);
-  if (show_durations && (!flamegraph) && (!csv)) {
-    std::cout << std::right << std::setw(21) << "Duration";
-  }
-  clock_gettime(CLOCK_MONOTONIC, &t2);
-
-  update_duration(&durations[PRINT_DURATION_HEADER], t1, t2);
-
-}
-
-/* Print one event */
-static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
-  	
-  struct timespec t1, t2;
-	clock_gettime(CLOCK_MONOTONIC, &t1);
-
-  _print_timestamp(e.timestamp);
-
-  if (!per_thread)
-    std::cout << std::right << std::setw(10) << thread->getName();
-  if (verbose) {
-    std::cout << std::right << std::setw(10) << thread->getTokenString(token);
-  }
-  std::cout << std::setw(4) << " " << thread->getEventString(e.event);
-  thread->printEventAttribute(&e);
-  std::cout << std::endl;
-  clock_gettime(CLOCK_MONOTONIC, &t2);
-
-  update_duration(&durations[PRINT_EVENT], t1, t2);
-
-}
-
-bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
-  for (const auto& reader : readers) {
-    if (!reader.isEndOfTrace()) {
-      return false;
-    }
-  }
-  return true;
-
-}
-
-struct thread_data {
-  std::vector<std::string> callstack{};
-  std::vector<pallas_duration_t> callstack_duration{};
-  std::vector<pallas_timestamp_t> callstack_timestamp{};
-  pallas_timestamp_t last_timestamp;
-};
-
-void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
-		pallas::ThreadReader* min_reader,
-		pallas::EventOccurence& e) {
-      	struct timespec t1, t2;
-	clock_gettime(CLOCK_MONOTONIC, &t1);
-
-  // This lambda prints the callstack in the flamegraph format
-  auto  _print_callstack = [&]() {
-    auto duration = 0;
-    if(! threads_data[min_reader].callstack_duration.empty()) {
-      duration = threads_data[min_reader].callstack_duration.back();
-    }
-    for(auto str: threads_data[min_reader].callstack) {
-      std::cout<<";"<<str;
-    }
-    if(threads_data[min_reader].callstack.empty()) std::cout<<";";
-
-    std::cout<<" "<<duration<<std::endl;
-  };
-
-  if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
-    // Start a new frame
-    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
-
-    // Print the previous frame
-    _print_callstack();
-
-    // Start a new callstack duration
-    threads_data[min_reader].callstack.emplace_back(std::string(function_name));
-    // FIXME THIS SHOULD BE e.durations but it doesn't work yet
-    threads_data[min_reader].callstack_duration.emplace_back(0);
-
-  } else if(e.event->record == pallas::PALLAS_EVENT_LEAVE) {
-    // End a frame
-    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
-    // Print the current frame
-    _print_callstack();
-
-    // Start a new frame
-
-    threads_data[min_reader].callstack.pop_back();
-    threads_data[min_reader].callstack_duration.pop_back();
-    if(threads_data[min_reader].callstack_duration.empty()) {
-        threads_data[min_reader].callstack_duration.push_back(0);
-    }
-    // FIXME this should be e.duration
-    threads_data[min_reader].callstack_duration.back() = 0; // reset the counter
-
-  } else {
-    // Accumulate duration in the current frame
-    if(threads_data[min_reader].callstack_duration.empty()) threads_data[min_reader].callstack_duration.push_back(0);
-    // FIXME this should be e.duration
-    threads_data[min_reader].callstack_duration.back() += 0;
-  }
-  clock_gettime(CLOCK_MONOTONIC, &t2);
-
-  update_duration(&durations[PRINT_FLAME], t1, t2);
-
-}
-
-void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
-	      pallas::ThreadReader* min_reader,
-	      pallas::EventOccurence& e) {
-          	struct timespec t1, t2;
-	clock_gettime(CLOCK_MONOTONIC, &t1);
-
-  // This lambda prints the callstack in the flamegraph format
-  auto  _print_callstack = [&]() {
-    pallas_duration_t duration = 0;
-    if(! threads_data[min_reader].callstack_duration.empty()) {
-      duration = threads_data[min_reader].callstack_duration.back();
-    }   
-
-    pallas_timestamp_t first_timestamp = min_reader->thread_trace->getFirstTimestamp();
-    if(! threads_data[min_reader].callstack_timestamp.empty()) {
-      first_timestamp = threads_data[min_reader].callstack_timestamp.back();
-    }
-
-
-    static bool first_line = true;
-    if(first_line) {
-      std::cout<<"Thread,Function,Start,Finish,Duration\n";
-      first_line = false;
-    }
-
-    std::cout<<min_reader->thread_trace->getName()<<",";
-    if(threads_data[min_reader].callstack.empty())
-      std::cout<<"main";
-    else
-      std::cout<<threads_data[min_reader].callstack.back();
-
-    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<std::endl;
-
-     // Check that timestamps to not overlap
-    pallas_assert_always(threads_data[min_reader].last_timestamp <= first_timestamp);
-    threads_data[min_reader].last_timestamp = first_timestamp + duration;
-  };
-
-  if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
-    // Start a new frame
-    const char* function_name = min_reader->thread_trace->getRegionStringFromEvent(e.event);
 
     // Print the previous frame
     _print_callstack();
@@ -533,6 +308,156 @@ void printStructure(const int flags, pallas::GlobalArchive& trace) {
       auto tr = pallas::ThreadReader(
         thread->archive,
         thread->id,
+        flags
+        );
+      printThreadStructure(tr);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
+  update_duration(&durations[PRINT_STRUCTURE], t1, t2);
+
+}
+
+void usage(const char* prog_name) {
+  std::cout << "Usage : " << prog_name << " [options] <trace file>" << std::endl;
+  std::cout << "\t" << "-h" << "\t" << "Show this help and exit" << std::endl;
+  std::cout << "\t" << "-v" << "\t" << "Enable verbose mode" << std::endl;
+  std::cout << "\t" << "-T" << "\t" << "Enable per thread mode" << std::endl;
+  std::cout << "\t" << "-d" << "\t" << "Show durations" << std::endl;
+  std::cout << "\t" << "-t" << "\t" << "Hide timestamps" << std::endl;
+  std::cout << "\t" << "-S" << "\t" << "Enable structure mode (per thread mode only)" << std::endl;
+  std::cout << "\t" << "-s" << "\t" << "Do not unroll sequences (structure mode only)" << std::endl;
+  std::cout << "\t" << "-l" << "\t" << "Do not unroll loops (structure mode only)" << std::endl;
+  std::cout << "\t" << "--thread thread_id" << "\t" << "Only print thread <thread_id>" << std::endl;
+  std::cout << "\t" << "-f" << "\t" << "Generate a flamegraph file" << std::endl;
+  std::cout << "\t" << "-c" << "\t" << "Generate a csv file" << std::endl;
+  std::cout << "\t" << "-cb"<< "\t" << "Generate a csv file (bulk mode)" << std::endl;
+}
+
+int main(const int argc, char* argv[]) {
+
+  for (int i = 0; i<NB_FUNCTIONS; i++){
+    duration_init(&durations[i]);
+  }
+
+
+  int flags = PALLAS_READ_FLAG_UNROLL_ALL;
+  bool show_structure = false;
+  char* trace_name = nullptr;
+
+  for (int nb_opts = 1; nb_opts < argc; nb_opts++) {
+    if (!strcmp(argv[nb_opts], "-v")) {
+      pallas_debug_level_set(pallas::DebugLevel::Debug);
+    } else if (!strcmp(argv[nb_opts], "-h") || !strcmp(argv[nb_opts], "-?")) {
+      usage(argv[0]);
+      return EXIT_SUCCESS;
+    } else if (!strcmp(argv[nb_opts], "-v")) {
+      pallas_debug_level_set(pallas::DebugLevel::Debug);
+    } else if (!strcmp(argv[nb_opts], "-T")) {
+      per_thread = true;
+    } else if (!strcmp(argv[nb_opts], "-d")) {
+      show_durations = true;
+    } else if (!strcmp(argv[nb_opts], "-t")) {
+      show_timestamps = false;
+    } else if (!strcmp(argv[nb_opts], "-S")) {
+      show_structure = true;
+    } else if (!strcmp(argv[nb_opts], "-s")) {
+      flags &= ~PALLAS_READ_FLAG_UNROLL_SEQUENCE;
+    } else if (!strcmp(argv[nb_opts], "-l")) {
+      flags &= ~PALLAS_READ_FLAG_UNROLL_LOOP;
+    } else if (!strcmp(argv[nb_opts], "-f")) {
+      flamegraph = true;
+    } else if (!strcmp(argv[nb_opts], "-c")) {
+      csv = true;
+    } else if (!strcmp(argv[nb_opts], "-cb")) {
+      csv_bulk = true;
+    } else if (!strcmp(argv[nb_opts], "--thread")) {
+      per_thread = true;
+      thread_to_print = atoi(argv[nb_opts+1]);
+      nb_opts++;
+    } else {
+      /* Unknown parameter name. It's probably the trace's path name. We can stop
+       * parsing the parameter list.
+       */
+      trace_name = argv[nb_opts];
+    }
+  }
+
+        flags
+        );
+      printThreadStructure(tr);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+
+  update_duration(&durations[PRINT_STRUCTURE], t1, t2);
+
+}
+
+void usage(const char* prog_name) {
+  std::cout << "Usage : " << prog_name << " [options] <trace file>" << std::endl;
+  std::cout << "\t" << "-h" << "\t" << "Show this help and exit" << std::endl;
+  std::cout << "\t" << "-v" << "\t" << "Enable verbose mode" << std::endl;
+  std::cout << "\t" << "-T" << "\t" << "Enable per thread mode" << std::endl;
+  std::cout << "\t" << "-d" << "\t" << "Show durations" << std::endl;
+  std::cout << "\t" << "-t" << "\t" << "Hide timestamps" << std::endl;
+  std::cout << "\t" << "-S" << "\t" << "Enable structure mode (per thread mode only)" << std::endl;
+  std::cout << "\t" << "-s" << "\t" << "Do not unroll sequences (structure mode only)" << std::endl;
+  std::cout << "\t" << "-l" << "\t" << "Do not unroll loops (structure mode only)" << std::endl;
+  std::cout << "\t" << "--thread thread_id" << "\t" << "Only print thread <thread_id>" << std::endl;
+  std::cout << "\t" << "-f" << "\t" << "Generate a flamegraph file" << std::endl;
+  std::cout << "\t" << "-c" << "\t" << "Generate a csv file" << std::endl;
+  std::cout << "\t" << "-cb"<< "\t" << "Generate a csv file (bulk mode)" << std::endl;
+}
+
+int main(const int argc, char* argv[]) {
+
+  for (int i = 0; i<NB_FUNCTIONS; i++){
+    duration_init(&durations[i]);
+  }
+
+
+  int flags = PALLAS_READ_FLAG_UNROLL_ALL;
+  bool show_structure = false;
+  char* trace_name = nullptr;
+
+  for (int nb_opts = 1; nb_opts < argc; nb_opts++) {
+    if (!strcmp(argv[nb_opts], "-v")) {
+      pallas_debug_level_set(pallas::DebugLevel::Debug);
+    } else if (!strcmp(argv[nb_opts], "-h") || !strcmp(argv[nb_opts], "-?")) {
+      usage(argv[0]);
+      return EXIT_SUCCESS;
+    } else if (!strcmp(argv[nb_opts], "-v")) {
+      pallas_debug_level_set(pallas::DebugLevel::Debug);
+    } else if (!strcmp(argv[nb_opts], "-T")) {
+      per_thread = true;
+    } else if (!strcmp(argv[nb_opts], "-d")) {
+      show_durations = true;
+    } else if (!strcmp(argv[nb_opts], "-t")) {
+      show_timestamps = false;
+    } else if (!strcmp(argv[nb_opts], "-S")) {
+      show_structure = true;
+    } else if (!strcmp(argv[nb_opts], "-s")) {
+      flags &= ~PALLAS_READ_FLAG_UNROLL_SEQUENCE;
+    } else if (!strcmp(argv[nb_opts], "-l")) {
+      flags &= ~PALLAS_READ_FLAG_UNROLL_LOOP;
+    } else if (!strcmp(argv[nb_opts], "-f")) {
+      flamegraph = true;
+    } else if (!strcmp(argv[nb_opts], "-c")) {
+      csv = true;
+    } else if (!strcmp(argv[nb_opts], "-cb")) {
+      csv_bulk = true;
+    } else if (!strcmp(argv[nb_opts], "--thread")) {
+      per_thread = true;
+      thread_to_print = atoi(argv[nb_opts+1]);
+      nb_opts++;
+    } else {
+      /* Unknown parameter name. It's probably the trace's path name. We can stop
+       * parsing the parameter list.
+       */
+      trace_name = argv[nb_opts];
+    }
+  }
+
         flags
         );
       printThreadStructure(tr);
