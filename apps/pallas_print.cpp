@@ -44,8 +44,6 @@ void duration_write_csv(const char* filename, const Duration* d) {
     file << (d->count ? d->total_d / d->count : 0) << "\n";
 }
 
-#define NB_FUNCTIONS 12
-Duration durations[NB_FUNCTIONS];
 
 
 enum FunctionIndex {
@@ -60,8 +58,12 @@ enum FunctionIndex {
   PRINT_TRACE,
   GET_CURRENT_INDEX, 
   PRINT_THREAD_STRUCTURE,
-  PRINT_STRUCTURE
+  PRINT_STRUCTURE,
+  NB_FUNCTIONS
 };
+
+
+Duration durations[NB_FUNCTIONS];
 
 
 void duration_write_all_csv(const char* filename) {
