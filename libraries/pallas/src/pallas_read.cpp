@@ -295,7 +295,6 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
 //******************* EXPLORATION FUNCTIONS ********************
 
 const Token& ThreadReader::pollCurToken() const {
-    struct timespec t1, t2;
     return getTokenInCallstack(currentState.current_frame_index);
 }
 
