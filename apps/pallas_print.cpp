@@ -382,9 +382,12 @@ void printTrace(pallas::GlobalArchive& trace) {
         } 
         struct timespec t5, t6;
         clock_gettime(CLOCK_MONOTONIC, &t5);
-        while (reader.getNextToken().isValid());
-        clock_gettime(CLOCK_MONOTONIC, &t6);
-        update_duration(&durations[GET_NEXT_TOKEN], &t5, &t6);
+        while (reader.getNextToken().isValid()){
+          clock_gettime(CLOCK_MONOTONIC, &t5);
+          clock_gettime(CLOCK_MONOTONIC, &t6);
+          update_duration(&durations[GET_NEXT_TOKEN], &t5, &t6);
+        };
+
     }
     return;
   }
