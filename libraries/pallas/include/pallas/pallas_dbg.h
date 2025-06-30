@@ -108,6 +108,7 @@ enum FunctionIndex {
   POLL, 
   GET_NEXT_TOKEN,
   NEXT,
+  POLL2,
   NB_FUNCTIONS
 };
 

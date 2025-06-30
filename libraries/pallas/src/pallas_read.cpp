@@ -557,11 +557,17 @@ bool ThreadReader::moveToPrevTokenInBlock() {
 }
 
 Token ThreadReader::getNextToken(int flags) {
+    struct timespec t1, t2, t3;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     if (flags == PALLAS_READ_FLAG_NONE)
         flags = pallas_read_flag;
     if (!moveToNextToken(flags))
         return Token();
+    clock_gettime(CLOCK_MONOTONIC, &t2);
     return pollCurToken();
+    clock_gettime(CLOCK_MONOTONIC, &t3);
+    update_duration(&durations[NEXT], t1, t2);
+    update_duration(&durations[POLL2], t1, t3);
 }
 Token ThreadReader::getPrevToken(int flags) {
     if (flags == PALLAS_READ_FLAG_NONE)
