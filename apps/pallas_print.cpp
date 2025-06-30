@@ -15,12 +15,7 @@
 #include <fstream>
 #include <float.h>
 
-typedef struct {
-	double total_d;
-	double min_d;
-	double max_d;
-	int count;
-} Duration;
+
 
 void duration_init(Duration* d) {
 	d->total_d = 0.0;
@@ -44,24 +39,7 @@ void duration_write_csv(const char* filename, const Duration* d) {
     file << (d->count ? d->total_d / d->count : 0) << "\n";
 }
 
-#define NB_FUNCTIONS 12
-Duration durations[NB_FUNCTIONS];
 
-
-enum FunctionIndex {
-  PRINT_TIMESTAMP,
-  PRINT_TIMESTAMP_HEADER,
-  PRINT_DURATION,
-  PRINT_DURATION_HEADER,
-  PRINT_EVENT,
-  PRINT_FLAME,
-  PRINT_CSV,
-  PRINT_CSV_BULK,
-  PRINT_TRACE,
-  GET_CURRENT_INDEX, 
-  PRINT_THREAD_STRUCTURE,
-  PRINT_STRUCTURE
-};
 
 
 void duration_write_all_csv(const char* filename) {
