@@ -47,21 +47,21 @@ void duration_write_all_csv(const char* filename) {
   std::ofstream file(std::string(filename) + ".csv");
   file << "function,calls,total,min,max,average\n";
 
-  const char* function_names[NB_FUNCTIONS] = {
-  "PRINT_TIMESTAMP",
-  "PRINT_TIMESTAMP_HEADER",
-  "PRINT_DURATION",
-  "PRINT_DURATION_HEADER",
-  "PRINT_EVENT",
-  "PRINT_FLAME",
-  "PRINT_CSV",
-  "PRINT_CSV_BULK",
-  "PRINT_TRACE",
-  "GET_CURRENT_INDEX", 
-  "PRINT_THREAD_STRUCTURE",
-  "PRINT_STRUCTURE", 
-  "POLL"
-  };
+  // const char* function_names[NB_FUNCTIONS] = {
+  // "PRINT_TIMESTAMP",
+  // "PRINT_TIMESTAMP_HEADER",
+  // "PRINT_DURATION",
+  // "PRINT_DURATION_HEADER",
+  // "PRINT_EVENT",
+  // "PRINT_FLAME",
+  // "PRINT_CSV",
+  // "PRINT_CSV_BULK",
+  // "PRINT_TRACE",
+  // "GET_CURRENT_INDEX", 
+  // "PRINT_THREAD_STRUCTURE",
+  // "PRINT_STRUCTURE", 
+  // "POLL"
+  // };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
     const Duration& d = durations[i];
@@ -379,7 +379,12 @@ void printTrace(pallas::GlobalArchive& trace) {
           if (token.type == pallas::TypeEvent) {
             printEvent(reader.thread_trace, token, reader.getEventOccurence(token, reader.currentState.currentFrame->tokenCount[token]));
           }
-        } while (reader.getNextToken().isValid());
+        } 
+        struct timespec t5, t6;
+        clock_gettime(CLOCK_MONOTONIC, &t5);
+        while (reader.getNextToken().isValid());
+        clock_gettime(CLOCK_MONOTONIC, &t6);
+        update_duration(&durations[GET_NEXT_TOKEN], &t5, &t6);
     }
     return;
   }
