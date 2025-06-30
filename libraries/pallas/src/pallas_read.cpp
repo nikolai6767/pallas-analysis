@@ -9,6 +9,8 @@
 #include <cstring>
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
+#include <time.h>
+#include "pallas/pallas_dbg.h"
 
 namespace pallas {
 
@@ -583,7 +585,7 @@ void ThreadReader::enterBlock() {
     currentState.current_frame_index++;
     currentState.currentFrame++;
     currentState.currentFrame->frame_index = 0;
-    struct timestamp t1, t2;
+    struct timespec t1, t2;
     clock_gettime(CLOCK_MONOTONIC, &t1);
     currentState.currentFrame->referential_timestamp = currentState.callstack[currentState.current_frame_index - 1].referential_timestamp;
     clock_gettime(CLOCK_MONOTONIC, &t2);
