@@ -290,23 +290,24 @@ pallas::GlobalArchive* open_trace(const std::string& path) {
   return pallas_open_trace(path.c_str());
 }
 
-template<class VectorType> class DataHolder {
- private:
-  VectorType& data;
+template <class VectorType>
+class DataHolder {
+   private:
+    VectorType* data;
 
- public:
-  explicit DataHolder(VectorType& data_) : data(data_) {};
-  py::array_t<uint64_t> get_array() {
-    return py::array_t({data.size}, {sizeof(uint64_t)}, &data.front(),  //
-                       py::capsule(this, [](void* p) {
-                         auto* holder = reinterpret_cast<DataHolder*>(p);
-                         if (holder->data.size > 3) {
-                           holder->data.free_data();
-                           // TODO Don't delete it, but rather use the LRU
-                         }
-                         delete holder;
-                       }));
-  }
+   public:
+    explicit DataHolder(VectorType* data_) { data = data_; };
+    py::array_t<uint64_t> get_array() {
+        data->ref++;
+        return py::array_t({data->size}, {sizeof(uint64_t)}, &data->front(),  //
+                           py::capsule(this, [](void* p) {
+                               auto* holder = reinterpret_cast<DataHolder*>(p);
+                               if (--holder->data->ref == 0) {
+                                   holder->data->free_data();
+                               }
+                               delete holder;
+                           }));
+    }
 };
 
 PYBIND11_MODULE(pallas_trace, m) {
@@ -322,8 +323,8 @@ PYBIND11_MODULE(pallas_trace, m) {
   py::class_<pallas::Sequence>(m, "Sequence", "A Pallas Sequence, ie a group of tokens.")
     .def_readonly("id", &pallas::Sequence::id)
     .def_readonly("tokens", &pallas::Sequence::tokens)
-    .def_property_readonly("timestamps", [](const pallas::Sequence& self) { return (new DataHolder(*self.timestamps))->get_array(); })
-    .def_property_readonly("durations", [](const pallas::Sequence& self) { return (new DataHolder(*self.durations))->get_array(); })
+    .def_property_readonly("timestamps", [](const pallas::Sequence& self) { return (new DataHolder(self.timestamps))->get_array(); })
+    .def_property_readonly("durations", [](const pallas::Sequence& self) { return (new DataHolder(self.durations))->get_array(); })
     .def_property_readonly("max_duration", [](const pallas::Sequence& self) { return self.durations->max; })
     .def_property_readonly("min_duration", [](const pallas::Sequence& self) { return self.durations->min; })
     .def_property_readonly("mean_duration", [](const pallas::Sequence& self) { return self.durations->mean; })
@@ -340,7 +341,7 @@ PYBIND11_MODULE(pallas_trace, m) {
     .def_readonly("id", &pallas::EventSummary::id)
     .def_readonly("event", &pallas::EventSummary::event)
     .def_readonly("nb_occurrences", &pallas::EventSummary::nb_occurences)
-    .def_property_readonly("timestamps", [](const pallas::EventSummary& self) { return (new DataHolder(*self.timestamps))->get_array(); })
+    .def_property_readonly("timestamps", [](const pallas::EventSummary& self) { return (new DataHolder(self.timestamps))->get_array(); })
     .def("__repr__", [](const pallas::EventSummary& self) { return "<pallas_python.EventSummary " + std::to_string(self.id) + ">"; });
 
   py::class_<pallas::Event>(m, "Event", "A Pallas Event.").def_readonly("record", &pallas::Event::record).def_property_readonly("data", &Event_get_data);

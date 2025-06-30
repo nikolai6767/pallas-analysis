@@ -30,6 +30,8 @@ class LinkedVector {
    public:
     /** Number of element stored in the vector.  */
     size_t size = 0;
+    /** Number of times the vector's data is linked somewhere. */
+    size_t ref = 0;
     /**
      * Adds a new element at the end of the vector, after its current last element.
      *
@@ -194,7 +196,8 @@ class LinkedDurationVector {
    public:
     /** Number of element stored in the vector.  */
     size_t size = 0;
-
+    /** Number of times the vector's data is linked somewhere. */
+    size_t ref = 0;
     /**
      * Adds a new element at the end of the vector, after its current last element.
      * Updates mean, min and max.
