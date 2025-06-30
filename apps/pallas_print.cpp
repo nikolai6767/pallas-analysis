@@ -62,6 +62,8 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_STRUCTURE", 
   "POLL",
   "GET_NEXT_TOKEN",
+  "NEXT",
+  "POLL2"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
