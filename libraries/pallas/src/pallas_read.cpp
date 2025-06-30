@@ -583,7 +583,11 @@ void ThreadReader::enterBlock() {
     currentState.current_frame_index++;
     currentState.currentFrame++;
     currentState.currentFrame->frame_index = 0;
+    struct timestamp t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     currentState.currentFrame->referential_timestamp = currentState.callstack[currentState.current_frame_index - 1].referential_timestamp;
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    update_duration(&durations[POLL2], t1, t2);
     currentState.currentFrame->callstack_iterable = new_block;
     currentState.currentFrame->tokenCount = (currentState.currentFrame - 1)->tokenCount;
 #ifdef DEBUG

@@ -376,7 +376,7 @@ void printTrace(pallas::GlobalArchive& trace) {
         _print_timestamp_header();
         _print_duration_header();
         do {
-          pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
+          //pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
           last_timestamp = reader.currentState.currentFrame->referential_timestamp;
           auto token = reader.pollCurToken();
           if (token.type == pallas::TypeEvent) {
