@@ -329,12 +329,12 @@ typedef struct Sequence {
    * If need be, counts the number of Token in that Sequence to initialize it.
    * When counting these tokens, it does so backwards. offsetMap allows you to start the count with an offset.
    * @returns Reference to #tokenCount.*/
-  TokenCountMap getTokenCountWriting(const Thread* thread);
+  TokenCountMap& getTokenCountWriting(const Thread* thread);
   /** Getter for #tokenCount during the reading process.
    * If need be, counts the number of Token in that Sequence to initialize it.
    * When counting these tokens, it does so forward. offsetMap allows you to start the count with an offset.
    * @returns Reference to #tokenCount.*/
-  TokenCountMap getTokenCountReading(const pallas::Thread* thread,
+  TokenCountMap& getTokenCountReading(const pallas::Thread* thread,
                               const TokenCountMap& threadReaderTokenCountMap,
                               bool isReversedOrder = false);
 

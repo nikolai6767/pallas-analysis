@@ -193,7 +193,7 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
         loop_seq->durations->add(duration_second_iteration);
 
         // And add that timestamp to the vectors
-        auto tokenCount = loop_seq->getTokenCountWriting(thread);
+        auto& tokenCount = loop_seq->getTokenCountWriting(thread);
         auto first_event = getFirstEvent(loop_seq->tokens.front(), thread);
         auto first_token_summary = thread->events[first_event.id];
         size_t nb_first_token = first_token_summary.timestamps->size;
@@ -658,7 +658,7 @@ TokenId Thread::getEventId(Event* e) {
 
 pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t offset) const {
     pallas_duration_t sum = 0;
-    auto tokenCount = sequence->getTokenCountWriting(this);
+    auto& tokenCount = sequence->getTokenCountWriting(this);
     auto start_event_token = getFirstEvent(sequence->tokens.front(), this);
     auto last_event_token = getLastEvent(sequence->tokens.back(), this);
     auto start_event = getEventSummary(start_event_token);

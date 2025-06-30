@@ -495,7 +495,7 @@ void _loopGetTokenCountReading(const Loop* loop, const Thread* thread, TokenCoun
   size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
   // This creates bug idk why ?????
-  TokenCountMap temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
+  TokenCountMap& temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
   temp *= loop_nb_iterations;
   readerTokenCountMap += temp;
   sequenceTokenCountMap += temp;
@@ -522,7 +522,7 @@ void _sequenceGetTokenCountReading(Sequence* seq, const Thread* thread, TokenCou
   }
 }
 
-TokenCountMap Sequence::getTokenCountReading(const Thread* thread, const TokenCountMap& threadReaderTokenCountMap, bool isReversedOrder) {
+TokenCountMap& Sequence::getTokenCountReading(const Thread* thread, const TokenCountMap& threadReaderTokenCountMap, bool isReversedOrder) {
   if (tokenCount.empty()) {
     auto tokenCountMapCopy = TokenCountMap(threadReaderTokenCountMap);
     auto tempTokenCount = TokenCountMap();
@@ -535,7 +535,7 @@ TokenCountMap Sequence::getTokenCountReading(const Thread* thread, const TokenCo
 static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& tokenCount) {
   size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
-  auto temp = loop_sequence->getTokenCountWriting(thread);
+  auto& temp = loop_sequence->getTokenCountWriting(thread);
   DOFOR(i, loop->nb_iterations) {
     tokenCount += temp;
   }
@@ -545,8 +545,7 @@ static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, To
   tokenCount[loop->repeated_token] += loop_nb_iterations;
 }
 
-TokenCountMap Sequence::getTokenCountWriting(const Thread* thread) {
-    // TODO this should return a ref because right now it's copying ad vitam aeternam
+TokenCountMap& Sequence::getTokenCountWriting(const Thread* thread) {
    if (tokenCount.empty()) {
     for (auto& token : tokens) {
       if (tokenCount.find(token) == tokenCount.end()) {
