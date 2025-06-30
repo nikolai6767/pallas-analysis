@@ -60,7 +60,7 @@ void duration_write_all_csv(const char* filename) {
   "GET_CURRENT_INDEX", 
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 
-  "AUTRE"
+  "POLL"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -133,7 +133,6 @@ static void _print_duration_header() {
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
   	
   struct timespec t1, t2;
-  struct timespec t3, t4;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
 
   _print_timestamp(e.timestamp);
@@ -143,16 +142,13 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   if (verbose) {
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
   }
-  clock_gettime(CLOCK_MONOTONIC, &t3);
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
-  clock_gettime(CLOCK_MONOTONIC, &t4);
 
   thread->printEventAttribute(&e);
   std::cout << std::endl;
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_EVENT], t1, t2);
-  update_duration(&durations[AUTRE], t3, t4);
 
 
 }
@@ -418,7 +414,11 @@ void printTrace(pallas::GlobalArchive& trace) {
       }
     }
 
+    struct timespec t3, t4;
+    clock_gettime(CLOCK_MONOTONIC, &t3);
     auto token = min_reader->pollCurToken();
+    clock_gettime(CLOCK_MONOTONIC, &t4);
+    update_duration(&durations[POLL], t3, t4);
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
