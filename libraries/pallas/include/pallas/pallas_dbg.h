@@ -108,5 +108,6 @@ enum FunctionIndex {
   NB_FUNCTIONS
 };
 
+Duration durations[NB_FUNCTIONS];
 
 void duration_write_all_csv(const char* filename);
