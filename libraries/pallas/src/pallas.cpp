@@ -546,6 +546,7 @@ static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, To
 }
 
 TokenCountMap Sequence::getTokenCountWriting(const Thread* thread) {
+    // TODO this should return a ref because right now it's copying ad vitam aeternam
    if (tokenCount.empty()) {
     for (auto& token : tokens) {
       if (tokenCount.find(token) == tokenCount.end()) {
