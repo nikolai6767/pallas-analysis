@@ -62,7 +62,6 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_STRUCTURE", 
   "POLL",
   "GET_NEXT_TOKEN",
-  "NEXT"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -421,7 +420,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
 
     struct timespec t3, t4;
-    struct timespec s, e;
+
     clock_gettime(CLOCK_MONOTONIC, &t3);
     auto token = min_reader->pollCurToken();
     clock_gettime(CLOCK_MONOTONIC, &t4);
@@ -437,13 +436,16 @@ void printTrace(pallas::GlobalArchive& trace) {
 	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
       }
     }
-    clock_gettime(CLOCK_MONOTONIC, &s);
+
     if (! min_reader->getNextToken().isValid()) {
-      clock_gettime(CLOCK_MONOTONIC, &e);
+      struct timespec t4, t5;
+      clock_gettime(CLOCK_MONOTONIC, &t4);
       pallas_assert(min_reader->isEndOfTrace());
+      clock_gettime(CLOCK_MONOTONIC, &t5);
+      update_duration(&durations[GET_NEXT_TOKEN], t4, t5);
     }
   }
-  update_duration(&durations[NEXT], s, e);
+
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_TRACE], t1, t2);
