@@ -200,7 +200,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t o
     auto sequenceOccurence = SequenceOccurence();
     sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
-    sequenceOccurence.timestamp = currentState.currentFrame->referential_timestamp;
+    sequenceOccurence.timestamp = sequenceOccurence.sequence->timestamps->at(occurence_id);
     sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
     sequenceOccurence.full_sequence = nullptr;
 
