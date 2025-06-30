@@ -9,7 +9,6 @@
 #pragma once
 
 #include <pthread.h>
-#include <ankerl/unordered_dense.h>
 #include "pallas_config.h"
 #include "pallas_dbg.h"
 #include "pallas_linked_vector.h"
@@ -18,7 +17,8 @@
 #ifdef __cplusplus
 #include <cstring>
 #include <map>
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
+
 #else
 #include <stdbool.h>
 #include <string.h>
