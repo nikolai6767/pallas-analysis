@@ -1260,7 +1260,7 @@ static void pallasStoreAdditionalContent(pallas::AdditionalContent<void> *additi
 }
 
 static void pallasReadAdditionalContent(pallas::AdditionalContent<void> *additional_content, File& file) {
-    pallas_log(pallas::DebugLevel::Normal, "\tReading additional content\n");
+    pallas_log(pallas::DebugLevel::Verbose, "\tReading additional content\n");
     size_t original_position = ftell(file.file);
     size_t theo_sum;
     size_t theo_count;
@@ -1279,7 +1279,7 @@ static void pallasReadAdditionalContent(pallas::AdditionalContent<void> *additio
         pallas_warn("Mismatch in # of data written and # of data user defined read_content returns: %lu != %lu\n", theo_sum, sum);
     }
     fseek(file.file, original_position + sizeof(size_t) * 2 + theo_sum, SEEK_SET);
-    pallas_log(pallas::DebugLevel::Normal, "\tRead %lu additional contents for %lu bytes\n", count, sum);
+    pallas_log(pallas::DebugLevel::Verbose, "\tRead %lu additional contents for %lu bytes\n", count, sum);
 }
 
 static File pallasGetThreadFile(const char* dir_name, pallas::Thread* thread, const char* mode) {
@@ -1566,7 +1566,7 @@ pallas::Thread* pallas::Archive::getThread(ThreadId thread_id) {
     if (threads[i] && threads[i]->id == thread_id)
       return threads[i];
   }
-  pallas_log(pallas::DebugLevel::Normal, "Loading Thread %d in Archive %d\n", thread_id, id);
+  pallas_log(pallas::DebugLevel::Verbose, "Loading Thread %d in Archive %d\n", thread_id, id);
   auto* thread = new Thread();
   auto location = getLocation(thread_id);
   if (location == nullptr) {
