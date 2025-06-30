@@ -111,23 +111,6 @@ enum FunctionIndex {
   NB_FUNCTIONS
 };
 
-  const char* function_names[NB_FUNCTIONS] = {
-  "PRINT_TIMESTAMP",
-  "PRINT_TIMESTAMP_HEADER",
-  "PRINT_DURATION",
-  "PRINT_DURATION_HEADER",
-  "PRINT_EVENT",
-  "PRINT_FLAME",
-  "PRINT_CSV",
-  "PRINT_CSV_BULK",
-  "PRINT_TRACE",
-  "GET_CURRENT_INDEX", 
-  "PRINT_THREAD_STRUCTURE",
-  "PRINT_STRUCTURE", 
-  "POLL"
-  "GET_NEXT_TOKEN"
-  "NEXT"
-  };
 
 
 extern Duration durations[NB_FUNCTIONS];
