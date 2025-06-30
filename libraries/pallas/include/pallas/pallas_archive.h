@@ -120,7 +120,7 @@ typedef struct AdditionalContent {
 typedef struct GlobalArchive {
   char* dir_name;         /**< Name of the directory in which the archive is recorded. */
   char* trace_name;       /**< Name of the trace. */
-  char* fullpath;         /**< \todo Complete this. */
+  char* fullpath;         /**< Name of the directory + name if the trace. */
   pthread_mutex_t lock;   /**< Archive-wise lock, used for synchronising some threads. */
   Definition definitions; /**< Definitions. */
 

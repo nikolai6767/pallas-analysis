@@ -257,8 +257,8 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
                     pallas::Event* event = thread_trace->getEvent(t_start);
                     if (event->record == pallas::PALLAS_EVENT_ENTER) {
                         const char* event_name = thread_trace->getRegionStringFromEvent(event);
-                        // TODO: if that's an MPI call (eg MPI_Send, MPI_Allreduce, ...)
-                        // we may want to get the function parameters (eg. dest, tag, ...)
+                        // TODO if that's an MPI call (eg MPI_Send, MPI_Allreduce, ...)
+                        //      we may want to get the function parameters (eg. dest, tag, ...)
                         names[s] = std::string(event_name);
                         name_found = true;
                     } else if (event->record == pallas::PALLAS_EVENT_THREAD_BEGIN) {
