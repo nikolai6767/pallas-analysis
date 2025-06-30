@@ -868,7 +868,7 @@ void pallas::LinkedDurationVector::load_data(SubArray* sub) {
         f.open("r");
         ret = fseek(f.file, sub->offset, 0);
     }
-    sub->array = _pallas_compress_read(size, f.file);
+    sub->array = _pallas_compress_read(sub->size, f.file);
 }
 
 /**************** Storage Functions ****************/
