@@ -459,7 +459,13 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
   if (tr.currentState.current_frame_index <= 1) {
     return "";
   }
+  struct timespec t3, t4;
+  clock_gettime(CLOCK_MONOTONIC, &t3);
+
   const auto t = tr.pollCurToken();
+  	clock_gettime(CLOCK_MONOTONIC, &t4);
+    update_duration(&durations[NEXT], t3, t4);
+
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
   structure_indent[tr.currentState.current_frame_index - 2] = (isLastOfSeq ? "╰" : "├");

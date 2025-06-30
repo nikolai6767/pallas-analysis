@@ -296,10 +296,7 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
 
 const Token& ThreadReader::pollCurToken() const {
     struct timespec t1, t2;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
     return getTokenInCallstack(currentState.current_frame_index);
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    update_duration(&durations[NEXT], t1, t2);
 }
 
 Token ThreadReader::pollNextToken(int flags) const {
