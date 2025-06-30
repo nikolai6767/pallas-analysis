@@ -438,11 +438,14 @@ void printTrace(pallas::GlobalArchive& trace) {
 	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
       }
     }
-
+    struct timespec s, e;
+    clock_gettime(CLOCK_MONOTONIC, &s);
     if (! min_reader->getNextToken().isValid()) {
+      clock_gettime(CLOCK_MONOTONIC, &e);
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
+  update_duration(&durations[NEXT], &s, &e);
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_TRACE], t1, t2);

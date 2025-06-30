@@ -107,6 +107,7 @@ enum FunctionIndex {
   PRINT_STRUCTURE,
   POLL, 
   GET_NEXT_TOKEN,
+  NEXT,
   NB_FUNCTIONS
 };
 
@@ -125,6 +126,7 @@ enum FunctionIndex {
   "PRINT_STRUCTURE", 
   "POLL"
   "GET_NEXT_TOKEN"
+  "NEXT"
   };
 
 
