@@ -242,10 +242,10 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
                         // And it's not going to be edited
                         curTokenSeq[curIndex - 1] = thread->loops[lid].self_id;
                         l->nb_iterations = 0;
-                        pallas_log(DebugLevel::Debug, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
-                        pallas_log(DebugLevel::Debug, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
+                        pallas_log(DebugLevel::Normal, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
+                        pallas_log(DebugLevel::Normal, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
                         if (l->self_id.id == thread->nb_loops - 1) {
-                            pallas_log(DebugLevel::Debug, "findLoopBasic: Remove last loop L%d ( S%d )\n", l->self_id.id, l->repeated_token.id);
+                            pallas_log(DebugLevel::Normal, "findLoopBasic: Remove last loop L%d ( S%d )\n", l->self_id.id, l->repeated_token.id);
                             thread->nb_loops--;
                             // TODO: We should delete unused loops for cleanliness's sake
                         } else {
@@ -254,6 +254,66 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
                         }
                         l->repeated_token = {TypeInvalid, PALLAS_TOKEN_ID_INVALID};
                         l->self_id = {TypeInvalid, PALLAS_TOKEN_ID_INVALID};
+                        // And now we have to check for loops containing loops
+
+                        // First, we need to "offset" the sizes
+                        // Because they're being used to compute timestamps
+                        // TODO Dans le cas d'une config chelou, il y aura des bugs
+                        //      Exemple: E L1 E L1 Enter          Leave
+                        //                            ↪ S2 = E L1  ⤴
+                        //      Explication: Le Enter n'aura pas proc ce bout de code parce qu'il est dans son propre buffer
+                        //      Donc lorsque le Leave sera écrit, ça va créer une séquence, qui contient la séquence répétée juste avant
+                        //      Lors de l'offset, les séquences vont être détectées, le E L1 E L1 va être simplfié en 2 *  S2, et on perdra un timestmap quelque part
+                        //      Mais ce sont des cas qui peuvent uniquement arriver lors des écritures de trace manuelle
+                        //      En tout cas on sait pour le futur qu'un bug peut venir d'ici quoi
+                        //      Pour éviter ça, il faudrait juste sauvegarder les timestamps et les durées des séquences
+                        //      Et les réécrire à la fin
+                        auto last_token = curTokenSeq.back();
+                        if (last_token.type == TypeEvent) {
+                            auto & e = thread->events[last_token.id];
+                            e.timestamps->size -= 1;
+                        }
+                        if (last_token.type == TypeSequence) {
+                            auto * s = thread->sequences[last_token.id];
+                            const auto &tokenCount = s->getTokenCountWriting(thread);
+                            for ( const auto & [token, count] : tokenCount) {
+                                if (token.type == TypeSequence) {
+                                    auto * s2 = thread->sequences[last_token.id];
+                                    s2->timestamps->size -= count;
+                                    s2->durations->size -= count;
+                                }
+                                if (token.type == TypeEvent) {
+                                    auto & e2 = thread->events[last_token.id];
+                                    e2.timestamps->size -= count;
+                                }
+                            }
+                            s->timestamps->size -= 1;
+                            s->durations->size -= 1;
+                        }
+                        curTokenSeq.resize(curTokenSeq.size() - 1);
+                        findLoop();
+                        curTokenSeq.push_back(last_token);
+                        if (last_token.type == TypeEvent) {
+                            auto & e = thread->events[last_token.id];
+                            e.timestamps->size += 1;
+                        }
+                        if (last_token.type == TypeSequence) {
+                            auto * s = thread->sequences[last_token.id];
+                            const auto &tokenCount = s->getTokenCountWriting(thread);
+                            for ( const auto & [token, count] : tokenCount) {
+                                if (token.type == TypeSequence) {
+                                    auto * s2 = thread->sequences[last_token.id];
+                                    s2->timestamps->size += count;
+                                    s2->durations->size += count;
+                                }
+                                if (token.type == TypeEvent) {
+                                    auto & e2 = thread->events[last_token.id];
+                                    e2.timestamps->size += count;
+                                }
+                            }
+                            s->timestamps->size += 1;
+                            s->durations->size += 1;
+                        }
                         return;
                     }
                 }
@@ -440,7 +500,7 @@ void ThreadWriter::recordExitFunction() {
     pallas_assert(computed_duration == sequence_duration);
 #endif
     seq->timestamps->add(sequence_start_timestamp[cur_depth]);
-    seq->durations->add(last_timestamp - sequence_start_timestamp[cur_depth]);
+    seq->durations->add(sequence_duration);
 
     pallas_log(DebugLevel::Debug, "Exiting function, closing %s, start=%lu\n", thread->getTokenString(seq_id).c_str(), sequence_start_timestamp[cur_depth]);
 
@@ -598,15 +658,9 @@ pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t off
     auto last_event_token = getLastEvent(sequence->tokens.back(), this);
     auto start_event = getEventSummary(start_event_token);
     auto last_event = getEventSummary(last_event_token);
-    if (offset == 0) {
-        return pallas_get_duration(
-            start_event->timestamps->at(start_event->timestamps->size - tokenCount[start_event_token]),
-            last_event->timestamps->back());
-    } else {
-        return pallas_get_duration(
-            start_event->timestamps->at(start_event->timestamps->size - 2 * tokenCount[start_event_token]),
-            last_event->timestamps->at(last_event->timestamps->size - 1 - tokenCount[last_event_token]));
-    }
+    auto start_index = start_event->timestamps->size - tokenCount[start_event_token] * (1 + offset);
+    auto end_index = last_event->timestamps->size - 1 -  tokenCount[last_event_token] * offset;
+    return pallas_get_duration(start_event->timestamps->at(start_index), last_event->timestamps->at(end_index));
 }
 }  // namespace pallas
 
