@@ -39,21 +39,7 @@ void duration_write_csv(const char* filename, const Duration* d) {
     file << (d->count ? d->total_d / d->count : 0) << "\n";
 }
 
-Duration durations[NB_FUNCTIONS] = {
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0},
-    {0.0, DBL_MAX, 0.0, 0}
-
-};
+Duration durations[NB_FUNCTIONS] = {};
 
 
 
