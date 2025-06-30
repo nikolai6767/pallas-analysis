@@ -143,16 +143,16 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   if (verbose) {
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
   }
-    clock_gettime(CLOCK_MONOTONIC, &t3);
+  clock_gettime(CLOCK_MONOTONIC, &t3);
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
-    clock_gettime(CLOCK_MONOTONIC, &t4);
+  clock_gettime(CLOCK_MONOTONIC, &t4);
 
   thread->printEventAttribute(&e);
   std::cout << std::endl;
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_EVENT], t1, t2);
-  update_duration(&durations[PRINT_EVENT], t3, t4);
+  update_duration(&durations[AUTRE], t3, t4);
 
 
 }
