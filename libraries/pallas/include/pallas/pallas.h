@@ -342,7 +342,6 @@ typedef struct Sequence {
    * @returns A string that describes the sequence.
    */
   std::string guessName(const pallas::Thread* thread);
-  size_t getEventCount(const struct Thread* thread);
   ~Sequence() { delete durations; delete timestamps; };
 #endif
 } Sequence;

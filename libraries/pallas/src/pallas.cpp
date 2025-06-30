@@ -488,14 +488,6 @@ std::string Sequence::guessName(const pallas::Thread* thread) {
   return buff;
 }
 
-size_t Sequence::getEventCount(const struct Thread* thread) {
-  // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops
-  // inside of it.
-  return 0;
-  // TokenCountMap tokenCount = getTokenCount(thread);
-  return tokenCount.getEventCount();
-}
-
 void _sequenceGetTokenCountReading(Sequence* seq, const Thread* thread, TokenCountMap& readerTokenCountMap, TokenCountMap& sequenceTokenCountMap, bool isReversedOrder);
 
 TokenCountMap tempSeen;
