@@ -208,6 +208,8 @@ typedef struct Event {
                            // todo: align on 256
 } __attribute__((packed)) Event;
 
+#ifdef __cplusplus
+
 struct custom_hash_unique_object_representation {
     using is_avalanching = void;
 
@@ -217,7 +219,6 @@ struct custom_hash_unique_object_representation {
     }
 };
 /*************************** Sequences **********************/
-#ifdef __cplusplus
 /**
  * A Map for counting Tokens.
  *
