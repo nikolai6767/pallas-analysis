@@ -351,35 +351,38 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
 }
 
 void printThreadStructure(pallas::ThreadReader& tr) {
-  std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
-  auto current_token = tr.pollCurToken();
-  while (true) {
-    std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame_index <= 1) ? 0 : tr.currentState.current_frame_index))
-              << tr.thread_trace->getTokenString(current_token) << "";
-    if (current_token.type == pallas::TypeEvent) {
-      auto occ = tr.getEventOccurence(current_token, tr.currentState.currentFrame->tokenCount[current_token]);
-      printEvent(tr.thread_trace, current_token, occ);
+    std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
+    auto current_token = tr.pollCurToken();
+    while (true) {
+        std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame_index <= 1) ? 0 : tr.currentState.current_frame_index))
+                  << tr.thread_trace->getTokenString(current_token) << "";
+        if (current_token.type == pallas::TypeEvent) {
+            auto occ = tr.getEventOccurence(current_token, tr.currentState.currentFrame->tokenCount[current_token]);
+            printEvent(tr.thread_trace, current_token, occ);
+        } else if (current_token.type == pallas::TypeSequence) {
+            auto occ = tr.getSequenceOccurence(current_token, tr.currentState.currentFrame->tokenCount[current_token]);
+            _print_timestamp(occ.timestamp);
+            if (show_durations) {
+                auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.currentState.currentFrame->tokenCount[current_token]);
+                std::cout << std::setw(21) << "";
+                std::cout.precision(9);
+                std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
+            }
+            std::cout << std::endl;
+        } else if (current_token.type == pallas::TypeLoop) {
+            if (show_durations) {
+                auto d = tr.getLoopDuration(current_token);
+                std::cout << std::setw(21) << "";
+                std::cout.precision(9);
+                std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
+            }
+            std::cout << std::endl;
+        }
+        auto next_token = tr.getNextToken();
+        if (!next_token.isValid())
+            break;
+        current_token = next_token;
     }
-    else if (current_token.type == pallas::TypeSequence) {
-      if (show_durations) {
-        auto d = tr.thread_trace->getSequence(current_token)->durations->at(tr.currentState.currentFrame->tokenCount[current_token]);
-        std::cout << std::setw(21) << "";
-        std::cout.precision(9);
-        std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
-      } std::cout << std::endl;
-    } else if (current_token.type == pallas::TypeLoop) {
-      if (show_durations) {
-      auto d = tr.getLoopDuration(current_token);
-      std::cout << std::setw(21) << "";
-      std::cout.precision(9);
-      std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
-    } std::cout << std::endl;
-    }
-    auto next_token = tr.getNextToken();
-    if (! next_token.isValid())
-      break;
-    current_token = next_token;
-  }
 }
 
 void printStructure(const int flags, pallas::GlobalArchive& trace) {
