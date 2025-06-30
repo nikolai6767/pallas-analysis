@@ -86,6 +86,7 @@ target_link_libraries(pallas
         rt
         m
         ${ZSTD_LIBRARIES}
+        unordered_dense::unordered_dense
 )
 target_link_directories(pallas PRIVATE ${ZSTD_LIBRARY_DIRS})
 if (DOXYGEN_FOUND AND BUILD_DOC)

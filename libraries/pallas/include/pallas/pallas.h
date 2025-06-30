@@ -9,6 +9,7 @@
 #pragma once
 
 #include <pthread.h>
+#include <ankerl/unordered_dense.h>
 #include "pallas_config.h"
 #include "pallas_dbg.h"
 #include "pallas_linked_vector.h"
@@ -207,6 +208,14 @@ typedef struct Event {
                            // todo: align on 256
 } __attribute__((packed)) Event;
 
+struct custom_hash_unique_object_representation {
+    using is_avalanching = void;
+
+    [[nodiscard]] auto operator()(Token const& f) const noexcept -> uint64_t {
+        static_assert(std::has_unique_object_representations_v<Token>);
+        return ankerl::unordered_dense::detail::wyhash::hash(&f, sizeof(f));
+    }
+};
 /*************************** Sequences **********************/
 #ifdef __cplusplus
 /**
@@ -216,7 +225,7 @@ typedef struct Event {
  *
  *  This class also comes with addition and multiplication, so that we can easily use them.
  */
-struct TokenCountMap : public std::map<Token, size_t> {
+struct TokenCountMap : ankerl::unordered_dense::map<Token, size_t, custom_hash_unique_object_representation> {
   /** Adds each (key, value) pair of the other map to this one. */
   void operator+=(const TokenCountMap& other) {
     for (const auto& [key, value] : other) {

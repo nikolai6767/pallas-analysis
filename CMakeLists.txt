@@ -36,7 +36,7 @@ option(ENABLE_MPI_TEST "MPI tests" ON)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZSTD libzstd REQUIRED)
 find_package(Doxygen)
-
+find_package(unordered_dense CONFIG REQUIRED)
 
 INCLUDE(CheckTypeSize)
 SET(CMAKE_EXTRA_INCLUDE_FILES "map")
