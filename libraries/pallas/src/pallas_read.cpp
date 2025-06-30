@@ -11,6 +11,8 @@
 #include "pallas/pallas_log.h"
 #include <time.h>
 #include "pallas/pallas_dbg.h"
+#include <cfloat>
+#include <fstream>
 
 
 void duration_init(Duration* d) {
