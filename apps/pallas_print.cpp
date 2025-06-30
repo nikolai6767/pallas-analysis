@@ -463,8 +463,8 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
   clock_gettime(CLOCK_MONOTONIC, &t3);
 
   const auto t = tr.pollCurToken();
-  	clock_gettime(CLOCK_MONOTONIC, &t4);
-    update_duration(&durations[NEXT], t3, t4);
+  clock_gettime(CLOCK_MONOTONIC, &t4);
+  update_duration(&durations[POLL2], t3, t4);
 
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
@@ -495,6 +495,8 @@ void printThreadStructure(pallas::ThreadReader& tr) {
   	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
   std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
+  struct timespec t3, t4;
+  clock_gettime(CLOCK_MONOTONIC, &t3);
   auto current_token = tr.pollCurToken();
   while (true) {
     std::cout << getCurrentIndent(tr) << std::left << std::setw(15 - ((tr.currentState.current_frame_index <= 1) ? 0 : tr.currentState.current_frame_index))
