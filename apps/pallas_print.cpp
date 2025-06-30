@@ -383,11 +383,12 @@ void printTrace(pallas::GlobalArchive& trace) {
             printEvent(reader.thread_trace, token, reader.getEventOccurence(token, reader.currentState.currentFrame->tokenCount[token]));
           }
         } 
-        while (reader.getNextToken().isValid()){
-          clock_gettime(CLOCK_MONOTONIC, &t5);
-          clock_gettime(CLOCK_MONOTONIC, &t6);
-          update_duration(&durations[GET_NEXT_TOKEN], &t5, &t6);
-        };
+        clock_gettime(CLOCK_MONOTONIC, &t5);
+
+        while (reader.getNextToken().isValid());
+      	clock_gettime(CLOCK_MONOTONIC, &t6);
+        update_duration(&durations[GET_NEXT_TOKEN], t5, t6);
+
 
     }
     return;
@@ -446,7 +447,7 @@ void printTrace(pallas::GlobalArchive& trace) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
-  update_duration(&durations[NEXT], &s, &e);
+  update_duration(&durations[NEXT], s, e);
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   update_duration(&durations[PRINT_TRACE], t1, t2);
