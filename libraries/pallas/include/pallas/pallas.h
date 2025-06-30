@@ -17,7 +17,8 @@
 #ifdef __cplusplus
 #include <cstring>
 #include <map>
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
+
 #else
 #include <stdbool.h>
 #include <string.h>
@@ -207,8 +208,17 @@ typedef struct Event {
                            // todo: align on 256
 } __attribute__((packed)) Event;
 
-/*************************** Sequences **********************/
 #ifdef __cplusplus
+
+struct custom_hash_unique_object_representation {
+    using is_avalanching = void;
+
+    [[nodiscard]] auto operator()(Token const& f) const noexcept -> uint64_t {
+        static_assert(std::has_unique_object_representations_v<Token>);
+        return ankerl::unordered_dense::detail::wyhash::hash(&f, sizeof(f));
+    }
+};
+/*************************** Sequences **********************/
 /**
  * A Map for counting Tokens.
  *
@@ -216,7 +226,7 @@ typedef struct Event {
  *
  *  This class also comes with addition and multiplication, so that we can easily use them.
  */
-struct TokenCountMap : public std::map<Token, size_t> {
+struct TokenCountMap : ankerl::unordered_dense::map<Token, size_t, custom_hash_unique_object_representation> {
   /** Adds each (key, value) pair of the other map to this one. */
   void operator+=(const TokenCountMap& other) {
     for (const auto& [key, value] : other) {

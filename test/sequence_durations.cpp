@@ -30,11 +30,20 @@ static inline void check_event_allocation(Thread* thread_trace, unsigned id) {
     }
 }
 
+static inline void print_sequence_info(Sequence* s, Thread* t) {
+    std::cout << "Information on sequence " << s->id << ":\n"
+                      << "\tNumber of tokens: " << s->tokens.size() << ": ";
+    t->printTokenVector(s->tokens);
+    std::cout << "\tNumber of iterations: " << s->durations->size << "\n"
+              << "\tDurations: " << s->durations->to_string() << std::endl;
+}
+
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
     /* Make a dummy archive and a dummy thread writer. */
     Archive archive("sequence_duration_trace", 0);
     archive.addString(0, "main_thread");
     archive.defineLocation(0, 0, 0);
+    archive.addRegion(0, 0);
     ThreadWriter thread_writer(archive, 0);
 
     /* Here's what we're going to do: we'll define some sequences as the following:
@@ -46,9 +55,11 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
      * S_n = L1 L2 ... L_n-1
      * And then we'll check that the durations of all the sequences is oki doki
      */
+    pallas_record_enter(&thread_writer, nullptr, get_timestamp(), 0);
 
-    int OUTER_LOOP_SIZE = 2;
-    int INNER_LOOP_SIZE = 10;
+
+    int OUTER_LOOP_SIZE = 4;
+    int INNER_LOOP_SIZE = 5;
     int MAX_SUBSEQUENCE_NUMBER = 10;
 
     for (int outer_loop_number = 1; outer_loop_number <= OUTER_LOOP_SIZE; outer_loop_number++) {
@@ -58,23 +69,19 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
             for (int loop = 0; loop < INNER_LOOP_SIZE; loop++) {
                 // Finally, doing the sequence
                 for (int eid = 0; eid <= sequence_number; eid++) {
-                    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), sequence_number * MAX_SUBSEQUENCE_NUMBER + eid);
+                    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), sequence_number * MAX_SUBSEQUENCE_NUMBER + eid + 2);
                 }
             }
         }
     }
-    pallas_record_generic(&thread_writer, nullptr, get_timestamp(), 0);
+    pallas_record_leave(&thread_writer, nullptr, get_timestamp(), 0);
     thread_writer.thread->events[0].timestamps->at(0) = 0;
 
     for (int sequence_number = 0; sequence_number <= MAX_SUBSEQUENCE_NUMBER; sequence_number++) {
         Sequence* s = thread_writer.thread->sequences[sequence_number];
         if (sequence_number > 0) {
             s->durations->final_update_mean();
-            std::cout << "Information on sequence " << sequence_number << ":\n"
-                      << "\tNumber of tokens: " << s->tokens.size() << ": ";
-            thread_writer.thread->printTokenVector(s->tokens);
-            std::cout << "\tNumber of iterations: " << s->durations->size << "\n"
-                      << "\tDurations: " << s->durations->to_string() << std::endl;
+            print_sequence_info(s, thread_writer.thread);
 
             pallas_assert_always(s->tokens.size() == sequence_number + 1);
             pallas_assert_always(s->durations->size == INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
@@ -90,6 +97,14 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
             //      pallas_assert_always(s->durations->back() == )
         }
     }
+    auto outer_sequence = thread_writer.thread->sequences[thread_writer.thread->nb_sequences - 2];
+    print_sequence_info(outer_sequence, thread_writer.thread);
+    pallas_assert_always(outer_sequence->timestamps->size == OUTER_LOOP_SIZE);
+    pallas_assert_always(outer_sequence->tokens.size() == MAX_SUBSEQUENCE_NUMBER);
+    // theorical_length = INNER_LOOP_SIZE * sum(i=0;MAX_SUBSEQUENCE_NUMBER) { i +  2 }
+    size_t theorical_length = INNER_LOOP_SIZE * (2 * MAX_SUBSEQUENCE_NUMBER + (MAX_SUBSEQUENCE_NUMBER * (MAX_SUBSEQUENCE_NUMBER - 1) / 2) ) - 1;
+    pallas_assert_always(theorical_length == outer_sequence->durations->min);
+    pallas_assert_always(theorical_length == outer_sequence->durations->max);
 
     return 0;
 }
