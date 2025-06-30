@@ -260,6 +260,7 @@ void printTrace(pallas::GlobalArchive& trace) {
         auto reader = pallas::ThreadReader(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
         _print_timestamp_header();
         _print_duration_header();
+        std::cout << std::endl;
         do {
           pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
           last_timestamp = reader.currentState.currentFrame->referential_timestamp;
