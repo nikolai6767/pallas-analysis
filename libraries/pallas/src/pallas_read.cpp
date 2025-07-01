@@ -366,6 +366,7 @@ const Token& ThreadReader::pollCurToken() const {
 }
 
 Token ThreadReader::pollNextToken(int flags) const {
+    std::cout << "hello" << std::endl;
     if (currentState.current_frame_index < 0)
         // return an invalid token
         return Token();

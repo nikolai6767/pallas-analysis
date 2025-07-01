@@ -74,7 +74,6 @@ Loop* Thread::getLoop(Token token) const {
 }
 
 Token& Thread::getToken(Token sequenceToken, int index) const {
-  std::cout << "hello" << std::endl;
   if (sequenceToken.type == TypeSequence) {
     auto* sequence = getSequence(sequenceToken);
     if (!sequence) {
