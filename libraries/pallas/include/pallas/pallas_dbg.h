@@ -111,6 +111,7 @@ enum FunctionIndex {
   POLL2,
   PRINT_EVENT1,
   PRINT_EVENT2,
+  GET_EVENT_STRING,
   NB_FUNCTIONS
 };
 

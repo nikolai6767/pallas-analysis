@@ -10,6 +10,7 @@
 #include "pallas/pallas.h"
 #include "pallas/pallas_archive.h"
 #include "pallas/pallas_log.h"
+#include "pallas/pallas_dbg.h"
 __thread uint64_t thread_rank = 0;
 unsigned int pallas_mpi_rank = 0;
 
@@ -206,6 +207,8 @@ const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
   return region ? archive->getString(region->string_ref)->str : "INVALID";
 }
 std::string Thread::getEventString(Event* e) const {
+  struct timespec t1, t2;
+  clock_gettime(CLOCK_MONOTONIC, &t1);
   byte* cursor = nullptr;
   switch (e->record) {
   case PALLAS_EVENT_ENTER: {
@@ -415,6 +418,8 @@ std::string Thread::getEventString(Event* e) const {
   default:
     return "{.record=" + std::to_string(e->record) + ", .size=" + std::to_string(e->event_size) + "}";
   }
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+  update_duration(&durations[GET_EVENT_STRING], t1, t2);
 }
 
 Thread::Thread() {

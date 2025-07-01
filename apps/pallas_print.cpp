@@ -86,7 +86,6 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
 
   if (!per_thread)
     std::cout << std::right << std::setw(10) << thread->getName();
-    //clock_gettime(CLOCK_MONOTONIC, &t3);
   if (verbose) {
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
   }

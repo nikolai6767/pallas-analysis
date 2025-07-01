@@ -63,7 +63,8 @@ void duration_write_all_csv(const char* filename) {
   "NEXT",
   "POLL2",
   "PRINT_EVENT1",
-  "PRINT_EVENT2"
+  "PRINT_EVENT2",
+  "GET_EVENT_STRING"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
