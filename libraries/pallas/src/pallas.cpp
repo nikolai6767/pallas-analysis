@@ -207,8 +207,6 @@ const char* Thread::getRegionStringFromEvent(pallas::Event* e) const {
   return region ? archive->getString(region->string_ref)->str : "INVALID";
 }
 std::string Thread::getEventString(Event* e) const {
-  struct timespec t1, t2;
-  clock_gettime(CLOCK_MONOTONIC, &t1);
   byte* cursor = nullptr;
   switch (e->record) {
   case PALLAS_EVENT_ENTER: {
@@ -416,10 +414,8 @@ std::string Thread::getEventString(Event* e) const {
     return eventName->str;
   }
   default:
-    return "{.record=" + std::to_string(e->record) + ", .size=" + std::to_string(e->event_size) + "}";clock_gettime(CLOCK_MONOTONIC, &t2);
+    return "{.record=" + std::to_string(e->record) + ", .size=" + std::to_string(e->event_size) + "}";
   }
-  
-  update_duration(&durations[GET_EVENT_STRING], t1, t2);
 }
 
 Thread::Thread() {

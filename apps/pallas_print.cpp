@@ -79,27 +79,21 @@ static void _print_duration_header() {
 /* Print one event */
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
   	
-  struct timespec t1, t2, t3, t4;
-	clock_gettime(CLOCK_MONOTONIC, &t1);
-
-  _print_timestamp(e.timestamp);
-
-  if (!per_thread)
-    std::cout << std::right << std::setw(10) << thread->getName();
-  if (verbose) {
-    std::cout << std::right << std::setw(10) << thread->getTokenString(token);
-  }
+  struct timespec t1, t2, t3, t4, t5
   clock_gettime(CLOCK_MONOTONIC, &t3);
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
   clock_gettime(CLOCK_MONOTONIC, &t4);
   thread->printEventAttribute(&e);
+  clock_gettime(CLOCK_MONOTONIC, &t5);
   std::cout << std::endl;
-  clock_gettime(CLOCK_MONOTONIC, &t2);
+  
 
   update_duration(&durations[PRINT_EVENT], t1, t2);
-  update_duration(&durations[PRINT_EVENT1], t1, t3);
+  update_duration(&durations[PRINT_EVENT1], t2, t3);
 
   update_duration(&durations[PRINT_EVENT2], t3, t4);
+  update_duration(&durations[PRINT_EVENT3], t4, t5);
+  
 
 
 
