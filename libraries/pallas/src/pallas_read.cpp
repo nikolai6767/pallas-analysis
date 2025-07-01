@@ -65,7 +65,8 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_EVENT2",
   "PRINT_EVENT3",
   "GET_EVENT",
-  "GET_EVENT_OCC"
+  "GET_EVENT_OCC",
+  "TOK"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -363,7 +364,6 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
 //******************* EXPLORATION FUNCTIONS ********************
 
 const Token& ThreadReader::pollCurToken() const {
-    std::cout << "hello" << std::endl;
     return getTokenInCallstack(currentState.current_frame_index);
 }
 
@@ -626,11 +626,15 @@ bool ThreadReader::moveToPrevTokenInBlock() {
 }
 
 Token ThreadReader::getNextToken(int flags) {
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     if (flags == PALLAS_READ_FLAG_NONE)
         flags = pallas_read_flag;
     if (!moveToNextToken(flags))
         return Token();
     return pollCurToken();
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    update_duration(&durations[TOK], t1, t2);
 }
 Token ThreadReader::getPrevToken(int flags) {
     if (flags == PALLAS_READ_FLAG_NONE)
