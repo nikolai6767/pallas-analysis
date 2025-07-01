@@ -61,7 +61,8 @@ void duration_write_all_csv(const char* filename) {
   "POLL",
   "GET_NEXT_TOKEN",
   "NEXT",
-  "POLL2"
+  "POLL2",
+  "POLL3"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -359,7 +360,11 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
 //******************* EXPLORATION FUNCTIONS ********************
 
 const Token& ThreadReader::pollCurToken() const {
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     return getTokenInCallstack(currentState.current_frame_index);
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    update_duration(&durations[POLL3], t1, t2);
 }
 
 Token ThreadReader::pollNextToken(int flags) const {

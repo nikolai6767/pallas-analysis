@@ -76,22 +76,22 @@ CXX(
    -*- */
 
 
-
+//Duration structure 
 typedef struct {
 	double total_d;
 	double min_d;
 	double max_d;
 	int count;
 } Duration;
-
+//Initialises a duration (all to 0 and DBL_MAX for min)
 void duration_init(Duration* d);
-
+//Updates a duration with two timespecs
 void update_duration(Duration* d, struct timespec t1, struct timespec t2);
-
+//writes one duration
 void duration_write_csv(const char* filename, const Duration* d);
 
 
-
+//All tracked functions
 enum FunctionIndex {
   PRINT_TIMESTAMP,
   PRINT_TIMESTAMP_HEADER,
@@ -109,11 +109,12 @@ enum FunctionIndex {
   GET_NEXT_TOKEN,
   NEXT,
   POLL2,
+  POLL3,
   NB_FUNCTIONS
 };
 
 
-
+//Table of durations
 extern Duration durations[NB_FUNCTIONS];
-
+//Writes all the durations of duration[NB_FUNCTIONS] to a file
 void duration_write_all_csv(const char* filename);
