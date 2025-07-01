@@ -58,13 +58,13 @@ void duration_write_all_csv(const char* filename) {
   "GET_CURRENT_INDEX", 
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 
-  "POLL",
+  "POLL_CURR_TOKEN",
   "GET_NEXT_TOKEN",
-  "NEXT",
   "POLL2",
   "PRINT_EVENT1",
   "PRINT_EVENT2",
-  "PRINT_EVENT3"
+  "PRINT_EVENT3",
+  "GET_TOKEN"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -146,7 +146,11 @@ const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
     }
     auto sequence = getFrameInCallstack(frame_number);
     pallas_assert(sequence.isIterable());
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     return thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    update_duration(&durations[GET_TOKEN], t1, t2);
 }
 void ThreadReader::printCurToken() const {
     std::cout << thread_trace->getTokenString(pollCurToken()) << std::endl;

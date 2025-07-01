@@ -380,7 +380,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     clock_gettime(CLOCK_MONOTONIC, &t3);
     auto token = min_reader->pollCurToken();
     clock_gettime(CLOCK_MONOTONIC, &t4);
-    update_duration(&durations[POLL], t3, t4);
+    update_duration(&durations[POLL_CURR_TOKEN], t3, t4);
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
