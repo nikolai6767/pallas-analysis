@@ -141,16 +141,12 @@ const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
 }
 
 const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
-    struct timespec t1, t2;
     if (frame_number < 0 || frame_number >= MAX_CALLSTACK_DEPTH) {
         pallas_error("Frame number is too high or negative: %d\n", frame_number);
     }
-    clock_gettime(CLOCK_MONOTONIC, &t1);
     auto sequence = getFrameInCallstack(frame_number);
     pallas_assert(sequence.isIterable());
     return thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    update_duration(&durations[GET_TOKEN], t1, t2); 
 }
 void ThreadReader::printCurToken() const {
     std::cout << thread_trace->getTokenString(pollCurToken()) << std::endl;
