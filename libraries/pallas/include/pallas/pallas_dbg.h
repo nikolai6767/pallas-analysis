@@ -112,6 +112,7 @@ enum FunctionIndex {
   PRINT_EVENT2,
   PRINT_EVENT3,
   GET_EVENT,
+  GET_EVENT_OCC,
   NB_FUNCTIONS
 };
 

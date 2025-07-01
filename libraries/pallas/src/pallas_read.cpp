@@ -64,7 +64,8 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_EVENT1",
   "PRINT_EVENT2",
   "PRINT_EVENT3",
-  "GET_EVENT"
+  "GET_EVENT",
+  "GET_EVENT_OCC"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -254,6 +255,8 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
 }
 
 EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_id) const {
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     auto eventOccurence = EventOccurence();
     auto* es = getEventSummary(event_id);
     eventOccurence.event = thread_trace->getEvent(event_id);
@@ -261,6 +264,8 @@ EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_
     eventOccurence.timestamp = es->timestamps->at(occurence_id);
     eventOccurence.attributes = getEventAttributeList(event_id, occurence_id);
     return eventOccurence;
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    update_duration(&durations[GET_EVENT_OCC], t1, t2);
 }
 
 SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t occurence_id) const {
