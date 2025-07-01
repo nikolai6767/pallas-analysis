@@ -23,7 +23,7 @@ void duration_init(Duration* d) {
 }
 
 void update_duration(Duration* d, struct timespec t1, struct timespec t2){
-	long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
+	long time = (t2.tv_sec - t1.tv_sec) * 1e-9 + (t2.tv_nsec - t1.tv_nsec);
 	d->total_d += time;
 	if (time < d ->min_d) d->min_d = time;
 	if (time > d -> max_d) d-> max_d = time;

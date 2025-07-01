@@ -366,9 +366,6 @@ void printTrace(pallas::GlobalArchive& trace) {
   }
 
   while (!isReadingOver(readers)) {
-    struct timespec t7, t8;
-    clock_gettime(CLOCK_MONOTONIC, &t7);
-
     pallas::ThreadReader* min_reader = &readers[0];
     pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max();
 
@@ -376,11 +373,11 @@ void printTrace(pallas::GlobalArchive& trace) {
     for (auto & reader : readers) {
       if (!reader.isEndOfTrace() && reader.currentState.currentFrame->referential_timestamp < min_timestamp) {
         min_reader = &reader;
-        min_timestamp = reader.currentState.currentFrame->referential_timestamp;clock_gettime(CLOCK_MONOTONIC, &t8);
+        min_timestamp = reader.currentState.currentFrame->referential_timestamp;
       }
     
     }
-    update_duration(&durations[GET_TOKEN], t7, t8);
+  
     
     struct timespec t3, t4;
 
