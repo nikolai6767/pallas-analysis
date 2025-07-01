@@ -69,7 +69,7 @@ void duration_write_all_csv(const char* filename) {
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
     const Duration& d = durations[i];
-    if (d.count > 0){
+    if (d.count > 10){
       double avg = d.count ? d.total_d / d.count : 0.0;
       file << function_names[i] << "," << d.count << "," << d.total_d << "," << d.min_d << "," << d.max_d << "," << avg << "\n";
     }
@@ -141,16 +141,12 @@ const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
 }
 
 const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
-        struct timespec t1, t2;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
     if (frame_number < 0 || frame_number >= MAX_CALLSTACK_DEPTH) {
         pallas_error("Frame number is too high or negative: %d\n", frame_number);
     }
     auto sequence = getFrameInCallstack(frame_number);
     pallas_assert(sequence.isIterable());
     return thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    update_duration(&durations[GET_TOKEN], t1, t2);
 }
 void ThreadReader::printCurToken() const {
     std::cout << thread_trace->getTokenString(pollCurToken()) << std::endl;
