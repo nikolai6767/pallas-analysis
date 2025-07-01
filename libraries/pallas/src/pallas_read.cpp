@@ -362,6 +362,7 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
 //******************* EXPLORATION FUNCTIONS ********************
 
 const Token& ThreadReader::pollCurToken() const {
+    std::cout << "hello" << std::endl;
     return getTokenInCallstack(currentState.current_frame_index);
 }
 
