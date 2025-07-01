@@ -62,7 +62,6 @@ void duration_write_all_csv(const char* filename) {
   "GET_NEXT_TOKEN",
   "NEXT",
   "POLL2",
-  "POLL3",
   "PRINT_EVENT1",
   "PRINT_EVENT2"
   };
