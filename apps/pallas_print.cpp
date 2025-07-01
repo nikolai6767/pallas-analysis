@@ -401,7 +401,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
       struct timespec t5, t6;
       clock_gettime(CLOCK_MONOTONIC, &t5);
-      update_duration(&durations[GET_TOKEN], t4, t5);
+      update_duration(&durations[GET_EVENT], t4, t5);
 
     if (! min_reader->getNextToken().isValid()) {
 
