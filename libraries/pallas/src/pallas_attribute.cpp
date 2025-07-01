@@ -238,6 +238,8 @@ void Thread::printAttribute(const struct AttributeData* attr) const {
 }
 
 void Thread::printAttributeList(const AttributeList* attribute_list) const {
+  struct timespec t1, t2;
+  clock_gettime(CLOCK_MONOTONIC, &t1);
   if (attribute_list == nullptr)
     return;
   printf(" { ");
@@ -252,6 +254,8 @@ void Thread::printAttributeList(const AttributeList* attribute_list) const {
     printAttribute(&attr);
   }
   printf(" }");
+  clock_gettime(CLOCK_MONOTONIC, &t2);
+  update_duration(&durations[PRINT_ATT_L], t1, t2);
 }
 
 void Thread::printEventAttribute(const struct EventOccurence* e) const {
