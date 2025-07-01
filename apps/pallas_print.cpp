@@ -99,7 +99,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   update_duration(&durations[PRINT_EVENT], t1, t2);
   update_duration(&durations[PRINT_EVENT1], t1, t3);
 
-  update_duration(&durations[PRINT_EVENT2], t1, t4);
+  update_duration(&durations[PRINT_EVENT2], t3, t4);
 
 
 
