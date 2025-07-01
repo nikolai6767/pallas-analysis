@@ -110,6 +110,8 @@ enum FunctionIndex {
   NEXT,
   POLL2,
   POLL3,
+  PRINT_EVENT1,
+  PRINT_EVENT2,
   NB_FUNCTIONS
 };
 

@@ -62,7 +62,9 @@ void duration_write_all_csv(const char* filename) {
   "GET_NEXT_TOKEN",
   "NEXT",
   "POLL2",
-  "POLL3"
+  "POLL3",
+  "PRINT_EVENT1",
+  "PRINT_EVENT2"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -622,15 +624,11 @@ bool ThreadReader::moveToPrevTokenInBlock() {
 }
 
 Token ThreadReader::getNextToken(int flags) {
-    struct timespec t1, t2;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
     if (flags == PALLAS_READ_FLAG_NONE)
         flags = pallas_read_flag;
     if (!moveToNextToken(flags))
         return Token();
     return pollCurToken();
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    update_duration(&durations[POLL3], t1, t2);
 }
 Token ThreadReader::getPrevToken(int flags) {
     if (flags == PALLAS_READ_FLAG_NONE)
