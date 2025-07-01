@@ -396,16 +396,12 @@ const String* Archive::getString(StringRef string_ref) {
 }
 
 const Region* Archive::getRegion(RegionRef region_ref) {
-  struct timespec t1, t2;
-  clock_gettime(CLOCK_MONOTONIC, &t1);
   pthread_mutex_lock(&lock);
   auto res = definitions.getRegion(region_ref);
   if (res == nullptr && global_archive)
     res = global_archive->getRegion(region_ref);
   pthread_mutex_unlock(&lock);
   return res;
-  clock_gettime(CLOCK_MONOTONIC, &t2);
-  update_duration(&durations[REGION], t1, t2);
 }
 
 const Attribute* Archive::getAttribute(AttributeRef attribute_ref) {

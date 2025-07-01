@@ -64,8 +64,7 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_EVENT1",
   "PRINT_EVENT2",
   "PRINT_EVENT3",
-  "GET_TOKEN",
-  "REGION"
+  "GET_TOKEN"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
@@ -142,6 +141,7 @@ const Token& ThreadReader::getFrameInCallstack(int frame_number) const {
 }
 
 const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
+    std::cout << "hello" << std::endl;
     if (frame_number < 0 || frame_number >= MAX_CALLSTACK_DEPTH) {
         pallas_error("Frame number is too high or negative: %d\n", frame_number);
     }
