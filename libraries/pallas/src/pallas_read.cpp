@@ -255,7 +255,6 @@ pallas_duration_t ThreadReader::getLoopDuration(Token loop_id) const {
 }
 
 EventOccurence ThreadReader::getEventOccurence(Token event_id, size_t occurence_id) const {
-    std::cout << "----------------------------------------------" << std::endl;
     auto eventOccurence = EventOccurence();
     auto* es = getEventSummary(event_id);
     eventOccurence.event = thread_trace->getEvent(event_id);
