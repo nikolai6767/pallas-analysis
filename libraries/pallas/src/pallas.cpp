@@ -416,9 +416,9 @@ std::string Thread::getEventString(Event* e) const {
     return eventName->str;
   }
   default:
-    return "{.record=" + std::to_string(e->record) + ", .size=" + std::to_string(e->event_size) + "}";
+    return "{.record=" + std::to_string(e->record) + ", .size=" + std::to_string(e->event_size) + "}";clock_gettime(CLOCK_MONOTONIC, &t2);
   }
-  clock_gettime(CLOCK_MONOTONIC, &t2);
+  
   update_duration(&durations[GET_EVENT_STRING], t1, t2);
 }
 
