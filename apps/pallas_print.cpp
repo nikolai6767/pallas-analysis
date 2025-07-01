@@ -382,9 +382,12 @@ void printTrace(pallas::GlobalArchive& trace) {
     struct timespec t3, t4;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
+
     auto token = min_reader->pollCurToken();
+
     clock_gettime(CLOCK_MONOTONIC, &t4);
     update_duration(&durations[POLL_CURR_TOKEN], t3, t4);
+
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
@@ -398,6 +401,8 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
       struct timespec t5, t6;
       clock_gettime(CLOCK_MONOTONIC, &t5);
+      update_duration(&durations[GET_TOKEN], t4, t5);
+
     if (! min_reader->getNextToken().isValid()) {
 
       pallas_assert(min_reader->isEndOfTrace());
