@@ -638,12 +638,13 @@ int main(const int argc, char* argv[]) {
   else
     printTrace(*trace);
 
+  clock_gettime(CLOCK_MONOTONIC, &t4);
+  update_duration(&durations[PALLAS_PRINT], t3, t4);
+
+  delete trace;
   
   duration_write_all_csv("test");
 
-  delete trace;
-  clock_gettime(CLOCK_MONOTONIC, &t4);
-  update_duration(&durations[PALLAS_PRINT], t3, t4);
   return EXIT_SUCCESS;
 }
 
