@@ -115,13 +115,15 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
     clock_gettime(CLOCK_MONOTONIC, &t5);
   }
   clock_gettime(CLOCK_MONOTONIC, &t9);
+
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
 
   clock_gettime(CLOCK_MONOTONIC, &t6);
 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
-  std::cout << std::endl;
+
+  //std::cout << std::endl;
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   

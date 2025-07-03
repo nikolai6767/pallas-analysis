@@ -255,10 +255,13 @@ void Thread::printAttributeList(const AttributeList* attribute_list) const {
 }
 
 void Thread::printEventAttribute(const struct EventOccurence* e) const {
+
   struct timespec t1, t2;
   clock_gettime(CLOCK_MONOTONIC, &t1);
+
   printAttributeList(e->attributes);
-    clock_gettime(CLOCK_MONOTONIC, &t2);
+  
+  clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_EV_ATT], t1, t2);
 }
 }  // namespace pallas
