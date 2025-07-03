@@ -150,7 +150,7 @@ const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
     }
     auto sequence = getFrameInCallstack(frame_number);
     pallas_assert(sequence.isIterable());
-    auto  retval =  thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
+    const Token&  retval =  thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
     clock_gettime(CLOCK_MONOTONIC, &t2);
     update_duration(&durations[TOK], t1, t2);
     return retval; 
