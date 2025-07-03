@@ -43,7 +43,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
 
     clock_gettime(CLOCK_MONOTONIC, &t2);
 
-    std::cout << std::right << std::fixed << ts / 1e9;
+    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
   }
