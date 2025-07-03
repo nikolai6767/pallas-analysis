@@ -43,7 +43,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
 
     clock_gettime(CLOCK_MONOTONIC, &t2);
 
-    std::cout << std::right << std::fixed << ts / 1e9;
+    std::cout << std::right  << std::fixed << ts / 1e9;     // std::setw() long
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
   }
@@ -61,7 +61,7 @@ static void _print_timestamp_header() {
 	clock_gettime(CLOCK_MONOTONIC, &t1);
 
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
-    std::cout << std::right << std::setw(21) << "Timestamp";
+    std::cout << std::right << "Timestamp";
   }
 
   clock_gettime(CLOCK_MONOTONIC, &t2);
