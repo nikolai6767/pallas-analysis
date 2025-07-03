@@ -101,13 +101,9 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   struct timespec t1, t2, t3, t4, t5, t6, t7, t8, t9;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
-
-  auto ts = e.timestamp;
+  _print_timestamp(e.timestamp);
   
   clock_gettime(CLOCK_MONOTONIC, &t2);
-
-    _print_timestamp(ts);
-
 
   if (!per_thread)
     clock_gettime(CLOCK_MONOTONIC, &t8);
