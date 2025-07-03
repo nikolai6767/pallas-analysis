@@ -123,7 +123,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  std::cout << std::endl;
+  std::cout << "\n";
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   
@@ -173,7 +173,7 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
     }
     if(threads_data[min_reader].callstack.empty()) std::cout<<";";
 
-    std::cout<<" "<<duration<<std::endl;
+    std::cout<<" "<<duration<<"\n";
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
@@ -247,7 +247,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     else
       std::cout<<threads_data[min_reader].callstack.back();
 
-    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<std::endl;
+    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<"\n";
 
      // Check that timestamps to not overlap
     pallas_assert_always(threads_data[min_reader].last_timestamp <= first_timestamp);
@@ -378,7 +378,7 @@ void printTrace(pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
     auto thread_list = trace.getThreadList();
   for (auto * thread: thread_list) {
-      std::cout <<thread->id << std::endl;
+      std::cout <<thread->id << "\n";
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
@@ -387,7 +387,7 @@ void printTrace(pallas::GlobalArchive& trace) {
 
   _print_timestamp_header();
   _print_duration_header();
-  std::cout << std::endl;
+  std::cout << "\n";
 
   if(csv_bulk) {
     printCSVBulk(readers);
@@ -506,7 +506,7 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
 void printThreadStructure(pallas::ThreadReader& tr) {
   	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
-  std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
+  std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << "\n";
   struct timespec t3, t4;
   clock_gettime(CLOCK_MONOTONIC, &t3);
   auto current_token = tr.pollCurToken();
@@ -523,14 +523,14 @@ void printThreadStructure(pallas::ThreadReader& tr) {
         std::cout << std::setw(21) << "";
         std::cout.precision(9);
         std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
-      } std::cout << std::endl;
+      } std::cout << "\n";
     } else if (current_token.type == pallas::TypeLoop) {
       if (show_durations) {
       auto d = tr.getLoopDuration(current_token);
       std::cout << std::setw(21) << "";
       std::cout.precision(9);
       std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
-    } std::cout << std::endl;
+    } std::cout << "\n";
     }
     auto next_token = tr.getNextToken();
     if (! next_token.isValid())
