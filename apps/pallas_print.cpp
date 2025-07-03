@@ -31,22 +31,31 @@ bool csv = false;
 bool csv_bulk = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
-	struct timespec t1, t2;
+
+	struct timespec t1, t2, t3;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
+
   if (show_timestamps) {
     std::cout.precision(9);
+    clock_gettime(CLOCK_MONOTONIC, &t2);
     std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
   }
-	clock_gettime(CLOCK_MONOTONIC, &t2);
-	update_duration(&durations[PRINT_TIMESTAMP], t1, t2);
+
+	clock_gettime(CLOCK_MONOTONIC, &t3);
+
+  update_duration(&durations[PRINT_TIMESTAMP_PRECISION], t1, t2);
+	update_duration(&durations[PRINT_TIMESTAMP], t1, t3);
 }
 
 static void _print_timestamp_header() {
-  	struct timespec t1, t2;
+
+  struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
+
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
+
   clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_TIMESTAMP_HEADER], t1, t2);
 

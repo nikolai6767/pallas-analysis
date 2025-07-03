@@ -47,6 +47,7 @@ void duration_write_all_csv(const char* filename) {
 
   const char* function_names[NB_FUNCTIONS] = {
   "PRINT_TIMESTAMP",
+  "PRINT_TIMESTAMP_PRECISION",
   "PRINT_TIMESTAMP_HEADER",
   "PRINT_DURATION",
   "PRINT_DURATION_HEADER",

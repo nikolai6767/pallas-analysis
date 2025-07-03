@@ -94,6 +94,7 @@ void duration_write_csv(const char* filename, const Duration* d);
 //All tracked functions
 enum FunctionIndex {
   PRINT_TIMESTAMP,
+  PRINT_TIMESTAMP_PRECISION,
   PRINT_TIMESTAMP_HEADER,
   PRINT_DURATION,
   PRINT_DURATION_HEADER,
