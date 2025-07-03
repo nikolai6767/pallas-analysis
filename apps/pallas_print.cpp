@@ -98,7 +98,7 @@ static void _print_duration_header() {
 /* Print one event */
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
   
-  struct timespec t1, t2, t3, t4, t5, t6, t7, t8, t9;
+  struct timespec t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
   _print_timestamp(e.timestamp);
@@ -122,16 +122,19 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
   std::cout << std::endl;
-  
+
+  clock_gettime(CLOCK_MONOTONIC, &t10);
   
 
-  update_duration(&durations[PRINT_EVENT], t1, t7);
+  update_duration(&durations[PRINT_EVENT], t1, t10);
 
   update_duration(&durations[PRINT_EVENT_PRINT_TIMESTAMP], t1, t2);
   update_duration(&durations[PRINT_EVENT_GET_NAME], t8, t3);
   update_duration(&durations[PRINT_EVENT_GET_TOKEN_STRING], t4, t5);
   update_duration(&durations[PRINT_EVENT_GET_EVENT_STRING], t9, t6);
   update_duration(&durations[PRINT_EVENT_GET_PRINT_EV_ATT], t6, t7);
+  update_duration(&durations[PRINT_EVENT_ENDL], t7, t10);
+
 }
 
 bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {

@@ -59,6 +59,7 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_EVENT_GET_EVENT_STRING",
   "PRINT_EVENT_GET_PRINT_EV_ATT",
   "PRINT_EV_ATT",
+  "PRINT_EVENT_ENDL",
   "PRINT_FLAME",
   "PRINT_CSV",
   "PRINT_CSV_BULK",
