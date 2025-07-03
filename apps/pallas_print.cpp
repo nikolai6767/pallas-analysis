@@ -450,17 +450,22 @@ void printTrace(pallas::GlobalArchive& trace) {
 
 static std::string structure_indent[MAX_CALLSTACK_DEPTH];
 std::string getCurrentIndent(const pallas::ThreadReader& tr) {
-  	struct timespec t1, t2;
+  	
+  struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
+
   if (tr.currentState.current_frame_index <= 1) {
     return "";
   }
+
   struct timespec t3, t4;
   clock_gettime(CLOCK_MONOTONIC, &t3);
 
   const auto t = tr.pollCurToken();
+
   clock_gettime(CLOCK_MONOTONIC, &t4);
-  update_duration(&durations[POLL2], t3, t4);
+  update_duration(&durations[STRUCTURE_INDENT_POLLCURTOKEN], t3, t4);
+  
 
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
@@ -481,9 +486,10 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
     }
     structure_indent[tr.currentState.current_frame_index - 2] = isLastOfSeq ? " " : "│";
     return current_indent;
+
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
-  update_duration(&durations[GET_CURRENT_INDEX], t1, t2);
+  update_duration(&durations[STRUCTURE_INDENT], t1, t2);
 
 }
 
