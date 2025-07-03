@@ -119,6 +119,7 @@ enum FunctionIndex {
   PRINT_STRUCTURE,
   GET_EVENT_OCC,
   TOK,
+  POLL2,
   NB_FUNCTIONS
 };
 

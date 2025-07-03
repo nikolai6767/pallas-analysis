@@ -71,7 +71,8 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 
   "GET_EVENT_OCC",
-  "TOK"
+  "TOK",
+  "POLL2"
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
