@@ -43,13 +43,9 @@ static void _print_timestamp(pallas_timestamp_t ts) {
 
     clock_gettime(CLOCK_MONOTONIC, &t2);
 
-    auto res = ts / 1e9;
+    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
-
-    std::cout << std::right << std::setw(21) << std::fixed << res;
-
-    //clock_gettime(CLOCK_MONOTONIC, &t3);
   }
 
 	clock_gettime(CLOCK_MONOTONIC, &t4);
@@ -105,9 +101,13 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   struct timespec t1, t2, t3, t4, t5, t6, t7, t8, t9;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
-  _print_timestamp(e.timestamp);
+
+  auto ts = e.timestamp;
   
   clock_gettime(CLOCK_MONOTONIC, &t2);
+
+    _print_timestamp(ts);
+
 
   if (!per_thread)
     clock_gettime(CLOCK_MONOTONIC, &t8);
