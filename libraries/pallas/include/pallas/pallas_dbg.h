@@ -120,6 +120,7 @@ enum FunctionIndex {
   GET_EVENT_OCC,
   TOK,
   POLL2,
+  PALLAS_PRINT,
   OPEN_TRACE,
   NB_FUNCTIONS
 };

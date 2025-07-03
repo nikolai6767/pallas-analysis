@@ -569,6 +569,9 @@ void usage(const char* prog_name) {
 
 int main(const int argc, char* argv[]) {
 
+  struct timespec t3, t4;
+  clock_gettime(CLOCK_MONOTONIC, &t3);
+
   for (int i = 0; i<NB_FUNCTIONS; i++){
     duration_init(&durations[i]);
   }
@@ -639,6 +642,8 @@ int main(const int argc, char* argv[]) {
   duration_write_all_csv("test");
 
   delete trace;
+  clock_gettime(CLOCK_MONOTONIC, &t4);
+  update_duration(&durations[PALLAS_PRINT], t3, t4);
   return EXIT_SUCCESS;
 }
 

@@ -73,6 +73,7 @@ void duration_write_all_csv(const char* filename) {
   "GET_EVENT_OCC",
   "TOK",
   "POLL2",
+  "PALLAS_PRINT",
   "OPEN_TRACE",
   };
 
