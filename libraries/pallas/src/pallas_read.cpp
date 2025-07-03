@@ -63,12 +63,12 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_CSV_BULK",
   "PRINT_TRACE",
   "PRINT_TRACE_POLLCURTOKEN",
+  "PRINT_TRACE_PRINT_EVENT",
   "GET_CURRENT_INDEX", 
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 
   "GET_NEXT_TOKEN",
   "POLL2",
-  "GET_EVENT",
   "GET_EVENT_OCC",
   "TOK"
   };
