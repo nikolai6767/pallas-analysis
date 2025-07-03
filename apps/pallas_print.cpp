@@ -429,7 +429,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
       update_duration(&durations[PRINT_TRACE_PRINT_EVENT], t8, t5);
 
-      update_duration(&durations[PRINT_TRACE_GET_EV_OCC], t8, t5);
+      update_duration(&durations[PRINT_TRACE_GET_EV_OCC], t7, t8);
 
     if (! min_reader->getNextToken().isValid()) {
 
