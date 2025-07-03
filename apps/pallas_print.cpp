@@ -36,11 +36,20 @@ static void _print_timestamp(pallas_timestamp_t ts) {
 	clock_gettime(CLOCK_MONOTONIC, &t1);
 
   if (show_timestamps) {
+
     clock_gettime(CLOCK_MONOTONIC, &t5);
+
     std::cout.precision(9);
+
     clock_gettime(CLOCK_MONOTONIC, &t2);
-    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
+
+    auto res = ts / 1e9;
+
     clock_gettime(CLOCK_MONOTONIC, &t3);
+
+    std::cout << std::right << std::setw(21) << std::fixed << res;
+
+    //clock_gettime(CLOCK_MONOTONIC, &t3);
   }
 
 	clock_gettime(CLOCK_MONOTONIC, &t4);
