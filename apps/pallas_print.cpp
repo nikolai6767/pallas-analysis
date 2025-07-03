@@ -123,7 +123,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  std::cout << "\n";
+  std::cout << std::endl;
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   
@@ -378,7 +378,7 @@ void printTrace(pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
     auto thread_list = trace.getThreadList();
   for (auto * thread: thread_list) {
-      std::cout <<thread->id << "\n";
+      std::cout <<thread->id << std::endl;
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
@@ -387,7 +387,7 @@ void printTrace(pallas::GlobalArchive& trace) {
 
   _print_timestamp_header();
   _print_duration_header();
-  std::cout << "\n";
+  std::cout << std::endl;
 
   if(csv_bulk) {
     printCSVBulk(readers);
