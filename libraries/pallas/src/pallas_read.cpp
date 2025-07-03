@@ -64,6 +64,7 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_TRACE",
   "PRINT_TRACE_POLLCURTOKEN",
   "PRINT_TRACE_PRINT_EVENT",
+  "PRINT_TRACE_GET_EV_OCC",
   "GET_CURRENT_INDEX", 
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 

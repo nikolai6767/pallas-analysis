@@ -398,7 +398,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
   
     
-    struct timespec t3, t4, t5, t6, t7;
+    struct timespec t3, t4, t5, t6, t7, t8;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
 
@@ -414,13 +414,22 @@ void printTrace(pallas::GlobalArchive& trace) {
       } else if(csv) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printCSV(threads_data, min_reader, e);
+      
       } else {
         clock_gettime(CLOCK_MONOTONIC, &t7);
-	  printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
+
+        auto res = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
+
+        clock_gettime(CLOCK_MONOTONIC, &t8);
+
+	      printEvent(min_reader->thread_trace, token, res);
+
         clock_gettime(CLOCK_MONOTONIC, &t5);
 }
     }
-      update_duration(&durations[PRINT_TRACE_PRINT_EVENT], t7, t5);
+      update_duration(&durations[PRINT_TRACE_PRINT_EVENT], t8, t5);
+
+      update_duration(&durations[PRINT_TRACE_GET_EV_OCC], t8, t5);
 
     if (! min_reader->getNextToken().isValid()) {
 
