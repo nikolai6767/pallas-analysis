@@ -75,7 +75,7 @@ void duration_write_all_csv(const char* filename) {
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {
     const Duration& d = durations[i];
-    if (d.count > 1){
+    if (d.count > 0){
       double avg = d.count ? d.total_d / d.count : 0.0;
       file << function_names[i] << "," << d.count << "," << d.total_d << "," << d.min_d << "," << d.max_d << "," << avg << "\n";
     }

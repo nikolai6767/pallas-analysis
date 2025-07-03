@@ -127,12 +127,6 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   update_duration(&durations[PRINT_EVENT_GET_TOKEN_STRING], t4, t5);
   update_duration(&durations[PRINT_EVENT_GET_EVENT_STRING], t9, t6);
   update_duration(&durations[PRINT_EVENT_GET_PRINT_EV_ATT], t6, t7);
-
-
-  
-
-
-
 }
 
 bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
