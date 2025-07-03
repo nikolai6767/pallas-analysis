@@ -71,38 +71,48 @@ static void _print_duration_header() {
     std::cout << std::right << std::setw(21) << "Duration";
   }
   clock_gettime(CLOCK_MONOTONIC, &t2);
-
   update_duration(&durations[PRINT_DURATION_HEADER], t1, t2);
 
 }
 
 /* Print one event */
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
-  struct timespec t1, t2, t3, t4, t5;
+  
+  struct timespec t1, t2, t3, t4, t5, t6, t7;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
   _print_timestamp(e.timestamp);
+  
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   if (!per_thread)
     std::cout << std::right << std::setw(10) << thread->getName();
+      clock_gettime(CLOCK_MONOTONIC, &t3);
   if (verbose) {
+    clock_gettime(CLOCK_MONOTONIC, &t4);
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
+    clock_gettime(CLOCK_MONOTONIC, &t5);
   }
-  clock_gettime(CLOCK_MONOTONIC, &t3);
 
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
-  clock_gettime(CLOCK_MONOTONIC, &t4);
+
+  clock_gettime(CLOCK_MONOTONIC, &t6);
+
   thread->printEventAttribute(&e);
-  clock_gettime(CLOCK_MONOTONIC, &t5);
+  
   std::cout << std::endl;
   
+  clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  update_duration(&durations[PRINT_EVENT], t1, t2);
-  update_duration(&durations[PRINT_EVENT1], t2, t3);
+  update_duration(&durations[PRINT_EVENT], t1, t7);
 
-  update_duration(&durations[PRINT_EVENT2], t3, t4);
-  update_duration(&durations[PRINT_EVENT3], t4, t5);
+  update_duration(&durations[PRINT_EVENT_PRINT_TIMESTAMP], t1, t2);
+  update_duration(&durations[PRINT_EVENT_GET_NAME], t2, t3);
+  update_duration(&durations[PRINT_EVENT_GET_TOKEN_STRING], t4, t5);
+  update_duration(&durations[PRINT_EVENT_GET_EVENT_STRING], t5, t6);
+  update_duration(&durations[PRINT_EVENT_GET_PRINT_EV_ATT], t6, t7);
+
+
   
 
 
