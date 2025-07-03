@@ -398,7 +398,7 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
   
     
-    struct timespec t3, t4, t5, t6, t7, t8;
+    struct timespec t3, t4, t5, t6, t7, t8, t9, t10;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
 
@@ -431,11 +431,14 @@ void printTrace(pallas::GlobalArchive& trace) {
 
       update_duration(&durations[PRINT_TRACE_GET_EV_OCC], t7, t8);
 
-    if (! min_reader->getNextToken().isValid()) {
+      clock_gettime(CLOCK_MONOTONIC, &t9);
+      auto test = min_reader->getNextToken().isValid();
+      clock_gettime(CLOCK_MONOTONIC, &t10);
+      update_duration(&durations[PRINT_TRACE_GET_NEXT_TOKEN], t9, t10);
 
+
+    if (! test) {
       pallas_assert(min_reader->isEndOfTrace());
-      clock_gettime(CLOCK_MONOTONIC, &t6);
-      update_duration(&durations[GET_NEXT_TOKEN], t5, t6);
     }
   }
 
