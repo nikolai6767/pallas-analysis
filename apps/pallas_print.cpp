@@ -43,7 +43,7 @@ static void _print_timestamp(pallas_timestamp_t ts) {
 
     clock_gettime(CLOCK_MONOTONIC, &t2);
 
-    std::cout << std::right  << std::fixed << ts / 1e9;     // std::setw() long
+    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;     // std::setw() long
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
   }
@@ -61,7 +61,7 @@ static void _print_timestamp_header() {
 	clock_gettime(CLOCK_MONOTONIC, &t1);
 
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
-    std::cout << std::right << "Timestamp";
+    std::cout << std::right << std::setw(21) << "Timestamp";
   }
 
   clock_gettime(CLOCK_MONOTONIC, &t2);
@@ -123,7 +123,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  std::cout << std::endl;
+  std::cout << "\n";
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   
@@ -378,7 +378,7 @@ void printTrace(pallas::GlobalArchive& trace) {
   auto readers = std::vector<pallas::ThreadReader>();
     auto thread_list = trace.getThreadList();
   for (auto * thread: thread_list) {
-      std::cout <<thread->id << std::endl;
+      std::cout <<thread->id << "\n";
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
@@ -387,7 +387,7 @@ void printTrace(pallas::GlobalArchive& trace) {
 
   _print_timestamp_header();
   _print_duration_header();
-  std::cout << std::endl;
+  std::cout << "\n";
 
   if(csv_bulk) {
     printCSVBulk(readers);
