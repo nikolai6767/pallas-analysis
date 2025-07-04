@@ -31,54 +31,34 @@ bool csv = false;
 bool csv_bulk = false;
 
 static void _print_timestamp(pallas_timestamp_t ts) {
-
-	struct timespec t1, t2, t3, t4, t5;
+	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
-
   if (show_timestamps) {
-
-    clock_gettime(CLOCK_MONOTONIC, &t5);
-
     std::cout.precision(9);
-
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-
-    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;     // std::setw() long
-
-    clock_gettime(CLOCK_MONOTONIC, &t3);
+    std::cout << std::right << std::setw(21) << std::fixed << ts / 1e9;
   }
-
-	clock_gettime(CLOCK_MONOTONIC, &t4);
-
-  update_duration(&durations[PRINT_TIMESTAMP_PRECISION], t5, t2);
-  update_duration(&durations[PRINT_TIMESTAMP_ELSE], t2, t3);
-	update_duration(&durations[PRINT_TIMESTAMP], t1, t4);
+	clock_gettime(CLOCK_MONOTONIC, &t2);
+	update_duration(&durations[PRINT_TIMESTAMP], t1, t2);
 }
 
 static void _print_timestamp_header() {
-
-  struct timespec t1, t2;
+  	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
-
   if (show_timestamps && (!flamegraph) && (!csv) && (!csv_bulk) ) {
     std::cout << std::right << std::setw(21) << "Timestamp";
   }
-
   clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_TIMESTAMP_HEADER], t1, t2);
 
 }
 
 static void _print_duration(pallas_timestamp_t d) {
-
-  struct timespec t1, t2;
+  	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
-  
   if (show_durations) {
     std::cout.precision(9);
     std::cout << std::right << std::setw(21) << std::fixed << d / 1e9;
   }
-  
   clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[PRINT_DURATION], t1, t2);
 
@@ -91,51 +71,42 @@ static void _print_duration_header() {
     std::cout << std::right << std::setw(21) << "Duration";
   }
   clock_gettime(CLOCK_MONOTONIC, &t2);
+
   update_duration(&durations[PRINT_DURATION_HEADER], t1, t2);
 
 }
 
 /* Print one event */
 static void printEvent(const pallas::Thread* thread, const pallas::Token token, const pallas::EventOccurence e) {
-  
-  struct timespec t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
+  std::cout << "hi" << std::endl;
+  struct timespec t1, t2, t3, t4, t5;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
   _print_timestamp(e.timestamp);
-  
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
   if (!per_thread)
-    clock_gettime(CLOCK_MONOTONIC, &t8);
     std::cout << std::right << std::setw(10) << thread->getName();
-    clock_gettime(CLOCK_MONOTONIC, &t3);
   if (verbose) {
-    clock_gettime(CLOCK_MONOTONIC, &t4);
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
-    clock_gettime(CLOCK_MONOTONIC, &t5);
   }
-  clock_gettime(CLOCK_MONOTONIC, &t9);
+  clock_gettime(CLOCK_MONOTONIC, &t3);
 
   std::cout << std::setw(4) << " " << thread->getEventString(e.event);
-
-  clock_gettime(CLOCK_MONOTONIC, &t6);
-
+  clock_gettime(CLOCK_MONOTONIC, &t4);
   thread->printEventAttribute(&e);
-  clock_gettime(CLOCK_MONOTONIC, &t7);
-
+  clock_gettime(CLOCK_MONOTONIC, &t5);
   std::cout << std::endl;
-
-  clock_gettime(CLOCK_MONOTONIC, &t10);
   
 
-  update_duration(&durations[PRINT_EVENT], t1, t10);
+  update_duration(&durations[PRINT_EVENT], t1, t2);
+  update_duration(&durations[PRINT_EVENT1], t2, t3);
 
-  update_duration(&durations[PRINT_EVENT_PRINT_TIMESTAMP], t1, t2);
-  update_duration(&durations[PRINT_EVENT_GET_NAME], t8, t3);
-  update_duration(&durations[PRINT_EVENT_GET_TOKEN_STRING], t4, t5);
-  update_duration(&durations[PRINT_EVENT_GET_EVENT_STRING], t9, t6);
-  update_duration(&durations[PRINT_EVENT_GET_PRINT_EV_ATT], t6, t7);
-  update_duration(&durations[PRINT_EVENT_ENDL], t7, t10);
+  update_duration(&durations[PRINT_EVENT2], t3, t4);
+  update_duration(&durations[PRINT_EVENT3], t4, t5);
+  
+
+
 
 }
 
@@ -173,7 +144,7 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
     }
     if(threads_data[min_reader].callstack.empty()) std::cout<<";";
 
-    std::cout<<" "<<duration<<"\n";
+    std::cout<<" "<<duration<<std::endl;
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
@@ -247,7 +218,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     else
       std::cout<<threads_data[min_reader].callstack.back();
 
-    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<"\n";
+    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<std::endl;
 
      // Check that timestamps to not overlap
     pallas_assert_always(threads_data[min_reader].last_timestamp <= first_timestamp);
@@ -408,14 +379,14 @@ void printTrace(pallas::GlobalArchive& trace) {
     }
   
     
-    struct timespec t3, t4, t5, t6, t7, t8, t9, t10;
+    struct timespec t3, t4;
 
     clock_gettime(CLOCK_MONOTONIC, &t3);
 
     auto token = min_reader->pollCurToken();
 
     clock_gettime(CLOCK_MONOTONIC, &t4);
-    update_duration(&durations[PRINT_TRACE_POLLCURTOKEN], t3, t4);
+    update_duration(&durations[POLL_CURR_TOKEN], t3, t4);
 
     if (token.type == pallas::TypeEvent) {
       if(flamegraph) {
@@ -424,31 +395,19 @@ void printTrace(pallas::GlobalArchive& trace) {
       } else if(csv) {
 	auto e = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
 	printCSV(threads_data, min_reader, e);
-      
       } else {
-        clock_gettime(CLOCK_MONOTONIC, &t7);
-
-        auto res = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
-
-        clock_gettime(CLOCK_MONOTONIC, &t8);
-
-	      printEvent(min_reader->thread_trace, token, res);
-
-        clock_gettime(CLOCK_MONOTONIC, &t5);
-}
+	printEvent(min_reader->thread_trace, token, min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]));
+      }
     }
-      update_duration(&durations[PRINT_TRACE_PRINT_EVENT], t8, t5);
+      struct timespec t5, t6;
+      clock_gettime(CLOCK_MONOTONIC, &t5);
+      update_duration(&durations[GET_EVENT], t4, t5);
 
-      update_duration(&durations[PRINT_TRACE_GET_EV_OCC], t7, t8);
+    if (! min_reader->getNextToken().isValid()) {
 
-      clock_gettime(CLOCK_MONOTONIC, &t9);
-      auto test = min_reader->getNextToken().isValid();
-      clock_gettime(CLOCK_MONOTONIC, &t10);
-      update_duration(&durations[PRINT_TRACE_GET_NEXT_TOKEN], t9, t10);
-
-
-    if (! test) {
       pallas_assert(min_reader->isEndOfTrace());
+      clock_gettime(CLOCK_MONOTONIC, &t6);
+      update_duration(&durations[GET_NEXT_TOKEN], t5, t6);
     }
   }
 
@@ -460,22 +419,17 @@ void printTrace(pallas::GlobalArchive& trace) {
 
 static std::string structure_indent[MAX_CALLSTACK_DEPTH];
 std::string getCurrentIndent(const pallas::ThreadReader& tr) {
-  	
-  struct timespec t1, t2;
+  	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
-
   if (tr.currentState.current_frame_index <= 1) {
     return "";
   }
-
   struct timespec t3, t4;
   clock_gettime(CLOCK_MONOTONIC, &t3);
 
   const auto t = tr.pollCurToken();
-
   clock_gettime(CLOCK_MONOTONIC, &t4);
-  update_duration(&durations[STRUCTURE_INDENT_POLLCURTOKEN], t3, t4);
-
+  update_duration(&durations[POLL2], t3, t4);
 
   std::string current_indent;
   bool isLastOfSeq = tr.isEndOfCurrentBlock();
@@ -496,10 +450,9 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
     }
     structure_indent[tr.currentState.current_frame_index - 2] = isLastOfSeq ? " " : "│";
     return current_indent;
-
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
-  update_duration(&durations[STRUCTURE_INDENT], t1, t2);
+  update_duration(&durations[GET_CURRENT_INDEX], t1, t2);
 
 }
 
@@ -579,9 +532,6 @@ void usage(const char* prog_name) {
 
 int main(const int argc, char* argv[]) {
 
-  struct timespec t3, t4;
-  clock_gettime(CLOCK_MONOTONIC, &t3);
-
   for (int i = 0; i<NB_FUNCTIONS; i++){
     duration_init(&durations[i]);
   }
@@ -634,12 +584,8 @@ int main(const int argc, char* argv[]) {
     usage(argv[0]);
     return EXIT_SUCCESS;
   }
-  struct timespec t1, t2;
-  clock_gettime(CLOCK_MONOTONIC, &t1);
-  auto trace = pallas_open_trace(trace_name);
-  clock_gettime(CLOCK_MONOTONIC, &t2);
-  update_duration(&durations[OPEN_TRACE], t1, t2);
 
+  auto trace = pallas_open_trace(trace_name);
   if(trace == nullptr)
     return EXIT_FAILURE;
 
@@ -648,13 +594,10 @@ int main(const int argc, char* argv[]) {
   else
     printTrace(*trace);
 
-  clock_gettime(CLOCK_MONOTONIC, &t4);
-  update_duration(&durations[PALLAS_PRINT], t3, t4);
-
-  delete trace;
   
   duration_write_all_csv("test");
 
+  delete trace;
   return EXIT_SUCCESS;
 }
 
