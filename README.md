@@ -5,6 +5,6 @@
 run
  ```cd pallas-analysis``` and
 ```source build_pallas_eztrace/setup_all.sh``` 
-to build and install pallas and eztrace with all needed variables. 
+to build and install pallas and eztrace with all the necessary environment variables. 
 
-Be carefull, you may have to use pallas installed OTF2 library.  
+Be careful: you may need to use the OTF2 library provided by the Pallas installation.
