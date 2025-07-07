@@ -123,7 +123,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  std::cout << std::endl;
+  std::cout << "\n";
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   
