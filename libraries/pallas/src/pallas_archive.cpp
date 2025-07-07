@@ -263,13 +263,21 @@ std::vector<Location> GlobalArchive::getLocationList() {
 
 std::vector<Thread*> GlobalArchive::getThreadList() {
   std::vector<Thread*> output;
+  struct timespec t1, t2, t3, t4;
   for (auto& lg: location_groups) {
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     auto a = getArchive(lg.id);
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+
     for (const auto& l : a->locations) {
-        auto* t = a->getThread(l.id);
+      clock_gettime(CLOCK_MONOTONIC, &t3);
+      auto* t = a->getThread(l.id);
+      clock_gettime(CLOCK_MONOTONIC, &t4);
       output.push_back(t);
     }
   }
+  update_duration(&durations[GET_THREAD_LIST_GET_ARCHIVE], t1, t2);
+  update_duration(&durations[GET_THREAD_LIST_GET_THREAD], t3, t4);
   return output;
 }
 

@@ -64,6 +64,10 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_CSV",
   "PRINT_CSV_BULK",
   "PRINT_TRACE",
+  "PRINT_TRACE_GET_THREAD_LIST",
+  "GET_THREAD_LIST_GET_ARCHIVE",
+  "GET_THREAD_LIST_GET_THREAD",
+  "PRINT_TRACE_EMPLACE_BACK",
   "PRINT_TRACE_POLLCURTOKEN",
   "PRINT_TRACE_PRINT_EVENT",
   "PRINT_TRACE_GET_EV_OCC",
@@ -73,8 +77,8 @@ void duration_write_all_csv(const char* filename) {
   "PRINT_THREAD_STRUCTURE",
   "PRINT_STRUCTURE", 
   "GET_EVENT_OCC",
-  "TOK",
-  "POLL2",
+  "GET_TOKEN_IN_CALL_STACK",
+  "ENTER_BLOCK",
   "PALLAS_PRINT",
   "OPEN_TRACE",
   };
@@ -162,7 +166,7 @@ const Token& ThreadReader::getTokenInCallstack(int frame_number) const {
     pallas_assert(sequence.isIterable());
     const Token&  retval =  thread_trace->getToken(sequence, currentState.callstack[frame_number].frame_index);
     clock_gettime(CLOCK_MONOTONIC, &t2);
-    update_duration(&durations[TOK], t1, t2);
+    update_duration(&durations[GET_TOKEN_IN_CALL_STACK], t1, t2);
     return retval; 
 }
 void ThreadReader::printCurToken() const {
@@ -671,7 +675,7 @@ void ThreadReader::enterBlock() {
     clock_gettime(CLOCK_MONOTONIC, &t1);
     currentState.currentFrame->referential_timestamp = currentState.callstack[currentState.current_frame_index - 1].referential_timestamp;
     clock_gettime(CLOCK_MONOTONIC, &t2);
-    update_duration(&durations[POLL2], t1, t2);
+    update_duration(&durations[ENTER_BLOCK], t1, t2);
     currentState.currentFrame->callstack_iterable = new_block;
     currentState.currentFrame->tokenCount = (currentState.currentFrame - 1)->tokenCount;
 #ifdef DEBUG

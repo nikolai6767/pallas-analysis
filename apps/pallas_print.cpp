@@ -123,7 +123,7 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   thread->printEventAttribute(&e);
   clock_gettime(CLOCK_MONOTONIC, &t7);
 
-  std::cout << "\n";
+  std::cout << std::endl;
 
   clock_gettime(CLOCK_MONOTONIC, &t10);
   
@@ -173,7 +173,7 @@ void printFlame(std::map<pallas::ThreadReader*, struct thread_data> &threads_dat
     }
     if(threads_data[min_reader].callstack.empty()) std::cout<<";";
 
-    std::cout<<" "<<duration<<"\n";
+    std::cout<<" "<<duration<<std::endl;
   };
 
   if(e.event->record == pallas::PALLAS_EVENT_ENTER) {
@@ -247,7 +247,7 @@ void printCSV(std::map<pallas::ThreadReader*, struct thread_data> &threads_data,
     else
       std::cout<<threads_data[min_reader].callstack.back();
 
-    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<"\n";
+    std::cout<<","<<first_timestamp<<","<<first_timestamp+duration<<","<<duration<<std::endl;
 
      // Check that timestamps to not overlap
     pallas_assert_always(threads_data[min_reader].last_timestamp <= first_timestamp);
@@ -338,7 +338,7 @@ void printCSVBulk(std::vector<pallas::ThreadReader> readers) {
 	}
 
 	std::cout<<reader.thread_trace->getName()<<",";
-	std::cout<<seq_name<<","<<ts<<","<<ts+duration<<","<<duration<<"\n";
+	std::cout<<seq_name<<","<<ts<<","<<ts+duration<<","<<duration<<std::endl;
       }
     }
   }
@@ -376,13 +376,26 @@ void printTrace(pallas::GlobalArchive& trace) {
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
   auto readers = std::vector<pallas::ThreadReader>();
-    auto thread_list = trace.getThreadList();
+
+  struct timespec start, end, t20, t21;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
+  auto thread_list = trace.getThreadList();
+  clock_gettime(CLOCK_MONOTONIC, &end);
+
+  update_duration(&durations[PRINT_TRACE_GET_THREAD_LIST], start, end);
+
   for (auto * thread: thread_list) {
-      std::cout <<thread->id << std::endl;
+      std::cout <<thread->id << "\n";
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
+
+      clock_gettime(CLOCK_MONOTONIC, &t20);
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
+      clock_gettime(CLOCK_MONOTONIC, &t21);
+
       threads_data[&readers.back()] = {};
+  update_duration(&durations[PRINT_TRACE_EMPLACE_BACK], t20, t21);
   }
 
   _print_timestamp_header();
