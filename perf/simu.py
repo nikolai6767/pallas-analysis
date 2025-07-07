@@ -30,5 +30,5 @@ plt.title("Stats temporelles par fonction")
 plt.legend()
 plt.tight_layout()
 plt.grid(True, axis='y', linestyle='--', alpha=0.5)
-
+plt.yscale('log')
 plt.show()
