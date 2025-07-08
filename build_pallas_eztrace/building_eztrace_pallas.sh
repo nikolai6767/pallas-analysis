@@ -11,6 +11,20 @@ base_dir=$PWD
 # pip install pybind11
 # export pybind11_DIR=$(python -m pybind11 --cmakedir)
 
+## Install ZFP
+git clone https://github.com/LLNL/zfp.git
+cd zfp
+mkdir build install
+cd build
+export ZFP_ROOT=$PWD/../install
+cmake .. -DCMAKE_INSTALL_PREFIX=$ZFP_ROOT
+chmod u+x ../install
+make && make install
+export ZFP_INCLUDE_DIRS=$ZFP_ROOT/include/
+export ZFP_LIBRARIES=$ZFP_ROOT/lib/
+
+cd "$base_dir"
+
 ## install pallas
 git clone https://github.com/Pallas-Trace/pallas.git
 cd pallas
@@ -21,7 +35,7 @@ git checkout dev && git pull
 mkdir build install
 cd build
 export PALLAS_ROOT=$PWD/../install
-cmake .. -DCMAKE_INSTALL_PREFIX=$PALLAS_ROOT -DENABLE_PYTHON=OFF
+cmake .. -DCMAKE_INSTALL_PREFIX=$PALLAS_ROOT -DENABLE_PYTHON=OFF -DENABLE_ZFP=ON -DENABLE_SZ=ON
 make -j 14 && make install
 
 
@@ -40,7 +54,9 @@ cmake .. -DCMAKE_INSTALL_PREFIX="$EZTRACE_ROOT" -DCMAKE_BUILD_TYPE=RelWithDebInf
       -DOTF2_ROOT=$PALLAS_ROOT -DEZTRACE_ENABLE_MPI=ON
 make -j 14 && make install
 
-cd $base_dir
+cd "$base_dir"
 
 ## To export $PATH globally
 echo "export PATH=\"$EZTRACE_ROOT/bin:$PALLAS_ROOT/bin:\$PATH\"" >> $base_dir/build_pallas_eztrace/env.sh
+echo "export PATH=\"$ZFP_INCLUDE_DIRS=$ZFP_ROOT/include/:\$PATH\"" >> $base_dir/build_pallas_eztrace/env.sh
+echo "export PATH=\"$ZFP_LIBRARIES=$ZFP_ROOT/lib/:\$PATH\"" >> $base_dir/build_pallas_eztrace/env.sh

@@ -1,3 +1,4 @@
-pallas
-eztrace
+pallas/
+eztrace/
 env.sh
+zfp/
