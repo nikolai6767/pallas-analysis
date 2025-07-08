@@ -2,3 +2,5 @@ pallas/
 eztrace/
 env.sh
 zfp/
+*.o
+*.mod
