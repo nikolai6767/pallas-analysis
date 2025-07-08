@@ -9,9 +9,9 @@
  Total number of processes:     64
 
    iteration           ||r||                 zeta
-        1       0.19367524841904E-12   109.9989031370168
-        5       0.43507484463711E+10   109.9997561119109
-       10       0.72631857131945E+15   109.9998780569336
+        1       0.19367524841904E-12   109.9993673062689
+        5       0.55352057512148E+04   108.3987502564969
+       10                        NaN                 NaN
        15                        NaN                 NaN
        20                        NaN                 NaN
        25                        NaN                 NaN
@@ -35,11 +35,11 @@
  Class           =                        C
  Size            =                   150000
  Iterations      =                       75
- Time in seconds =                    26.10
+ Time in seconds =                    28.21
  Total processes =                       64
  Active processes=                       64
- Mop/s total     =                  5492.78
- Mop/s/process   =                    85.82
+ Mop/s total     =                  5081.64
+ Mop/s/process   =                    79.40
  Operation type  =           floating point
  Verification    =             UNSUCCESSFUL
  Version         =                    3.4.3

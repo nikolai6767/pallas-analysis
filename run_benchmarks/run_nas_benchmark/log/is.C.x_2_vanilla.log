@@ -23,11 +23,11 @@
  Class           =                        C
  Size            =                134217728
  Iterations      =                       10
- Time in seconds =                     0.90
+ Time in seconds =                     1.27
  Total processes =                       64
  Active processes=                       64
- Mop/s total     =                  1495.56
- Mop/s/process   =                    23.37
+ Mop/s total     =                  1055.25
+ Mop/s/process   =                    16.49
  Operation type  =              keys ranked
  Verification    =               SUCCESSFUL
  Version         =                    3.4.3

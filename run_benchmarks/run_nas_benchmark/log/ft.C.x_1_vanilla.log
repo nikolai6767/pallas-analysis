@@ -9,7 +9,7 @@
  Processor array     :         1x  64
  Layout type         :             1D
 
- Initialization time =      1.6422
+ Initialization time =      1.7311
 
  T =    1     Checksum =    5.195078707457D+02    5.149019699238D+02
  T =    2     Checksum =    5.155422171134D+02    5.127578201997D+02
@@ -38,11 +38,11 @@
  Class           =                        C
  Size            =            512x 512x 512
  Iterations      =                       20
- Time in seconds =                    23.53
+ Time in seconds =                    26.06
  Total processes =                       64
  Active processes=                       64
- Mop/s total     =                 16844.60
- Mop/s/process   =                   263.20
+ Mop/s total     =                 15211.07
+ Mop/s/process   =                   237.67
  Operation type  =           floating point
  Verification    =               SUCCESSFUL
  Version         =                    3.4.3
