@@ -7,3 +7,8 @@ To compile NPB3.4, make sure that Pallas and EZTrace are already installed. Then
 Then, run: ```bash make_nas.sh```.
 
 To launch the simulations, run: ```bash run_nas.sh``` 
+
+## LULESH
+
+To build and install LULESH, run ```bash make_lulesh.sh```.
+To launch the simulations, run: ```bash run_lulesh.sh
