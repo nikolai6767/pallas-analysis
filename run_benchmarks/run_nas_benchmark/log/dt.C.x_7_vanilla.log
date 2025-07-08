@@ -1,0 +1,14 @@
+** Usage: mpirun -np N ../bin/dt.S GraphName
+** Where 
+   - N is integer number of MPI processes
+   - S is the class S, W, or A 
+   - GraphName is the communication graph name BH, WH, or SH.
+   - the number of MPI processes N should not be be less than 
+     the number of nodes in the graph
+--------------------------------------------------------------------------
+prterun detected that one or more processes exited with non-zero status,
+thus causing the job to be terminated. The first process to do so was:
+
+   Process name: [prterun-sandor-2002165@1,53]
+   Exit code:    1
+--------------------------------------------------------------------------
