@@ -11,4 +11,4 @@ To launch the simulations, run: ```bash run_nas.sh```
 ## LULESH
 
 To build and install LULESH, run ```bash make_lulesh.sh```.
-To launch the simulations, run: ```bash run_lulesh.sh
+To launch the simulations, run: ```bash run_lulesh.sh```
