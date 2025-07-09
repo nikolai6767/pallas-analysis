@@ -1,8 +1,10 @@
 #!/bin/bash
 
 file=eztrace_pallas.env
+mkdir -p soft
+base_dir=$PWD/soft
 
-base_dir=$PWD
+cd $base_dir
 
 ## Creates a python virtual environment for pybind11
 # mkdir .venv
@@ -58,6 +60,6 @@ make -j 14 && make install
 cd "$base_dir"
 
 ## To export $PATH globally
-echo "export PATH=\"$EZTRACE_ROOT/bin:$PALLAS_ROOT/bin:\$PATH\"" >> $base_dir/build_pallas_eztrace/"$file"
-echo "export PATH=\"$ZFP_INCLUDE_DIRS=$ZFP_ROOT/include/:\$PATH\"" >> $base_dir/build_pallas_eztrace/"$file"
-echo "export PATH=\"$ZFP_LIBRARIES=$ZFP_ROOT/lib/:\$PATH\"" >> $base_dir/build_pallas_eztrace/"$file"
+echo "export PATH=\"$EZTRACE_ROOT/bin:$PALLAS_ROOT/bin:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
+echo "export PATH=\"$ZFP_INCLUDE_DIRS=$ZFP_ROOT/include/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
+echo "export PATH=\"$ZFP_LIBRARIES=$ZFP_ROOT/lib/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
