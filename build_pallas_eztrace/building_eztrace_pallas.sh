@@ -61,5 +61,4 @@ cd "$base_dir"
 
 ## To export $PATH globally
 echo "export PATH=\"$EZTRACE_ROOT/bin:$PALLAS_ROOT/bin:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
-echo "export PATH=\"$ZFP_INCLUDE_DIRS=$ZFP_ROOT/include/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
-echo "export PATH=\"$ZFP_LIBRARIES=$ZFP_ROOT/lib/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
+echo "export PATH=\"$ZFP_ROOT/bin/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
