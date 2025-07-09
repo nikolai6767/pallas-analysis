@@ -5,3 +5,4 @@ zfp/
 *.o
 *.mod
 run_benchmarks/run_nas_benchmark/NPB3.4-MPI/*
+run_benchmarks/run_lulesh/LULESH/*
