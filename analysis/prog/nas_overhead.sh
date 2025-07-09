@@ -9,9 +9,6 @@ touch $file
 echo "NAME,TIME" >> $file
 
 for app in $nas_dir/log/* ; do 
-
-    app_name=$(basename app)
-    echo $app | tr '\n' ',' >> $file
-    grep -e "Time in seconds" $app | sed -e "s/Time in seconds =//g" | sed -e "s/ //g" >> $file
-
+    echo $(basename $app) | tr '\n' ',' >> $file
+    grep -e "Time in seconds" $app | sed -e "s/Time in seconds =//g" | sed -e "s/ //g"  >> $file
 done
