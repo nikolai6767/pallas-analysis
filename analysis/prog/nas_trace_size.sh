@@ -18,4 +18,3 @@ for app in $nas_dir/traces/* ; do
         pallas_print ${app}/eztrace_log.pallas | wc -l >> $file2
     fi
 done
-
