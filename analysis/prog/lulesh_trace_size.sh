@@ -4,7 +4,7 @@ lulesh_dir=$PWD/../../run_benchmarks/run_lulesh
 file=$PWD/../res/lulesh_trace_size.csv
 
 touch $file
-    
+
 echo "NOM TAILLE" >> $file
 for app in $lulesh_dir/traces/* ; do 
     if [ -d "$app" ]; then
