@@ -8,9 +8,6 @@ eztrace = pd.read_csv("../res/nas_eztrace_time_mean.csv")
 vanilla = pd.read_csv("../res/nas_vanilla_time_mean.csv")
 
 
-
-
-
 df = pd.merge(vanilla, eztrace, on="NAME", suffixes=('_vanilla', '_eztrace'))
 df = pd.merge(df, overhead, on="NAME")
 
@@ -29,7 +26,6 @@ for i, row in df.iterrows():
     ax.text(ind[i] + width/2, row["MEAN_EZTRACE"] + 0.05 * max(df["MEAN_EZTRACE"]),
             f'+{row["OVH_PERCENT"]:.1f}%', ha='center', va='bottom', fontsize=8, color='red')
 
-
 ax.set_xlabel('Algorithme')
 ax.set_ylabel('Temps (s)')
 ax.set_title('Comparaison Vanilla vs Eztrace avec Overhead')
@@ -38,5 +34,5 @@ ax.set_xticklabels(df["NAME"], rotation=45, ha='right')
 ax.legend()
 
 plt.tight_layout()
-plt.savefig("comparison_vanilla_eztrace_overhead.pdf")
+plt.savefig("../plot/eztrace_overhead.pdf")
 plt.show()
