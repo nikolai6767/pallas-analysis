@@ -1,9 +1,8 @@
 #!/bin/bash
 
-input="$PWD/../res/nas_durations.csv"
+input="$PWD/../res/durations.csv"
 output="$PWD/../res/nas_vanilla_time_mean.csv"
 echo -n > $output
-# En-tête
 
 
 echo "NAME,MEAN_VANILLA,MIN_VANILLA,MAX_VANILLA" > "$output"

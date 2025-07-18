@@ -1,7 +1,7 @@
 #!/bin/sh
 
 nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark
-file=$PWD/../res/nas_overhead.csv
+file=$PWD/../res/overhead.csv
 
 exit=$PWD/../res/nas_overhead_mean.csv
 echo -n > "$exit"

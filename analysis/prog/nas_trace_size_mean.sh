@@ -1,10 +1,10 @@
 #!/bin/sh
 
 nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark
-file=$PWD/../res/nas_trace_size.csv
+file=$PWD/../res/trace_size.csv
 
 
-file="$PWD/../res/nas_trace_size.csv"        
+file="$PWD/../res/trace_size.csv"        
 output="$PWD/../res/nas_trace_size_mean.csv" 
 echo -n > $output
 echo "NAME,MEAN_SIZE" > "$output"

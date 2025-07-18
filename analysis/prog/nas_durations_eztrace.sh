@@ -1,13 +1,11 @@
 #!/bin/bash
 
-input="$PWD/../res/nas_durations.csv"
+input="$PWD/../res/durations.csv"
 output="$PWD/../res/nas_eztrace_time_mean.csv"
 echo -n > $output
 
 
 echo "NAME,MEAN_EZTRACE,MIN_EZTRACE,MAX_EZTRACE" > "$output"
-
-#set -x
 
 
 current_algo=""

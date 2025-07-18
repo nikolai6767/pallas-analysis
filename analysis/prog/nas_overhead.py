@@ -6,12 +6,16 @@ size = pd.read_csv("../res/nas_trace_size_mean.csv")
 overhead= pd.read_csv("../res/nas_overhead_mean.csv")
 eztrace = pd.read_csv("../res/nas_eztrace_time_mean.csv")  
 vanilla = pd.read_csv("../res/nas_vanilla_time_mean.csv")
+size=pd.read_csv("../res/nas_trace_size_mean.csv")
+size=size.sort_values(by="NAME")
 
 
 df = pd.merge(vanilla, eztrace, on="NAME", suffixes=('_vanilla', '_eztrace'))
 df = pd.merge(df, overhead, on="NAME")
+for i in range(len(df) - 1):
+    df.at[i, "NAME"] = "NAS " + df.at[i, "NAME"].upper()
+df.at[len(df) - 1, "NAME"] = df.at[len(df) - 1, "NAME"].upper()
 
-# df["OVH_PERCENT"] = (df["MEAN_OVH"] / df["MEAN_VANILLA"]) * 100
 df["OVH_PERCENT"] = ((df["MEAN_EZTRACE"] - df["MEAN_VANILLA"]) / df["MEAN_VANILLA"]) * 100
 
 ind = np.arange(len(df))
@@ -43,11 +47,10 @@ for i, row in df.iterrows():
         f'+{row["OVH_PERCENT"]:.1f}%', ha='center', va='bottom', fontsize=8, color='red')
 
 
-ax.set_xlabel('Algorithme')
 ax.set_ylabel('Temps (s)')
 ax.set_title('Comparaison en temps Vanilla vs Eztrace avec Overhead sur 20 simulations')
 ax.set_xticks(ind)
-ax.set_xticklabels(df["NAME"], rotation=45, ha='right')
+ax.set_xticklabels(df["NAME"], rotation=30, ha='center')
 ax.legend()
 
 plt.yscale('log')
