@@ -45,7 +45,7 @@ for i, row in df.iterrows():
 
 ax.set_xlabel('Algorithme')
 ax.set_ylabel('Temps (s)')
-ax.set_title('Comparaison en temps Vanilla vs Eztrace avec Overhead')
+ax.set_title('Comparaison en temps Vanilla vs Eztrace avec Overhead sur 20 simulations')
 ax.set_xticks(ind)
 ax.set_xticklabels(df["NAME"], rotation=45, ha='right')
 ax.legend()
