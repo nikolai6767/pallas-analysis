@@ -11,7 +11,7 @@ mkdir -p $traces_dir
 
 cd $nas_dir
 
-NB_ITER=10
+NB_ITER=30
 NB_RANKS=64
 
 for i in $(seq $NB_ITER) ; do 
@@ -26,6 +26,17 @@ for i in $(seq $NB_ITER) ; do
         mpirun -np "$NB_RANKS" eztrace -m -t "mpi compiler_instrumentation" "$app" 2>&1 | tee -a "$log_file_eztrace"
 
         mv $nas_dir/${app_name}_trace $traces_dir/${app_name}_trace_${i}
+
+
+        cat $PWD/zstd.csv | tail -n 1 >> "$log_file_eztrace"
+        cat $PWD/write.csv | tail -n 1 >> "$log_file_eztrace"
+        cat $PWD/write_vector.csv | tail -n 1 >> "$log_file_eztrace"
+        cat $PWD/write_duration_vector.csv | tail -n 1 >> "$log_file_eztrace"
+        cat $PWD/write_dur_subvec.csv | tail -n 1 >> "$log_file_eztrace"
+        cat $PWD/write_subvec.csv | tail -n 1 >> "$log_file_eztrace"
+
+
+        rm $PWD/*.csv
     done
 done
 

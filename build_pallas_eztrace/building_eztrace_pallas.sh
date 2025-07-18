@@ -28,6 +28,21 @@ export ZFP_LIBRARIES=$ZFP_ROOT/lib/
 
 cd "$base_dir"
 
+
+## Install SZ
+git clone https://github.com/szcompressor/SZ.git
+cd SZ
+mkdir build install
+cd build
+export SZ_ROOT=$PWD/../install
+cmake .. -DCMAKE_INSTALL_PREFIX=$SZ_ROOT
+chmod u+x ../install
+make && make install
+export SZ_INCLUDE_DIRS=$SZ_ROOT/include/sz
+export SZ_LIBRARIES=$SZ_ROOT/lib/
+
+cd "$base_dir"
+
 ## install pallas
 git clone https://github.com/Pallas-Trace/pallas.git
 cd pallas
@@ -62,3 +77,4 @@ cd "$base_dir"
 ## To export $PATH globally
 echo "export PATH=\"$EZTRACE_ROOT/bin:$PALLAS_ROOT/bin:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
 echo "export PATH=\"$ZFP_ROOT/bin/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
+echo "export PATH=\"$SZ_ROOT/bin/:\$PATH\"" >> $base_dir/../build_pallas_eztrace/"$file"
