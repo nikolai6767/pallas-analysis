@@ -12,6 +12,16 @@ size=size.sort_values(by="NAME")
 
 df = pd.merge(vanilla, eztrace, on="NAME", suffixes=('_vanilla', '_eztrace'))
 df = pd.merge(df, overhead, on="NAME")
+df=pd.merge(df, size, on="NAME")
+
+df["MAX_EZTRACE"]= df["MAX_EZTRACE"] / df["MEAN_VANILLA"]
+df["MIN_EZTRACE"]= df["MIN_EZTRACE"] / df["MEAN_VANILLA"]
+df["MEAN_EZTRACE"]= df["MEAN_EZTRACE"] / df["MEAN_VANILLA"]
+
+df["MAX_VANILLA"]= df["MAX_VANILLA"] / df["MEAN_VANILLA"]
+df["MIN_VANILLA"]= df["MIN_VANILLA"] / df["MEAN_VANILLA"]
+df["MEAN_VANILLA"]= df["MEAN_VANILLA"] / df["MEAN_VANILLA"]
+
 for i in range(len(df) - 1):
     df.at[i, "NAME"] = "NAS " + df.at[i, "NAME"].upper()
 df.at[len(df) - 1, "NAME"] = df.at[len(df) - 1, "NAME"].upper()
@@ -42,7 +52,7 @@ ax.errorbar(ind - width/2, df["MEAN_VANILLA"],
 
 
 for i, row in df.iterrows():
-    y_text = row["MAX_EZTRACE"] + 0.03 * max(df["MAX_EZTRACE"]) if 'MAX_EZTRACE' in df.columns else row["MEAN_EZTRACE"] + 0.05 * max(df["MEAN_EZTRACE"]) + 1
+    y_text = row["MAX_EZTRACE"] + 0.03 * max(df["MAX_EZTRACE"]) if 'MAX_EZTRACE' in df.columns else row["MEAN_EZTRACE"] + 0.05 * max(df["MEAN_EZTRACE"])
     ax.text(ind[i] + width/2, y_text,
         f'+{row["OVH_PERCENT"]:.1f}%', ha='center', va='bottom', fontsize=8, color='red')
 
@@ -53,7 +63,6 @@ ax.set_xticks(ind)
 ax.set_xticklabels(df["NAME"], rotation=30, ha='center')
 ax.legend()
 
-plt.yscale('log')
 ax.legend(loc='upper left', ncol=2, frameon=True)
 plt.tight_layout()
 plt.savefig("../plot/eztrace_overhead.pdf")
