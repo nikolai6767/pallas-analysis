@@ -105,10 +105,11 @@ static void printEvent(const pallas::Thread* thread, const pallas::Token token, 
   
   clock_gettime(CLOCK_MONOTONIC, &t2);
 
-  if (!per_thread)
+  if (!per_thread){
     clock_gettime(CLOCK_MONOTONIC, &t8);
     std::cout << std::right << std::setw(10) << thread->getName();
     clock_gettime(CLOCK_MONOTONIC, &t3);
+  }
   if (verbose) {
     clock_gettime(CLOCK_MONOTONIC, &t4);
     std::cout << std::right << std::setw(10) << thread->getTokenString(token);
@@ -359,7 +360,7 @@ void printTrace(pallas::GlobalArchive& trace) {
         _print_timestamp_header();
         _print_duration_header();
         do {
-          //pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
+          // pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
           last_timestamp = reader.currentState.currentFrame->referential_timestamp;
           auto token = reader.pollCurToken();
           if (token.type == pallas::TypeEvent) {
@@ -508,11 +509,14 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
       current_indent += "─";
     }
     structure_indent[tr.currentState.current_frame_index - 2] = isLastOfSeq ? " " : "│";
+  
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+
+    update_duration(&durations[STRUCTURE_INDENT], t1, t2);
+
     return current_indent;
 
-  clock_gettime(CLOCK_MONOTONIC, &t2);
 
-  update_duration(&durations[STRUCTURE_INDENT], t1, t2);
 
 }
 

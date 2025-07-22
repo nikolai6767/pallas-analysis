@@ -115,9 +115,9 @@ inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* strea
   duration_write_csv("write", &durations[WRITE]);
 
 
-  static char info[128];
-  snprintf(info, sizeof(info), "%zu,%zu", size, nmemb);
   if (SHOW_DETAILS) {
+    static char info[128];
+    snprintf(info, sizeof(info), "%zu,%zu", size, nmemb);
     write_csv_details("write", "write_details", info, t1, t2);
   }
 
@@ -147,7 +147,7 @@ class File {
   void open(const char* mode) {
     if (isOpen) {
       pallas_log(pallas::DebugLevel::Verbose, "Trying to open file that is already open: %s\n", path);
-      // close();
+      close();
       return;
     }
     while (numberOpenFiles >= maxNumberFilesOpen) {
@@ -578,7 +578,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
 
     byte* compressedArray = nullptr;
     size_t compressedSize;
-    switch (pallas::CompressionAlgorithm) {
+    switch (pallas::parameterHandler->getCompressionAlgorithm()) {
     case pallas::CompressionAlgorithm::None:
         break;
     case pallas::CompressionAlgorithm::ZSTD: {
@@ -844,7 +844,6 @@ void pallas::LinkedVector::write_to_file(FILE* infoFile, FILE* dataFile) {
     if (size == 0)
         return;
     // Write the Subarrays statistics
-    size_t acc = 0;
     auto* sub_array = first;
     while (sub_array) {
         if (sub_array->array != nullptr) {
@@ -855,7 +854,6 @@ void pallas::LinkedVector::write_to_file(FILE* infoFile, FILE* dataFile) {
         _pallas_fwrite(&sub_array->last_value, sizeof(sub_array->last_value), 1, infoFile);
         _pallas_fwrite(&sub_array->offset, sizeof(sub_array->offset), 1, infoFile);
         sub_array = sub_array->next;
-        acc += sub_array->size;
     }
     free_data();
     clock_gettime(CLOCK_MONOTONIC, &t2);
@@ -863,9 +861,9 @@ void pallas::LinkedVector::write_to_file(FILE* infoFile, FILE* dataFile) {
     duration_write_csv("write_vector",&durations[WRITE_VECTOR]);
 
 
-    static char info[128];
-    snprintf(info, sizeof(info), "%zu,%zu,%zu", size, acc, sizeof(size));
     if (SHOW_DETAILS) {
+      static char info[128];
+      snprintf(info, sizeof(info), "%zu", size);
       write_csv_details("write_vector", "write_vector_details", info, t1, t2);
     }
 }
@@ -915,6 +913,7 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
 
     // Then write the statistics for all the sub_arrays.
     auto* sub_array = first;
+    auto accu=0;
     while (sub_array) {
         if (sub_array->array != nullptr) {
             sub_array->write_to_file(valueFile);
@@ -925,6 +924,7 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
         _pallas_fwrite(&sub_array->mean, sizeof(sub_array->mean), 1, vectorFile);
         _pallas_fwrite(&sub_array->offset, sizeof(sub_array->offset), 1, vectorFile);
         sub_array = sub_array->next;
+        accu = accu + sizeof(sub_array->size);
     }
     free_data();
     clock_gettime(CLOCK_MONOTONIC, &t2);
@@ -932,10 +932,9 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
     duration_write_csv("write_duration_vector", &durations[WRITE_DUR_VECT]);
 
     static char info[128];
-    snprintf(info, sizeof(info), "%zu", size);
+    snprintf(info, sizeof(info), "%zu,%u", size,accu);
     if (SHOW_DETAILS) {
     write_csv_details("write_duration_vector", "write_duration_vector_details", info, t1, t2);
-    std::cout << "ok\n\n\n\n";
     }
 
 }
