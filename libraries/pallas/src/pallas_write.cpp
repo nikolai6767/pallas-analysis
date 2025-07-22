@@ -242,10 +242,10 @@ void ThreadWriter::findLoopBasic(size_t maxLoopLength) {
                         // And it's not going to be edited
                         curTokenSeq[curIndex - 1] = thread->loops[lid].self_id;
                         l->nb_iterations = 0;
-                        pallas_log(DebugLevel::Normal, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
-                        pallas_log(DebugLevel::Normal, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
+                        pallas_log(DebugLevel::Debug, "findLoopBasic: replaced a Loop by its earlier occurrence: L%d -> L%d\n", l->self_id.id, lid);
+                        pallas_log(DebugLevel::Debug, "findLoopBasic: %s\n", thread->getTokenArrayString(curTokenSeq.data(), 0, curTokenSeq.size()).c_str());
                         if (l->self_id.id == thread->nb_loops - 1) {
-                            pallas_log(DebugLevel::Normal, "findLoopBasic: Remove last loop L%d ( S%d )\n", l->self_id.id, l->repeated_token.id);
+                            pallas_log(DebugLevel::Debug, "findLoopBasic: Remove last loop L%d ( S%d )\n", l->self_id.id, l->repeated_token.id);
                             thread->nb_loops--;
                             // TODO: We should delete unused loops for cleanliness's sake
                         } else {

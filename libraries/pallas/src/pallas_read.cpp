@@ -32,9 +32,15 @@ void update_duration(Duration* d, struct timespec t1, struct timespec t2){
 
 void duration_write_csv(const char* filename, const Duration* d) {
     std::ofstream file(std::string(filename) + ".csv");
-    file << "calls,total_us,min_us,max_us,average_us\n";
-    file << d->count << "," << d->total_d << "," << d->min_d << "," << d->max_d << ",";
+    file << "name,calls,total_us,min_us,max_us,average_us\n";
+    file << std::string(filename) << "," << d->count << "," << d->total_d << "," << d->min_d << "," << d->max_d << ",";
     file << (d->count ? d->total_d / d->count : 0) << "\n";
+}
+
+void write_csv_details(const char* filename, const char* output, const char* info, struct timespec t1, struct timespec t2) {
+    std::ofstream file(std::string(output) + ".csv", std::ios::app);
+    long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
+    file << std::string(filename) << "," << time << "," << std::string(info) << "\n";
 }
 
 Duration durations[NB_FUNCTIONS] = {};
@@ -46,41 +52,42 @@ void duration_write_all_csv(const char* filename) {
   file << "function,calls,total,min,max,average\n";
 
   const char* function_names[NB_FUNCTIONS] = {
-  "PRINT_TIMESTAMP",
-  "PRINT_TIMESTAMP_PRECISION",
-  "PRINT_TIMESTAMP_ELSE",
-  "PRINT_TIMESTAMP_HEADER",
-  "PRINT_DURATION",
-  "PRINT_DURATION_HEADER",
-  "PRINT_EVENT",
-  "PRINT_EVENT_PRINT_TIMESTAMP",
-  "PRINT_EVENT_GET_NAME",
-  "PRINT_EVENT_GET_TOKEN_STRING",
-  "PRINT_EVENT_GET_EVENT_STRING",
-  "PRINT_EVENT_GET_PRINT_EV_ATT",
-  "PRINT_EV_ATT",
-  "PRINT_EVENT_ENDL",
-  "PRINT_FLAME",
-  "PRINT_CSV",
-  "PRINT_CSV_BULK",
-  "PRINT_TRACE",
-  "PRINT_TRACE_GET_THREAD_LIST",
-  "GET_THREAD_LIST_GET_ARCHIVE",
-  "GET_THREAD_LIST_GET_THREAD",
-  "PRINT_TRACE_EMPLACE_BACK",
-  "PRINT_TRACE_POLLCURTOKEN",
-  "PRINT_TRACE_PRINT_EVENT",
-  "PRINT_TRACE_GET_EV_OCC",
-  "PRINT_TRACE_GET_NEXT_TOKEN",
-  "STRUCTURE_INDENT", 
-  "STRUCTURE_INDENT_POLLCURTOKEN",
-  "PRINT_THREAD_STRUCTURE",
-  "PRINT_STRUCTURE", 
-  "GET_EVENT_OCC",
-  "GET_TOKEN_IN_CALL_STACK",
-  "ENTER_BLOCK",
-  "PALLAS_PRINT",
-  "OPEN_TRACE",
+//   "PRINT_TIMESTAMP",
+//   "PRINT_TIMESTAMP_PRECISION",
+//   "PRINT_TIMESTAMP_ELSE",
+//   "PRINT_TIMESTAMP_HEADER",
+//   "PRINT_DURATION",
+//   "PRINT_DURATION_HEADER",
+//   "PRINT_EVENT",
+//   "PRINT_EVENT_PRINT_TIMESTAMP",
+//   "PRINT_EVENT_GET_NAME",
+//   "PRINT_EVENT_GET_TOKEN_STRING",
+//   "PRINT_EVENT_GET_EVENT_STRING",
+//   "PRINT_EVENT_GET_PRINT_EV_ATT",
+//   "PRINT_EV_ATT",
+//   "PRINT_EVENT_ENDL",
+//   "PRINT_FLAME",
+//   "PRINT_CSV",
+//   "PRINT_CSV_BULK",
+//   "PRINT_TRACE",
+//   "PRINT_TRACE_GET_THREAD_LIST",
+//   "GET_THREAD_LIST_GET_ARCHIVE",
+//   "GET_THREAD_LIST_GET_THREAD",
+//   "PRINT_TRACE_EMPLACE_BACK",
+//   "PRINT_TRACE_POLLCURTOKEN",
+//   "PRINT_TRACE_PRINT_EVENT",
+//   "PRINT_TRACE_GET_EV_OCC",
+//   "PRINT_TRACE_GET_NEXT_TOKEN",
+//   "STRUCTURE_INDENT", 
+//   "STRUCTURE_INDENT_POLLCURTOKEN",
+//   "PRINT_THREAD_STRUCTURE",
+//   "PRINT_STRUCTURE", 
+//   "GET_EVENT_OCC",
+//   "GET_TOKEN_IN_CALL_STACK",
+//   "ENTER_BLOCK",
+//   "PALLAS_PRINT",
+//   "OPEN_TRACE",
+  "ZSTD",
   };
 
   for (int i = 0; i < NB_FUNCTIONS; ++i) {

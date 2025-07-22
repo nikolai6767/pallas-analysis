@@ -131,6 +131,16 @@ enum FunctionIndex {
   ENTER_BLOCK,
   PALLAS_PRINT,
   OPEN_TRACE,
+  ZSTD,
+  ZFP,
+  SZ, 
+  WRITE,
+  COMP,
+  WRITE_VECTOR,
+  WRITE_DUR_VECT,
+  WRITE_SUBVEC,
+  WRITE_DUR_SUBVEC,
+  ZSTD_HISTOGRAM,
   NB_FUNCTIONS
 };
 
@@ -140,3 +150,6 @@ extern Duration durations[NB_FUNCTIONS];
 
 //Writes all the durations of duration[NB_FUNCTIONS] to a file named filename.csv
 void duration_write_all_csv(const char* filename);
+
+
+void write_csv_details(const char* filename, const char* output, const char* info, struct timespec t1, struct timespec t2);
