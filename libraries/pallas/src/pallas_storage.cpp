@@ -127,8 +127,8 @@ inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* strea
 
 #define _pallas_fwrite(ptr, size, nmemb, stream)           \
   do {                                                     \
-    size_t ret = write_test(ptr, size, nmemb, stream);     \    
-    if (ret != (nmemb))                                    \  
+    size_t ret = write_test(ptr, size, nmemb, stream);     \
+    if (ret != (nmemb))                                    \
       pallas_error("fwrite failed\n");                     \
   } while(0)
 
@@ -257,8 +257,7 @@ static pallas::Archive* pallasGetArchive(pallas::GlobalArchive* global_archive,
  *  @returns Number of bytes written in the dest array.
  */
 inline static size_t _pallas_zstd_compress(void* src, size_t size, void* dest, size_t destSize) {
-  auto res = ZSTD_compress(dest, destSize, src, size, pallas::parameterHandler->getZstdCompressionLevel());
-  return res;
+  return ZSTD_compress(dest, destSize, src, size, pallas::parameterHandler->getZstdCompressionLevel());
 }
 
 /**
@@ -579,7 +578,7 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
 
     byte* compressedArray = nullptr;
     size_t compressedSize;
-    switch (pallas::CompressionAlgorithm::ZSTD) {
+    switch (pallas::CompressionAlgorithm) {
     case pallas::CompressionAlgorithm::None:
         break;
     case pallas::CompressionAlgorithm::ZSTD: {
@@ -936,6 +935,7 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
     snprintf(info, sizeof(info), "%zu", size);
     if (SHOW_DETAILS) {
     write_csv_details("write_duration_vector", "write_duration_vector_details", info, t1, t2);
+    std::cout << "ok\n\n\n\n";
     }
 
 }
