@@ -29,7 +29,7 @@
 
 #include <algorithm>
 
-#define SHOW_DETAILS 1
+#define SHOW_DETAILS 0
 
 
 
@@ -810,10 +810,10 @@ void pallas::LinkedVector::SubArray::write_to_file(FILE* file) {
     update_duration(&durations[WRITE_SUBVEC], t1, t2);
     duration_write_csv("write_subvec", &durations[WRITE_SUBVEC]);
 
-    static char info[128];
-    snprintf(info, sizeof(info), "%zu", size);
     if (SHOW_DETAILS) {
-    write_csv_details("write_subvec", "write_subvec_details", info, t1, t2);
+      static char info[128];
+      snprintf(info, sizeof(info), "%zu", size);
+      write_csv_details("write_subvec", "write_subvec_details", info, t1, t2);
     }
 
 }
@@ -830,9 +830,10 @@ void pallas::LinkedDurationVector::SubArray::write_to_file(FILE* file) {
     duration_write_csv("write_dur_subvec", &durations[WRITE_DUR_SUBVEC]);
 
 
-    static char info[128];
-    snprintf(info, sizeof(info), "%zu", size);
+
     if (SHOW_DETAILS) {
+    static char info[128];
+    snprintf(info, sizeof(info), "%zu,%zu", size);
     write_csv_details("write_dur_subvec", "write_dur_subvec_details", info, t1, t2);
     }
 }

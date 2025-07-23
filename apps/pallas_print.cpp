@@ -653,7 +653,9 @@ int main(const int argc, char* argv[]) {
   }
   struct timespec t1, t2;
   clock_gettime(CLOCK_MONOTONIC, &t1);
+
   auto trace = pallas_open_trace(trace_name);
+  
   clock_gettime(CLOCK_MONOTONIC, &t2);
   update_duration(&durations[OPEN_TRACE], t1, t2);
 
