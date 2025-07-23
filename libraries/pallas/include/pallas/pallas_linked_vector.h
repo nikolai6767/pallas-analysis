@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 /** Default size for creating Vectors and SubVectors.*/
-#define DEFAULT_VECTOR_SIZE 1000
+#define DEFAULT_VECTOR_SIZE 100
 
 namespace pallas {
 /**
