@@ -29,7 +29,7 @@
 
 #include <algorithm>
 
-#define SHOW_DETAILS 0
+#define SHOW_DETAILS 1
 
 
 
@@ -833,7 +833,7 @@ void pallas::LinkedDurationVector::SubArray::write_to_file(FILE* file) {
 
     if (SHOW_DETAILS) {
     static char info[128];
-    snprintf(info, sizeof(info), "%zu,%zu", size);
+    snprintf(info, sizeof(info), "%zu", size);
     write_csv_details("write_dur_subvec", "write_dur_subvec_details", info, t1, t2);
     }
 }
