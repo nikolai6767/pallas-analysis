@@ -2,5 +2,7 @@ log/
 traces/
 20_iter
 iter_20
-vectors
+vectors/traces
+vectors/log
+vectors/details
 .vscode
