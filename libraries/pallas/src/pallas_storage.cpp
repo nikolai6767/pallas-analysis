@@ -29,7 +29,8 @@
 
 #include <algorithm>
 
-#define SHOW_DETAILS 1
+#define SHOW_DETAILS 0
+#define TRACK_PERF 0
 
 
 
@@ -111,9 +112,10 @@ inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* strea
 
 
   clock_gettime(CLOCK_MONOTONIC, &t2);
+  if (TRACK_PERF){
   update_duration(&durations[WRITE], t1, t2);
   duration_write_csv("write", &durations[WRITE]);
-
+  }
 
   if (SHOW_DETAILS) {
     static char info[128];
@@ -592,9 +594,10 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
             compressedSize = _pallas_zstd_compress(src, size, compressedArray, compressedSize);
         }
         clock_gettime(CLOCK_MONOTONIC, &t2);
+          if (TRACK_PERF){
         update_duration(&durations[ZSTD], t1, t2);
         duration_write_csv("zstd", &durations[ZSTD]);
-
+          }
           static char info[128];
           snprintf(info, sizeof(info), "%zu,%zu,%zu", size, compressedSize, n);
           if (SHOW_DETAILS) {
@@ -624,12 +627,14 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
         compressedSize = _pallas_zstd_compress(tempCompressedArray, tempCompressedSize, compressedArray, compressedSize);
         delete[] tempCompressedArray;
         clock_gettime(CLOCK_MONOTONIC, &t2);
+          if (TRACK_PERF){
         update_duration(&durations[ZSTD_HISTOGRAM], t1, t2);
         duration_write_csv("zstd_histogram", &durations[ZSTD_HISTOGRAM]);     
-        
+          }
+
+          if (SHOW_DETAILS) {
           static char info[128];
           snprintf(info, sizeof(info), "%zu,%zu,%zu", size, compressedSize, n);
-          if (SHOW_DETAILS) {
           write_csv_details("zstd_histogram", "zstd_histrogram_details", info, t1, t2);
           }
 
@@ -643,9 +648,10 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
         compressedArray = new byte[compressedSize];
         compressedSize = _pallas_zfp_compress(src, n, compressedArray, compressedSize);
         clock_gettime(CLOCK_MONOTONIC, &t2);
+          if (TRACK_PERF){
         update_duration(&durations[ZFP], t1, t2);
         duration_write_csv("zfp", &durations[ZFP]);     
-
+          }
           static char info[128];
           snprintf(info, sizeof(info), "%zu,%zu,%zu", size, compressedSize, n);
           if (SHOW_DETAILS) {
@@ -660,8 +666,10 @@ inline static void _pallas_compress_write(uint64_t* src, size_t n, FILE* file) {
         clock_gettime(CLOCK_MONOTONIC, &t1);
         compressedArray = _pallas_sz_compress(src, n, compressedSize);
         clock_gettime(CLOCK_MONOTONIC, &t2);
+          if (TRACK_PERF){
         update_duration(&durations[SZ], t1, t2);
         duration_write_csv("sz", &durations[SZ]);   
+          }
         
           static char info[128];
           snprintf(info, sizeof(info), "%zu,%zu,%zu", size, compressedSize, n);
@@ -807,9 +815,10 @@ void pallas::LinkedVector::SubArray::write_to_file(FILE* file) {
     delete[] array;
     array = nullptr;
     clock_gettime(CLOCK_MONOTONIC, &t2);
+      if (TRACK_PERF){
     update_duration(&durations[WRITE_SUBVEC], t1, t2);
     duration_write_csv("write_subvec", &durations[WRITE_SUBVEC]);
-
+      }
     if (SHOW_DETAILS) {
       static char info[128];
       snprintf(info, sizeof(info), "%zu", size);
@@ -826,9 +835,10 @@ void pallas::LinkedDurationVector::SubArray::write_to_file(FILE* file) {
     delete [] array;
     array = nullptr;
     clock_gettime(CLOCK_MONOTONIC, &t2);
+      if (TRACK_PERF){
     update_duration(&durations[WRITE_DUR_SUBVEC], t1, t2);
     duration_write_csv("write_dur_subvec", &durations[WRITE_DUR_SUBVEC]);
-
+      }
 
 
     if (SHOW_DETAILS) {
@@ -858,9 +868,10 @@ void pallas::LinkedVector::write_to_file(FILE* infoFile, FILE* dataFile) {
     }
     free_data();
     clock_gettime(CLOCK_MONOTONIC, &t2);
+      if (TRACK_PERF){
     update_duration(&durations[WRITE_VECTOR], t1, t2);
     duration_write_csv("write_vector",&durations[WRITE_VECTOR]);
-
+      }
 
     if (SHOW_DETAILS) {
       static char info[128];
@@ -929,9 +940,10 @@ void pallas::LinkedDurationVector::write_to_file(FILE* vectorFile, FILE* valueFi
     }
     free_data();
     clock_gettime(CLOCK_MONOTONIC, &t2);
+      if (TRACK_PERF){
     update_duration(&durations[WRITE_DUR_VECT], t1, t2);
     duration_write_csv("write_duration_vector", &durations[WRITE_DUR_VECT]);
-
+      }
     static char info[128];
     snprintf(info, sizeof(info), "%zu,%u", size,accu);
     if (SHOW_DETAILS) {

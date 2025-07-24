@@ -46,7 +46,7 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
 
 
 
-void printTrace(pallas::GlobalArchive& trace1, pallas::GlobalArchive& trace2) {
+void printTrace(pallas::GlobalArchive& trace1) {
 
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
@@ -117,7 +117,7 @@ int main(const int argc, char* argv[]) {
     if (trace2==nullptr)
         return EXIT_FAILURE;
 
-    printTrace(*trace1, *trace2);
+    printTrace(*trace1);
 
 
     delete trace1;
