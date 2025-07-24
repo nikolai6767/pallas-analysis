@@ -295,7 +295,7 @@ SequenceOccurence ThreadReader::getSequenceOccurence(Token sequence_id, size_t o
     auto sequenceOccurence = SequenceOccurence();
     sequenceOccurence.sequence = thread_trace->getSequence(sequence_id);
 
-    sequenceOccurence.timestamp = currentState.currentFrame->referential_timestamp;
+    sequenceOccurence.timestamp = sequenceOccurence.sequence->timestamps->at(occurence_id);
     sequenceOccurence.duration = sequenceOccurence.sequence->durations->at(occurence_id);
     sequenceOccurence.full_sequence = nullptr;
 
@@ -352,8 +352,8 @@ void ThreadReader::guessSequencesNames(std::map<pallas::Sequence*, std::string>&
                     pallas::Event* event = thread_trace->getEvent(t_start);
                     if (event->record == pallas::PALLAS_EVENT_ENTER) {
                         const char* event_name = thread_trace->getRegionStringFromEvent(event);
-                        // TODO: if that's an MPI call (eg MPI_Send, MPI_Allreduce, ...)
-                        // we may want to get the function parameters (eg. dest, tag, ...)
+                        // TODO if that's an MPI call (eg MPI_Send, MPI_Allreduce, ...)
+                        //      we may want to get the function parameters (eg. dest, tag, ...)
                         names[s] = std::string(event_name);
                         name_found = true;
                     } else if (event->record == pallas::PALLAS_EVENT_THREAD_BEGIN) {

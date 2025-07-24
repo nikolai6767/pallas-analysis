@@ -31,6 +31,29 @@ static inline bool _pallas_arrays_equal(Token* array1, size_t size1, Token* arra
     return memcmp(array1, array2, sizeof(Token) * size1) == 0;
 }
 
+
+static Token getFirstEvent(Token t, const Thread* thread) {
+    while (t.type != TypeEvent) {
+        if (t.type == TypeSequence) {
+            t = thread->getSequence(t)->tokens[0];
+        } else {
+            t = thread->getLoop(t)->repeated_token;
+        }
+    }
+    return t;
+}
+
+static Token getLastEvent(Token t, const Thread* thread) {
+    while (t.type != TypeEvent) {
+        if (t.type == TypeSequence) {
+            t = thread->getSequence(t)->tokens.back();
+        } else {
+            t = thread->getLoop(t)->repeated_token;
+        }
+    }
+    return t;
+}
+
 Token Thread::getSequenceIdFromArray(pallas::Token* token_array, size_t array_len) {
     uint32_t hash = hash32((uint8_t*)(token_array), array_len * sizeof(pallas::Token), SEED);
     pallas_log(DebugLevel::Debug, "getSequenceIdFromArray: Searching for sequence {.size=%zu, .hash=%x}\n", array_len, hash);
@@ -170,8 +193,12 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
         loop_seq->durations->add(duration_second_iteration);
 
         // And add that timestamp to the vectors
-        loop_seq->timestamps->add(last_timestamp - duration_first_iteration - duration_second_iteration);
-        loop_seq->timestamps->add(last_timestamp - duration_second_iteration);
+        auto& tokenCount = loop_seq->getTokenCountWriting(thread);
+        auto first_event = getFirstEvent(loop_seq->tokens.front(), thread);
+        auto first_token_summary = thread->events[first_event.id];
+        size_t nb_first_token = first_token_summary.timestamps->size;
+        loop_seq->timestamps->add(first_token_summary.timestamps->at(nb_first_token- 2 * tokenCount[first_event]));
+        loop_seq->timestamps->add(first_token_summary.timestamps->at(nb_first_token - tokenCount[first_event]));
 
         // The current sequence last_timestamp does not need to be updated
     }
@@ -180,28 +207,6 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     curTokenSeq.push_back(loop->self_id);
 
     loop->addIteration();
-}
-
-static Token getFirstEvent(Token t, const Thread* thread) {
-    while (t.type != TypeEvent) {
-        if (t.type == TypeSequence) {
-            t = thread->getSequence(t)->tokens[0];
-        } else {
-            t = thread->getLoop(t)->repeated_token;
-        }
-    }
-    return t;
-}
-
-static Token getLastEvent(Token t, const Thread* thread) {
-    while (t.type != TypeEvent) {
-        if (t.type == TypeSequence) {
-            t = thread->getSequence(t)->tokens.back();
-        } else {
-            t = thread->getLoop(t)->repeated_token;
-        }
-    }
-    return t;
 }
 
 /**
@@ -653,7 +658,7 @@ TokenId Thread::getEventId(Event* e) {
 
 pallas_duration_t Thread::getLastSequenceDuration(Sequence* sequence, size_t offset) const {
     pallas_duration_t sum = 0;
-    auto tokenCount = sequence->getTokenCountWriting(this);
+    auto& tokenCount = sequence->getTokenCountWriting(this);
     auto start_event_token = getFirstEvent(sequence->tokens.front(), this);
     auto last_event_token = getLastEvent(sequence->tokens.back(), this);
     auto start_event = getEventSummary(start_event_token);

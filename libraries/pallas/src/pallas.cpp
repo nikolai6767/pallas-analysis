@@ -489,14 +489,6 @@ std::string Sequence::guessName(const pallas::Thread* thread) {
   return buff;
 }
 
-size_t Sequence::getEventCount(const struct Thread* thread) {
-  // TODO This function doesn't really makes sense, since the number of event is dependant on iteration of the loops
-  // inside of it.
-  return 0;
-  // TokenCountMap tokenCount = getTokenCount(thread);
-  return tokenCount.getEventCount();
-}
-
 void _sequenceGetTokenCountReading(Sequence* seq, const Thread* thread, TokenCountMap& readerTokenCountMap, TokenCountMap& sequenceTokenCountMap, bool isReversedOrder);
 
 TokenCountMap tempSeen;
@@ -504,7 +496,7 @@ void _loopGetTokenCountReading(const Loop* loop, const Thread* thread, TokenCoun
   size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
   // This creates bug idk why ?????
-  TokenCountMap temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
+  TokenCountMap& temp = loop_sequence->getTokenCountReading(thread, readerTokenCountMap, isReversedOrder);
   temp *= loop_nb_iterations;
   readerTokenCountMap += temp;
   sequenceTokenCountMap += temp;
@@ -531,7 +523,7 @@ void _sequenceGetTokenCountReading(Sequence* seq, const Thread* thread, TokenCou
   }
 }
 
-TokenCountMap Sequence::getTokenCountReading(const Thread* thread, const TokenCountMap& threadReaderTokenCountMap, bool isReversedOrder) {
+TokenCountMap& Sequence::getTokenCountReading(const Thread* thread, const TokenCountMap& threadReaderTokenCountMap, bool isReversedOrder) {
   if (tokenCount.empty()) {
     auto tokenCountMapCopy = TokenCountMap(threadReaderTokenCountMap);
     auto tempTokenCount = TokenCountMap();
@@ -544,7 +536,7 @@ TokenCountMap Sequence::getTokenCountReading(const Thread* thread, const TokenCo
 static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, TokenCountMap& tokenCount) {
   size_t loop_nb_iterations = loop->nb_iterations;
   auto* loop_sequence = thread->getSequence(loop->repeated_token);
-  auto temp = loop_sequence->getTokenCountWriting(thread);
+  auto& temp = loop_sequence->getTokenCountWriting(thread);
   DOFOR(i, loop->nb_iterations) {
     tokenCount += temp;
   }
@@ -554,7 +546,7 @@ static void _loopGetTokenCountWriting(const Loop* loop, const Thread* thread, To
   tokenCount[loop->repeated_token] += loop_nb_iterations;
 }
 
-TokenCountMap Sequence::getTokenCountWriting(const Thread* thread) {
+TokenCountMap& Sequence::getTokenCountWriting(const Thread* thread) {
    if (tokenCount.empty()) {
     for (auto& token : tokens) {
       if (tokenCount.find(token) == tokenCount.end()) {

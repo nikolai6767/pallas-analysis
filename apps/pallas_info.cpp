@@ -30,9 +30,10 @@ enum command {
   show_definitions = 1 << 1,
   show_sequence_content = 1 << 2,
   show_sequence_durations = 1 << 3,
-  list_archives = 1 << 4,
-  show_archive_details = 1 << 5,
-  list_threads = 1 << 6,
+  show_sequence_timestamps = 1 << 4,
+  list_archives = 1 << 5,
+  show_archive_details = 1 << 6,
+  list_threads = 1 << 7,
 };
 
 int cmd = none;
@@ -170,7 +171,16 @@ void info_sequence(Thread* t, int index, bool details = false) {
       }
       std::cout << std::endl << "------------------- End of sequence" << s->id << " durations." << std::endl;
     }
-  }
+
+    if (cmd & show_sequence_timestamps) {
+      std::cout << std::endl << "------------------- Sequence" << s->id << " timestamps:" << std::endl;
+      for (int i = 0; i < s->timestamps->size; i++) {
+        uint64_t timestamp = s->timestamps->at(i);
+        std::cout << "\t" << timestamp << std::endl;
+      }
+      std::cout << std::endl << "------------------- End of sequence" << s->id << " timestamps." << std::endl;
+    }
+}
 }
 
 void info_loop_header() {
@@ -454,6 +464,7 @@ void usage(const char* prog_name) {
   printf("\t-t             show thread details\n");
   printf("\t--content      show sequence content\n");
   printf("\t--durations    show sequence durations\n");
+  printf("\t--timestamps   show sequence timestamps\n");
   printf("\n");
   printf("\t-da            show archive details\n");
   printf("\n");
@@ -482,6 +493,8 @@ int main(int argc, char** argv) {
       cmd |= show_sequence_content;
     } else if (!strcmp(argv[nb_opts], "--durations")) {
       cmd |= show_sequence_durations;
+    } else if (!strcmp(argv[nb_opts], "--timestamps")) {
+      cmd |= show_sequence_timestamps;
     } else if (!strcmp(argv[nb_opts], "-da")) {
       cmd |= show_archive_details;
     } else if (!strcmp(argv[nb_opts], "--archive")) {
