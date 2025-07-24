@@ -1,6 +1,6 @@
 #!/bin/sh
 
-nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark
+nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/iter_20
 file=$PWD/../res/overhead.csv
 
 exit=$PWD/../res/nas_overhead_mean.csv

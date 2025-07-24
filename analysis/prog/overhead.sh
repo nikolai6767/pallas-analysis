@@ -1,6 +1,6 @@
 #!/bin/sh
 
-nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark
+nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/iter_20
 lulesh_dir=$PWD/../../run_benchmarks/run_lulesh
 file=$PWD/../res/durations.csv
 exit=$PWD/../res/overhead.csv
@@ -12,11 +12,11 @@ echo "NAME,TIME" >> $file
 
 for app in $nas_dir/log/* ; do 
     echo $(basename $app) | cut -d '.' -f 1 | tr '\n' ',' >> $file
-    grep -e "Time in seconds" $app | sed -e "s/Time in seconds =//g" | sed -e "s/ //g" >> $file
+    grep -e "\[TIME\]" $app | sed -e "s/\[TIME\]//g" | sed -e "s/ //g" >> $file
 done
 
 
-for app in $lulesh_dir/log/* ; do 
+for app in $lulesh_dir/log_old/* ; do 
     echo $(basename $app) | cut -d '.' -f1 | cut -d '_' -f 1 |tr '\n' ','>> $file
     grep -e "Elapsed time" $app | sed -e "s/Elapsed//g" | sed -e "s/time//g" | sed -e "s/=//g" | sed -e "s/(s)//g" | sed -e "s/ //g" | awk '{printf "%.0f\n", $1}'  >> $file
 done

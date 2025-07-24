@@ -1,8 +1,8 @@
 #!/bin/bash
 
 lulesh_dir=$PWD/run_lulesh
-log_dir=$lulesh_dir/log
-traces_dir=$lulesh_dir/traces
+log_dir=$lulesh_dir/iter_20/log
+traces_dir=$lulesh_dir/iter_20/traces
 
 mkdir -p $log_dir
 mkdir -p $traces_dir
@@ -20,8 +20,10 @@ for i in $(seq $NB_SIM) ; do
     log_file_vanilla="$log_dir/lulesh_${i}_vanilla.log"
     log_file_eztrace="$log_dir/lulesh_${i}_eztrace.log"
 
+    /usr/bin/time -f "[TIME] %e" \
     ./lulesh2.0 -p -i $NB_ITER -s $SIZE 2>&1 | tee -a "$log_file_vanilla"
 
+    /usr/bin/time -f "[TIME] %e" \
     eztrace -m -t "mpi" ./lulesh2.0 -p -i $NB_ITER -s $SIZE 2>&1 | tee -a "$log_file_eztrace"
 
     mv *0_trace $traces_dir/lulesh_trace_${i} 

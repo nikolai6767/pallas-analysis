@@ -38,17 +38,17 @@ bars_vanilla = ax.bar(ind - width/2, df["MEAN_VANILLA"], width, label='Vanilla',
 bars_eztrace = ax.bar(ind + width/2, df["MEAN_EZTRACE"], width, label='Eztrace', color='tab:orange')
 
 
-yerr_lower = df["MEAN_EZTRACE"] - df["MIN_EZTRACE"]
-yerr_upper = df["MAX_EZTRACE"] - df["MEAN_EZTRACE"]
+yerr_lower = (df["MEAN_EZTRACE"] - df["MIN_EZTRACE"])/df["MEAN_VANILLA"]
+yerr_upper = (df["MAX_EZTRACE"] - df["MEAN_EZTRACE"])/df["MEAN_VANILLA"]
 ax.errorbar(ind + width/2, df["MEAN_EZTRACE"], 
             yerr=[yerr_lower, yerr_upper],label="_nolegend_",
             fmt='none', ecolor='black', capsize=5)
 
-yerr_low = df["MEAN_VANILLA"] - df["MIN_VANILLA"]
-yerr_up = df["MAX_VANILLA"] - df["MEAN_VANILLA"]
-ax.errorbar(ind - width/2, df["MEAN_VANILLA"], 
-            yerr=[yerr_low, yerr_up],
-            fmt='none', ecolor='black', capsize=5, label="_nolegend_")
+# yerr_low = (df["MEAN_VANILLA"] - df["MIN_VANILLA"])/df["MEAN_VANILLA"]
+# yerr_up = (df["MAX_VANILLA"] - df["MEAN_VANILLA"])/df["MEAN_VANILLA"]
+# ax.errorbar(ind - width/2, df["MEAN_VANILLA"], 
+#             yerr=[yerr_low, yerr_up],
+#             fmt='none', ecolor='black', capsize=5, label="_nolegend_")
 
 
 for i, row in df.iterrows():
@@ -65,5 +65,5 @@ ax.legend()
 
 ax.legend(loc='upper left', ncol=2, frameon=True)
 plt.tight_layout()
-plt.savefig("../plot/eztrace_overhead.pdf")
+plt.savefig("../plot/eztrace_overhead_bis.pdf")
 plt.show()

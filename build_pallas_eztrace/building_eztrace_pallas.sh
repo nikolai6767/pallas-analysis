@@ -29,20 +29,6 @@ export ZFP_LIBRARIES=$ZFP_ROOT/lib/
 cd "$base_dir"
 
 
-## Install SZ
-git clone https://github.com/szcompressor/SZ.git
-cd SZ
-mkdir build install
-cd build
-export SZ_ROOT=$PWD/../install
-cmake .. -DCMAKE_INSTALL_PREFIX=$SZ_ROOT
-chmod u+x ../install
-make && make install
-export SZ_INCLUDE_DIRS=$SZ_ROOT/include/sz
-export SZ_LIBRARIES=$SZ_ROOT/lib/
-
-cd "$base_dir"
-
 ## install pallas
 git clone https://github.com/Pallas-Trace/pallas.git
 cd pallas
@@ -53,7 +39,7 @@ git checkout dev && git pull
 mkdir build install
 cd build
 export PALLAS_ROOT=$PWD/../install
-cmake .. -DCMAKE_INSTALL_PREFIX=$PALLAS_ROOT -DENABLE_PYTHON=OFF -DENABLE_ZFP=ON -DENABLE_SZ=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=$PALLAS_ROOT -DENABLE_PYTHON=OFF -DENABLE_ZFP=ON -DENABLE_SZ=OFF
 make -j 14 && make install
 
 

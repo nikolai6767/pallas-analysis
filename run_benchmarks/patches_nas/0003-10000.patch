@@ -1,0 +1,25 @@
+From 18645b30aa3b96bba25d4429a8246a1829ba1304 Mon Sep 17 00:00:00 2001
+From: MONTICELLI Nikolai <n.monticelli2016@gmail.com>
+Date: Wed, 23 Jul 2025 21:39:51 +0200
+Subject: [PATCH 3/6] 10000
+
+---
+ libraries/pallas/include/pallas/pallas_linked_vector.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libraries/pallas/include/pallas/pallas_linked_vector.h b/libraries/pallas/include/pallas/pallas_linked_vector.h
+index cd34a71..a06d7ff 100644
+--- a/libraries/pallas/include/pallas/pallas_linked_vector.h
++++ b/libraries/pallas/include/pallas/pallas_linked_vector.h
+@@ -20,7 +20,7 @@
+ #include <utility>
+ #include <vector>
+ /** Default size for creating Vectors and SubVectors.*/
+-#define DEFAULT_VECTOR_SIZE 1000
++#define DEFAULT_VECTOR_SIZE 10000
+ 
+ namespace pallas {
+ /**
+-- 
+2.47.2
+
