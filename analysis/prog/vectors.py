@@ -52,7 +52,7 @@ for file_name in file_names:
             continue
 
         if times and sizes:
-            plt.scatter(times, sizes, s=40, alpha=0.2, label=subfolder, rasterized=True, color=color)
+            plt.scatter(times, sizes, s=50, alpha=0.2, label=subfolder, rasterized=True, color=color)
 
             df = pd.DataFrame(all_rows, columns=header)
             df = df.apply(pd.to_numeric, errors='coerce')
@@ -67,17 +67,8 @@ for file_name in file_names:
 
                 if pd.notna(mean_time) and pd.notna(mean_size):
 
-                    plt.scatter(mean_time, mean_size, s=100, color='black', marker='x')
+                    plt.scatter(mean_time, mean_size, s=200, color=color, marker='o', zorder=10, edgecolors='black', alpha="0.5")
 
-                    plt.annotate(
-                        label,
-                        (mean_time, mean_size),
-                        textcoords="offset points",
-                        xytext=offset,
-                        ha='center',
-                        fontsize=8,
-                        color="color"
-                    )
            
             except Exception as e:
                 continue
