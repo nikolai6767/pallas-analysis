@@ -99,7 +99,7 @@ void printTrace(pallas::GlobalArchive& trace1) {
 
 int main(const int argc, char* argv[]) {
 
-    if (argc != 3){
+    if (argc != 2){
         std::cerr << "Usage: " << argv[0] << " <trace1.pallas> <trace2.pallas>" << std::endl;
         return EXIT_FAILURE;
     }
@@ -109,19 +109,18 @@ int main(const int argc, char* argv[]) {
 
     if (trace1==nullptr)
         return EXIT_FAILURE;
-    
 
-    auto trace2_name = argv[1];
-    auto trace2 = pallas_open_trace(trace2_name);
+    // auto trace2_name = argv[1];
+    // auto trace2 = pallas_open_trace(trace2_name);
 
-    if (trace2==nullptr)
-        return EXIT_FAILURE;
+    // if (trace2==nullptr)
+    //     return EXIT_FAILURE;
 
     printTrace(*trace1);
 
 
     delete trace1;
-    delete trace2;
+    // delete trace2;
     
     return EXIT_SUCCESS;
 }
