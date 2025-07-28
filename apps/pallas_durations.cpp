@@ -158,10 +158,12 @@ auto get_name_w_csv(char* c){
 
 int main(const int argc, char* argv[]) {
 
-    if (argc != 3){
-        std::cerr << "Usage: " << argv[0] << " <trace1.pallas> <trace2.pallas> " << std::endl;
+    if (argc > 4){
+        std::cerr << "Usage: " << argv[0] << " <trace1.pallas> <trace2.pallas> [-s]" << std::endl;
         return EXIT_FAILURE;
     }
+
+
     int status;
 
     auto trace_csv_1 = get_name_w_csv(argv[1]);
@@ -188,7 +190,14 @@ int main(const int argc, char* argv[]) {
     waitpid(pid2, &status, 0);
 
     double res = CompareTimestamps(trace_csv_1.c_str(), trace_csv_2.c_str());
-    printf("R^2 = %.12e\n", res);
+    
+    std::cout.precision(12);
+
+    std::cout << "------------------------------------------------------------------" << std::endl;
+    std::cout << std::right << std::setw(30) << std::fixed << "Result: R^2 = ";
+    std::cout << std::right << std::setw(12) << std::fixed << res << std::endl;
+    std::cout << "------------------------------------------------------------------" << std::endl;
+
 
     return EXIT_SUCCESS;
 }
