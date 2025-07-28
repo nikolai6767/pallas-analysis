@@ -359,7 +359,6 @@ void printTrace(pallas::GlobalArchive& trace) {
         auto reader = pallas::ThreadReader(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
         _print_timestamp_header();
         _print_duration_header();
-        std::cout << std::endl;
         do {
           // pallas_assert_always(last_timestamp <= reader.currentState.currentFrame->referential_timestamp);
           last_timestamp = reader.currentState.currentFrame->referential_timestamp;
@@ -522,7 +521,6 @@ std::string getCurrentIndent(const pallas::ThreadReader& tr) {
 }
 
 void printThreadStructure(pallas::ThreadReader& tr) {
-<<<<<<< HEAD
   	struct timespec t1, t2;
 	clock_gettime(CLOCK_MONOTONIC, &t1);
   std::cout << "--- Thread " << tr.thread_trace->id << "(" << tr.thread_trace->getName() << ")" << " ---" << std::endl;
