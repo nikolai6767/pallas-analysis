@@ -158,11 +158,10 @@ auto get_name_w_csv(char* c){
 
 int main(const int argc, char* argv[]) {
 
-    if (argc > 4){
-        std::cerr << "Usage: " << argv[0] << " <trace1.pallas> <trace2.pallas> [-s]" << std::endl;
+    if (argc != 3){
+        std::cerr << "Usage: " << argv[0] << " <trace1.pallas> <trace2.pallas> " << std::endl;
         return EXIT_FAILURE;
     }
-
 
     int status;
 
@@ -171,7 +170,6 @@ int main(const int argc, char* argv[]) {
 
     std::ofstream(trace_csv_1, std::ios::trunc);
     std::ofstream(trace_csv_2, std::ios::trunc);
-
 
     pid_t pid1 = fork();
 
