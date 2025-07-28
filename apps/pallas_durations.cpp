@@ -15,6 +15,8 @@
 
 #define EPSILON 1e-12
 
+bool details = true;
+
 int thread_to_print = -1;
 
 void write_csv_details(const char* filename, pallas_timestamp_t t){
@@ -92,7 +94,7 @@ void getTraceTimepstamps(char* name) {
 double mean(const char* trace){
   FILE* file = fopen(trace, "r");
 
-  int n = 0;
+  double n = 0.0;
   double y, sum_y = 0.0;
 
   if (!file){
@@ -107,7 +109,13 @@ double mean(const char* trace){
   fclose(file);
 
   double mean_y = sum_y / n ;
-  return mean_y;
+    if (details){
+      std::cout.precision(12);
+      std::cout << "------------------------------------------------------------------" << std::endl;
+      std::cout << std::right << std::fixed << "Details: ";
+      std::cout << " n = " << n << "," << "mean_y = " << mean_y << std::endl;
+    }
+    return mean_y;
 }
 
 
@@ -138,11 +146,16 @@ double CompareTimestamps(const char* trace1, const char* trace2){
     fclose(file2);
 
     if (ss_tot < EPSILON){
-      fprintf(stderr, "ss_tot nul");
+      fprintf(stderr, "\nss_tot nul\n");
       return -1.0;
     }
-    double R2 = 1.0 - ss_res / ss_tot;
-
+    if (details){
+      std::cout.precision(0);
+      std::cout << "------------------------------------------------------------------" << std::endl;
+      std::cout << std::right << std::fixed << "Details: ";
+      std::cout << " ss_res = " << ss_res << "," << "ss_tot = " << ss_tot << std::endl;
+      double R2 = 1.0 - ss_res / ss_tot;
+    }
     return R2;
 }
 
@@ -164,7 +177,6 @@ int main(const int argc, char* argv[]) {
     }
 
     int status;
-
     auto trace_csv_1 = get_name_w_csv(argv[1]);
     auto trace_csv_2 = get_name_w_csv(argv[2]);
 
@@ -183,7 +195,6 @@ int main(const int argc, char* argv[]) {
       getTraceTimepstamps(argv[2]);
       exit(EXIT_SUCCESS);
     }
-    
     waitpid(pid1, &status, 0);
     waitpid(pid2, &status, 0);
 
