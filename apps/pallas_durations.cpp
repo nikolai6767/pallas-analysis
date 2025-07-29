@@ -12,6 +12,7 @@
 #include <float.h>
 #include "pallas/pallas_dbg.h"
 #include <sys/wait.h>
+#include <malloc.h>
 
 #define EPSILON 1e-12
 
@@ -46,7 +47,8 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
 
 void getTraceTimepstamps(char* name) {
 
-  auto trace = *pallas_open_trace(name);
+  auto trac = pallas_open_trace(name);
+  auto trace = *trac;
 
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
@@ -87,7 +89,7 @@ void getTraceTimepstamps(char* name) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
-
+  delete trac;
 }
 
 
@@ -153,9 +155,9 @@ double CompareTimestamps(const char* trace1, const char* trace2){
       std::cout.precision(0);
       std::cout << "------------------------------------------------------------------" << std::endl;
       std::cout << std::right << std::fixed << "Details: ";
-      std::cout << " ss_res = " << ss_res << "," << "ss_tot = " << ss_tot << std::endl;
-      double R2 = 1.0 - ss_res / ss_tot;
+      std::cout << " ss_res = " << ss_res << "," << " ss_tot = " << ss_tot << std::endl;
     }
+    double R2 = 1.0 - ss_res / ss_tot;
     return R2;
 }
 
@@ -176,7 +178,7 @@ int main(const int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    int status;
+    int status1, status2;
     auto trace_csv_1 = get_name_w_csv(argv[1]);
     auto trace_csv_2 = get_name_w_csv(argv[2]);
 
@@ -195,11 +197,17 @@ int main(const int argc, char* argv[]) {
       getTraceTimepstamps(argv[2]);
       exit(EXIT_SUCCESS);
     }
-    waitpid(pid1, &status, 0);
-    waitpid(pid2, &status, 0);
+    waitpid(pid1, &status1, 0);
+    waitpid(pid2, &status2, 0);
+
+    if (!WIFEXITED(status1) || !WIFEXITED(status2)) {
+      std::cerr << "One of the child processes failed." << std::endl;
+      return EXIT_FAILURE;
+    }
+
 
     double res = CompareTimestamps(trace_csv_1.c_str(), trace_csv_2.c_str());
-    
+
     std::cout.precision(12);
 
     std::cout << "------------------------------------------------------------------" << std::endl;

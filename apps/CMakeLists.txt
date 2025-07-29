@@ -11,7 +11,7 @@ add_executable(pallas_durations pallas_durations.cpp)
 
 
 install(
-  TARGETS pallas_print pallas_info pallas_editor pallas_durations
+  TARGETS pallas_print pallas_info pallas_editor  pallas_durations
   LIBRARY DESTINATION ${INSTALL_LIBDIR}
   RUNTIME DESTINATION ${INSTALL_BINDIR}
   INCLUDES DESTINATION ${INSTALL_INCLUDEDIR}
