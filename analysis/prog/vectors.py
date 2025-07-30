@@ -17,61 +17,38 @@ cmap = cm.get_cmap('tab10', n_subfolders)
 first_details_path = os.path.join(base_dir, subfolders[0], "details")
 file_names = [f for f in os.listdir(first_details_path) if f.endswith(".csv")]
 
+
 for file_name in file_names:
-    plt.figure(figsize=(10, 6))
-    all_rows = []
+    fig, ax = plt.subplots(figsize=(10, 6))
+    any_data = False
 
-    for i, subfolder in enumerate(subfolders):
-        details_path = os.path.join(base_dir, subfolder, "details")
-        file_path = os.path.join(details_path, file_name)
-        color=cmap(i)
-        times = []
-        sizes = []
-
-        try:
-            with open(file_path, newline='') as csvfile:
-                reader = csv.reader(csvfile)
-                header = next(reader, None)
-
-                for row in reader:
-                    if len(row) >= 4:
-                        try:
-                            time = int(row[1])
-                            if file_name.startswith(("write_details_", "zstd", "write_duration_vector")):
-                                size = int(row[2]) * int(row[3])
-                            else:
-                                size = int(row[2])
-
-                            times.append(time)
-                            sizes.append(size)
-                            all_rows.append(row)
-                        except ValueError:
-                            continue
-        except Exception as e:
-            print(f"Erreur dans {file_path} : {e}")
+    for i, sf in enumerate(subfolders):
+        path = os.path.join(base_dir, sf, "details", file_name)
+        if not os.path.isfile(path):
             continue
 
-        if times and sizes:
-            plt.scatter(times, sizes, s=20, alpha=0.4, label=subfolder, rasterized=True, color=color, zorder=2)
+        df = pd.read_csv(path, header=None)
+        df = df.dropna(subset=[1, 2])
+        df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce')
+        df = df.dropna(subset=[1, 2])
 
-            df = pd.DataFrame(all_rows, columns=header)
-            df = df.apply(pd.to_numeric, errors='coerce')
+        if df.empty:
+            continue
 
-            try:
-                mean_time = df.iloc[:, 1].mean()
-                if file_name.startswith(("write_details_", "zstd", "write_duration_vector")):
-                    mean_size = (df.iloc[:, 2] * df.iloc[:, 3]).mean()
-                else:
-                    mean_size = df.iloc[:, 2].mean()
-                label = subfolder.split("-")[-1]
+        if file_name.startswith(("write_details_", "zstd", "write_duration_vector")) and df.shape[1] >= 4:
+            sizes = df.iloc[:, 2] * df.iloc[:, 3]
+        else:
+            sizes = df.iloc[:, 2]
+        times = df.iloc[:, 1]
 
-                if pd.notna(mean_time) and pd.notna(mean_size):
+        color = cmap(i)
+        ax.scatter(times, sizes, s=20, alpha=0.4,
+                   label=sf.split("-")[-1], rasterized=True, zorder=2, color=color)
+        ax.scatter(times.mean(), sizes.mean(), s=200, marker='o',
+                   edgecolors='black', color=color, zorder=10)
 
-                    plt.scatter(mean_time, mean_size, s=200, color=color, marker='o', zorder=10, edgecolors='black')
+        any_data = True
 
-           
-            except Exception as e:
-                continue
 
     plt.title(f"{file_name} — Temps en fonction de la taille")
     plt.xlabel("Durée (en ns)")
@@ -85,6 +62,5 @@ for file_name in file_names:
     output_dir = os.path.join(base_dir, "plots_by_file")
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, file_name.replace(".csv", ".png"))
-    if plt.gca().has_data():
-        plt.savefig(output_file, dpi=300)
+    plt.savefig(output_file, dpi=300) ### TODO: check dpi ###
     plt.close()
