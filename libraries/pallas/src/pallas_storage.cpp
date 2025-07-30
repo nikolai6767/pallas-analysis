@@ -29,8 +29,8 @@
 
 #include <algorithm>
 
-#define SHOW_DETAILS 0
-#define TRACK_PERF 0
+#define SHOW_DETAILS 1
+#define TRACK_PERF 1
 
 
 
