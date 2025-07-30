@@ -20,6 +20,9 @@ bool details = true;
 
 int thread_to_print = -1;
 
+/**
+ * Adds a timestamp t to the .csv file filename
+ */
 void write_csv_details(const char* filename, pallas_timestamp_t t){
     std::ofstream file(std::string(filename) + ".csv", std::ios::app);
     file << t << "\n";
@@ -45,6 +48,9 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
   return true;
 }
 
+/**
+ * name is a path for a .pallas trace file. It fills a .csv file with all the timestamps of the trace without any header.
+ */
 void getTraceTimepstamps(char* name) {
 
   auto trac = pallas_open_trace(name);
@@ -89,10 +95,13 @@ void getTraceTimepstamps(char* name) {
       pallas_assert(min_reader->isEndOfTrace());
     }
   }
+  trace.close();
   delete trac;
 }
 
-
+/**
+ * trace1 is a path for a csb file filled with timestamps (integers) and returns the mean value of these values
+ */
 double mean(const char* trace){
   FILE* file = fopen(trace, "r");
 
@@ -126,6 +135,10 @@ double mean(const char* trace){
  * R^2 = 1 - (SS_res / SS_tot) where:
  * SS_res = sum_1_n(y_i - x_i)^2
  * SS_tot = sum_1_n(y_i - mean(y))^2
+ */
+/**
+ * trace1 and trace2 are paths for csv files with the timestamps get with getTraceTimestamps. 
+ * Returns the statistical result of the R^2 test on these two files.
  */
 double CompareTimestamps(const char* trace1, const char* trace2){
     FILE* file1 = fopen(trace1, "r");
@@ -161,6 +174,10 @@ double CompareTimestamps(const char* trace1, const char* trace2){
     return R2;
 }
 
+/**
+ * Char* c is a path for a file.
+ * get_name_w_csv retruns the name of the parent forlder of the file, appended with ".csv"
+ */
 auto get_name_w_csv(char* c){
   auto* copy = strdup(c);
   auto* slash = strrchr(copy, '/');
@@ -170,6 +187,8 @@ auto get_name_w_csv(char* c){
   free(copy);
   return copy_s;
 }
+
+
 
 int main(const int argc, char* argv[]) {
 
@@ -204,7 +223,6 @@ int main(const int argc, char* argv[]) {
       std::cerr << "One of the child processes failed." << std::endl;
       return EXIT_FAILURE;
     }
-
 
     double res = CompareTimestamps(trace_csv_1.c_str(), trace_csv_2.c_str());
 
