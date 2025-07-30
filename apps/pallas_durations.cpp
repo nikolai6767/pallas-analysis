@@ -52,22 +52,29 @@ bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
  * name is a path for a .pallas trace file. It fills a .csv file with all the timestamps of the trace without any header.
  */
 void getTraceTimepstamps(char* name) {
-
+  std::cout << name << " - " << "getTraceTimestamp entry" << std::endl;
+  std::cout << name << " - ";
+  fprintf(stdout, "pallas_open_trace entry\n");
   auto trac = pallas_open_trace(name);
   auto trace = *trac;
-
+  std::cout << name << " - ";
+  fprintf(stdout, "pallas_open_trace exit\n");
+  int counter = 0;
+  int counter2 = 0;
   std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
   auto readers = std::vector<pallas::ThreadReader>();
 
   auto thread_list = trace.getThreadList();
-
   for (auto * thread: thread_list) {
+      counter++;
       if (thread == nullptr)  continue;
       if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
       readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
       threads_data[&readers.back()] = {};
   }
+
+  std::cout << name << " - " << " Threads ok " << counter << std::endl;
 
   while (!isReadingOver(readers)) {
     pallas::ThreadReader* min_reader = &readers[0];
@@ -77,7 +84,7 @@ void getTraceTimepstamps(char* name) {
         min_reader = &reader;
         min_timestamp = reader.currentState.currentFrame->referential_timestamp;
       }
-    
+      
     }
     auto token = min_reader->pollCurToken();
 
@@ -86,21 +93,30 @@ void getTraceTimepstamps(char* name) {
         pallas_timestamp_t t1 = get_timestamp(res);
         auto* copy = strdup(name);
         auto* slash = strrchr(copy, '/');
-        *slash = '\0';
+        if (slash != nullptr)
+          *slash = '\0';
         write_csv_details(copy, t1);
         free(copy);
 
     }
+
     if (! min_reader->getNextToken().isValid()) {
       pallas_assert(min_reader->isEndOfTrace());
     }
-  }
-  trace.close();
-  delete trac;
 }
 
+  trace.archive_list = nullptr;
+  trace.locations.clear();
+
+  delete trac;
+  std::cout << name << " - " << "getTraceTimestamp exit" << std::endl;
+  std::cout.flush();
+_exit(EXIT_SUCCESS);
+}
+
+
 /**
- * trace1 is a path for a csb file filled with timestamps (integers) and returns the mean value of these values
+ * trace1 is a path for a csv file filled with timestamps (integers) and returns the mean value of these values
  */
 double mean(const char* trace){
   FILE* file = fopen(trace, "r");
@@ -197,7 +213,6 @@ int main(const int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    int status1, status2;
     auto trace_csv_1 = get_name_w_csv(argv[1]);
     auto trace_csv_2 = get_name_w_csv(argv[2]);
 
@@ -211,17 +226,25 @@ int main(const int argc, char* argv[]) {
       exit(EXIT_SUCCESS);
     }
 
+    int status1;
+    waitpid(pid1, &status1, 0);
+    if (!WIFEXITED(status1)) {
+        std::cerr << "First process failed" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     pid_t pid2 = fork();
     if (pid2 == 0){
       getTraceTimepstamps(argv[2]);
+      fprintf(stdout, "second trace ok\n");
       exit(EXIT_SUCCESS);
     }
-    waitpid(pid1, &status1, 0);
-    waitpid(pid2, &status2, 0);
 
-    if (!WIFEXITED(status1) || !WIFEXITED(status2)) {
-      std::cerr << "One of the child processes failed." << std::endl;
-      return EXIT_FAILURE;
+    int status2;
+    waitpid(pid2, &status2, 0);
+    if (!WIFEXITED(status2)) {
+        std::cerr << "Second process failed" << std::endl;
+        return EXIT_FAILURE;
     }
 
     double res = CompareTimestamps(trace_csv_1.c_str(), trace_csv_2.c_str());
