@@ -9,7 +9,7 @@ import matplotlib.cm as cm
 
 
 
-base_dir = os.path.expanduser("~/soft/pallas-analysis/run_benchmarks/run_nas_benchmark/vectors")
+base_dir = os.path.expanduser("~/soft/pallas-analysis/run_benchmarks/run_lulesh/vectors")
 subfolders = sorted([f for f in os.listdir(base_dir) if f.startswith("000")])
 
 n_subfolders = len(subfolders)
@@ -62,7 +62,7 @@ for file_name in file_names:
     plt.legend(title="Subvector size", fontsize='small', loc='best')
     plt.tight_layout()
 
-    output_dir = os.path.join("../plot/", "nas_vectors")
+    output_dir = os.path.join("../plot/", "lulesh_vectors")
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, file_name.replace(".csv", ".png"))
     plt.savefig(output_file, dpi=300) ### TODO: check dpi ###
