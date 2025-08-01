@@ -7,7 +7,7 @@ import matplotlib.cm as cm
 
 
 
-
+summary = []
 
 base_dir = os.path.expanduser("~/soft/pallas-analysis/run_benchmarks/run_nas_benchmark/vectors")
 subfolders = sorted([f for f in os.listdir(base_dir) if f.startswith("000")])
@@ -51,6 +51,41 @@ for file_name in file_names:
                    edgecolors='black', color=color, zorder=10)
 
         any_data = True
+        func = df.iloc[:, 0].dropna().astype(str).mode()[0]
+        alg = sf.split("-")[-1]
+
+        summary.append({"func": func, "alg": alg, "mean_duration_ns": times.mean()})
+
+
+
+
+    summary_df = pd.DataFrame(summary)
+
+    agg = summary_df.groupby(["func", "alg"], observed=True).agg(
+        mean_duration_ns=("mean_duration_ns", "mean"),
+        samples=("mean_duration_ns", "size")
+    ).reset_index()
+
+    order = [sf.split("-")[-1] for sf in subfolders]
+    agg["alg"] = pd.Categorical(agg["alg"], categories=order, ordered=True)
+
+    output_dir = os.path.join("../plot/", "nas_vectors_summary")
+    os.makedirs(output_dir, exist_ok=True)
+
+    for func_name, grp in agg.groupby("func"):
+        grp = grp.sort_values("alg")
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"])
+        ax.set_yscale("log")
+        ax.set_xlabel("Subvector Size")
+        ax.set_ylabel("Mean duration (ns)")
+        ax.set_title(f"Time for '{func_name}'")
+        ax.grid(True, which="both", ls="--", alpha=0.4)
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"{func_name}.png"), dpi=300)
+        plt.close()
 
 
     plt.title(f"{file_name} — Size vs Duration")
@@ -61,9 +96,9 @@ for file_name in file_names:
     plt.yscale('log')
     plt.legend(title="Subvector size", fontsize='small', loc='best')
     plt.tight_layout()
-
     output_dir = os.path.join("../plot/", "nas_vectors")
     os.makedirs(output_dir, exist_ok=True)
+
     output_file = os.path.join(output_dir, file_name.replace(".csv", ".png"))
     plt.savefig(output_file, dpi=300) ### TODO: check dpi ###
     plt.close()
