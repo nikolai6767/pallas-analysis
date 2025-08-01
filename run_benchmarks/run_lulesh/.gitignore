@@ -8,3 +8,4 @@ traces_log
 log_old
 traces_old
 vectors/
+.temp
