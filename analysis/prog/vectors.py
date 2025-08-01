@@ -1,9 +1,9 @@
 import os
 import re
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas as pd # type: ignore
+import matplotlib.pyplot as plt # type: ignore
 import csv
-import matplotlib.cm as cm
+import matplotlib.cm as cm # type: ignore
 
 
 
