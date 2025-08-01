@@ -57,8 +57,11 @@ for patch_file in "$patches_dir"/*.patch; do
 
         time=$(grep -e "\[TIME\]" $log_file_eztrace | sed -e "s/\[TIME\]//g" | sed -e "s/ //g")
         max_memory=$(grep -e "\[MAX_MEMORY\]" $log_file_eztrace | sed -e "s/\[MAX_MEMORY\]//g" | sed -e "s/ //g")
-        echo "TIME,MAX_MEMORY" >> ${nas_dir}/perf_glob.csv
-        echo "$time,$max_memory" >> ${nas_dir}/perf_glob.csv
+
+        if [ -f "perf.csv" ] && [ ! -s "perf.csv" ]; then
+            echo "TIME,MAX_MEMORY" >> "perf.csv"
+        fi
+        echo "$time,$max_memory" >> "perf.csv
 
         rm $PWD/*.csv
     done

@@ -1,0 +1,2 @@
+name,calls,total_us,min_us,max_us,average_us
+write_dur_subvec,6942,2.40114e+09,0,3.64e+07,345886

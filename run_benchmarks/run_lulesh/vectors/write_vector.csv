@@ -1,0 +1,2 @@
+name,calls,total_us,min_us,max_us,average_us
+write_vector,15606,1.91068e+10,0,3.47986e+08,1.22433e+06

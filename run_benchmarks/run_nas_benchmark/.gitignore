@@ -6,3 +6,4 @@ vectors/traces
 vectors/log
 vectors/details
 .vscode
+.tmp
