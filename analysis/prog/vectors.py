@@ -20,7 +20,7 @@ order = [sf.split("-")[-1] for sf in subfolders]
 perf_info = {}
 for sf in subfolders:
     alg = sf.split("-")[-1]
-    perf_path = os.path.join(base_dir, sf, "perf.csv")
+    perf_path = os.path.join(base_dir, sf, "perfo.csv")
     if not os.path.isfile(perf_path):
         continue
     try:
@@ -76,6 +76,7 @@ for file_name in file_names:
         summary.append({"func": func, "alg": alg, "mean_duration_ns": times.mean(), 
             "mean_TIME_s": perf.get("TIME_s", pd.NA),
             "mean_MAX_PERF_kB": perf.get("MAX_PERF_kB", pd.NA),
+            "median_duration_ns": times.median(),
         })
 
 
@@ -99,6 +100,7 @@ for file_name in file_names:
 
     agg = summary_df.groupby(["func", "alg"], observed=True).agg(
         mean_duration_ns=("mean_duration_ns", "mean"),
+        median_duration_ns=("median_duration_ns", "median"),
         mean_TIME_s=("mean_TIME_s", "mean"),
         mean_MAX_PERF_kB=("mean_MAX_PERF_kB", "mean"),
     ).reset_index()
@@ -107,26 +109,63 @@ for file_name in file_names:
     out_dir_summary = os.path.join("../plot/", "nas_vectors_summary")
     os.makedirs(out_dir_summary, exist_ok=True)
     for func_name, grp in agg.groupby("func"):
-        grp = grp.sort_values("alg")
         fig, ax = plt.subplots(figsize=(8, 5))
-        bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"])
-        ax.set_yscale("log")
-        ax.set_xlabel("Subvector Size")
-        ax.set_ylabel("Mean duration (ns)")
-        ax.set_title(f"Time for '{func_name}'")
-        ax.grid(True, which="both", ls="--", alpha=0.4)
-        plt.xticks(rotation=45, ha="right")
 
-        time_ns = grp["mean_TIME_s"] * 1e9  # s en ns !!!!
-        ax.scatter(
+        bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"], label="Mean duration (ns)")
+        ax.set_yscale("log")
+        ax.set_ylabel("Mean duration (ns)")
+
+        ax2 = ax.twinx()
+        time_ns = grp["mean_TIME_s"]
+        ax2.set_yscale("log")
+        ax2.scatter(
             grp["alg"].astype(str),
             time_ns,
-            marker="x",
-            edgecolors="red",
+            marker="o",
+            edgecolors="black",
             facecolors="none",
-            s=40,
+            s=80,
             zorder=5,
-            label="Total time (ns)",
+            label="Total TIME (ns)",
+        )
+        ax2.set_ylabel("Total TIME (ns)")
+
+        lines, labels = ax.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax.legend(lines + lines2, labels + labels2, fontsize="small")
+
+        # grp = grp.sort_values("alg")
+        # fig, ax = plt.subplots(figsize=(8, 5))
+        # bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"])
+        # ax.set_yscale("log")
+        # ax.set_xlabel("Subvector Size")
+        # ax.set_ylabel("Mean duration (ns)")
+        # ax.set_title(f"Time for '{func_name}'")
+        # ax.grid(True, which="both", ls="--", alpha=0.4)
+        # plt.xticks(rotation=45, ha="right")
+
+        # time_ns = grp["mean_TIME_s"] * 1e9  # s en ns !!!!
+        # ax.scatter(
+        #     grp["alg"].astype(str),
+        #     time_ns,
+        #     marker="x",
+        #     edgecolors="red",
+        #     facecolors="none",
+        #     s=40,
+        #     zorder=5,
+        #     label="Total time (ns)",
+        # )
+        x_positions = range(len(grp))
+        medians = grp["median_duration_ns"]
+        ax.scatter(
+            x_positions,
+            medians,
+            marker="o",
+            s=60,
+            label="Médiane",
+            zorder=5,
+            edgecolors="black",
+            linewidths=1.5,
         )
 
         for rect, max_perf in zip(bars, grp["mean_MAX_PERF_kB"]):
@@ -134,7 +173,7 @@ for file_name in file_names:
             if pd.notna(max_perf):
                 ax.text(
                     rect.get_x() + rect.get_width() / 2,
-                    height * 1.05,
+                    height * 1.005,
                     f"{max_perf:.1f} KB",
                     ha="center",
                     va="bottom",

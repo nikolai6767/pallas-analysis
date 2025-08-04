@@ -33,7 +33,7 @@ for patch_file in "$patches_dir"/*.patch; do
     for app in $bin_dir/* ; do 
 
         app_name=$(basename "$app")
-        log_file_eztrace="$log_dir/${app_name}_${i}_eztrace.log"
+        log_file_eztrace="$log_dir/${app_name}_eztrace.log"
 
         /usr/bin/time -f "[TIME] %e\n [MAX_MEMORY] %M\n" \
         mpirun -np "$NB_RANKS" eztrace -m -t "mpi compiler_instrumentation" "$app" 2>&1 | tee -a "$log_file_eztrace"
@@ -58,10 +58,7 @@ for patch_file in "$patches_dir"/*.patch; do
         time=$(grep -e "\[TIME\]" $log_file_eztrace | sed -e "s/\[TIME\]//g" | sed -e "s/ //g")
         max_memory=$(grep -e "\[MAX_MEMORY\]" $log_file_eztrace | sed -e "s/\[MAX_MEMORY\]//g" | sed -e "s/ //g")
 
-        if [ ! -s "perf.csv" ]; then
-            echo "TIME,MAX_MEMORY" >> "perf.csv"
-        fi
-        echo "${time},${max_memory}" >> "${res_patch}/perf.csv"
+        echo "${time},${max_memory}" >> "${res_patch}/perfo.csv"
 
         rm $PWD/*.csv
     done
