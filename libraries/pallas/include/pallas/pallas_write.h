@@ -36,11 +36,22 @@ typedef struct ThreadWriter {
 #ifdef __cplusplus
 
    private:
-
-  /** Returns the duration for the last - offset given Sequence.*/
-  pallas_duration_t getLastSequenceDuration(Sequence* sequence, size_t offset = 0) const;
-  /* Tries to find a Loop in the most basic form.*/
+    /** Returns the duration for the last - offset given Sequence.*/
+    pallas_duration_t getLastSequenceDuration(Sequence* sequence, size_t offset = 0) const;
+    /** Finds a Loop in the current Sequence using a basic quadratic algorithm.
+     *
+     * For each correct possible loop length, this algorithm tries two things:
+     *  - First, it checks if the array of tokens of that length is in front of a loop token
+     *      whose repeating sequence is the same as ours. If is it, it replaces it.
+     *       - Example: L0 = 2 * S1 = E1 E2 E3. L0 E1 E2 E3 -> L0 (= 3 * S1).
+     *  - Secondly, it checks for any doubly repeating array of token, and replaces it with a Loop.
+     *       - Example: E1 E2 E3 E1 E2 E3 -> L0. L0 = 2 * S1 = E1 E2 E3
+     * @param maxLoopLength The maximum loop length that we try to find.
+     */
     void findLoopBasic(size_t maxLoopLength);
+    /** Checks the loop right before the last token for any repetitions. */
+    void checkLoopBefore();
+
     /** Tries to find a Loop in the current array of tokens.  */
     void findLoop();
     /** Tries to find and replace the last n tokens in the grammar sequence. */
