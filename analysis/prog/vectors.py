@@ -3,7 +3,6 @@ import re
 import pandas as pd # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import csv
-import matplotlib.cm as cm # type: ignore
 
 summary = []
 
@@ -11,7 +10,7 @@ base_dir = os.path.expanduser("~/soft/pallas-analysis/run_benchmarks/run_nas_ben
 subfolders = sorted([f for f in os.listdir(base_dir) if f.startswith("000")])
 perf_files = []
 n_subfolders = len(subfolders)
-cmap = cm.get_cmap('tab10', n_subfolders)
+cmap = plt.get_cmap('tab10', n_subfolders)
 order = [sf.split("-")[-1] for sf in subfolders]
 
 
@@ -108,7 +107,7 @@ for file_name in file_names:
     for func_name, grp in agg.groupby("func"):
         fig, ax = plt.subplots(figsize=(8, 5))
 
-        bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"], label="Mean duration (ns)")
+        bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"], label="Mean duration (ns)", color="slateblue")
         ax.set_yscale("log")
         ax.set_ylabel("Mean duration (ns)")
 
@@ -118,10 +117,9 @@ for file_name in file_names:
         ax2.scatter(
             grp["alg"].astype(str),
             time_ns,
-            marker="o",
-            edgecolors="black",
-            facecolors="none",
-            s=80,
+            marker="x",
+            color="black",
+            s=60,
             zorder=5,
             label="App total duration (s)",
         )
@@ -133,12 +131,12 @@ for file_name in file_names:
         ax.scatter(
             x_positions,
             medians,
-            marker="o",
-            s=60,
-            label="Median duration",
-            zorder=5,
-            edgecolors="black",
+            marker="x",
+            s=40,
+            label="Median duration (ns) ",
+            zorder=6,
             linewidths=1.5,
+            color="orange"
         )
 
         for rect, max_perf in zip(bars, grp["mean_MAX_PERF_kB"]):
@@ -152,13 +150,11 @@ for file_name in file_names:
                     va="bottom",
                     fontsize=8,
                     color="red",
-                    label="memory peak"
                 )
 
         lines, labels = ax.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
         ax.legend(lines + lines2, labels + labels2, fontsize="small")
-        ax.legend(fontsize="small")
 
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir_summary, f"{func_name}.png"), dpi=300)
