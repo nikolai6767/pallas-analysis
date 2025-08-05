@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt # type: ignore
 import csv
 import matplotlib.cm as cm # type: ignore
 
-
-
 summary = []
 
 base_dir = os.path.expanduser("~/soft/pallas-analysis/run_benchmarks/run_nas_benchmark/vectors")
@@ -38,6 +36,7 @@ first_details_path = os.path.join(base_dir, subfolders[0], "details")
 file_names = [f for f in os.listdir(first_details_path) if f.endswith(".csv")]
 
 for file_name in file_names:
+    summary = []
     fig, ax = plt.subplots(figsize=(10, 6))
     any_data = False
 
@@ -80,21 +79,18 @@ for file_name in file_names:
         })
 
 
-
-
-    if any_data:
-        ax.set_title(f"{file_name} — Size vs Duration")
-        ax.set_xlabel("Duration (ns)")
-        ax.set_ylabel("Size (byte)")
-        ax.grid(True)
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.legend(title="Subvector size", fontsize="small", loc="best")
-        plt.tight_layout()
-        out_dir_overall = os.path.join("../plot/", "nas_vectors")
-        os.makedirs(out_dir_overall, exist_ok=True)
-        plt.savefig(os.path.join(out_dir_overall, file_name.replace(".csv", ".png")), dpi=300)
-        plt.close()
+    ax.set_title(f"{file_name} — Size vs Duration")
+    ax.set_xlabel("Duration (ns)")
+    ax.set_ylabel("Size (byte)")
+    ax.grid(True)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend(title="Subvector size", fontsize="small", loc="best")
+    plt.tight_layout()
+    out_dir_overall = os.path.join("../plot/", "nas_vectors")
+    os.makedirs(out_dir_overall, exist_ok=True)
+    plt.savefig(os.path.join(out_dir_overall, file_name.replace(".csv", ".png")), dpi=300)
+    plt.close()
 
     summary_df = pd.DataFrame(summary)
 
@@ -105,6 +101,7 @@ for file_name in file_names:
         mean_MAX_PERF_kB=("mean_MAX_PERF_kB", "mean"),
     ).reset_index()
     agg["alg"] = pd.Categorical(agg["alg"], categories=order, ordered=True)
+    agg = agg.sort_values("alg")
 
     out_dir_summary = os.path.join("../plot/", "nas_vectors_summary")
     os.makedirs(out_dir_summary, exist_ok=True)
@@ -126,35 +123,11 @@ for file_name in file_names:
             facecolors="none",
             s=80,
             zorder=5,
-            label="Total TIME (ns)",
+            label="App total duration (s)",
         )
-        ax2.set_ylabel("Total TIME (ns)")
+        ax2.set_ylabel("App total duration (s)")
 
-        lines, labels = ax.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax.legend(lines + lines2, labels + labels2, fontsize="small")
 
-        # grp = grp.sort_values("alg")
-        # fig, ax = plt.subplots(figsize=(8, 5))
-        # bars = ax.bar(grp["alg"].astype(str), grp["mean_duration_ns"])
-        # ax.set_yscale("log")
-        # ax.set_xlabel("Subvector Size")
-        # ax.set_ylabel("Mean duration (ns)")
-        # ax.set_title(f"Time for '{func_name}'")
-        # ax.grid(True, which="both", ls="--", alpha=0.4)
-        # plt.xticks(rotation=45, ha="right")
-
-        # time_ns = grp["mean_TIME_s"] * 1e9  # s en ns !!!!
-        # ax.scatter(
-        #     grp["alg"].astype(str),
-        #     time_ns,
-        #     marker="x",
-        #     edgecolors="red",
-        #     facecolors="none",
-        #     s=40,
-        #     zorder=5,
-        #     label="Total time (ns)",
-        # )
         x_positions = range(len(grp))
         medians = grp["median_duration_ns"]
         ax.scatter(
@@ -162,7 +135,7 @@ for file_name in file_names:
             medians,
             marker="o",
             s=60,
-            label="Médiane",
+            label="Median duration",
             zorder=5,
             edgecolors="black",
             linewidths=1.5,
@@ -178,28 +151,15 @@ for file_name in file_names:
                     ha="center",
                     va="bottom",
                     fontsize=8,
+                    color="red",
+                    label="memory peak"
                 )
 
+        lines, labels = ax.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax.legend(lines + lines2, labels + labels2, fontsize="small")
         ax.legend(fontsize="small")
+
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir_summary, f"{func_name}.png"), dpi=300)
         plt.close()
-
-
-
-
-
-    plt.title(f"{file_name} — Size vs Duration")
-    plt.xlabel("Duration (ns)")
-    plt.ylabel("Size (byte)")
-    plt.grid(True)
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.legend(title="Subvector size", fontsize='small', loc='best')
-    plt.tight_layout()
-    output_dir = os.path.join("../plot/", "nas_vectors")
-    os.makedirs(output_dir, exist_ok=True)
-
-    output_file = os.path.join(output_dir, file_name.replace(".csv", ".png"))
-    plt.savefig(output_file, dpi=300) ### TODO: check dpi ###
-    plt.close()
