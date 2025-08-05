@@ -19,7 +19,7 @@ cd ${nas_dir}/../
 
 NB_SIM=1
 NB_ITER=250
-SIZE=128
+SIZE=32
 app_name="lulesh"
 
 for patch_file in "$patches_dir"/*.patch; do
