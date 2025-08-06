@@ -32,86 +32,43 @@ pallas_timestamp_t get_timestamp(const pallas::EventOccurence e){
     return(e.timestamp);
 }
 
-struct thread_data {
-  std::vector<std::string> callstack{};
-  std::vector<pallas_duration_t> callstack_duration{};
-  std::vector<pallas_timestamp_t> callstack_timestamp{};
-  pallas_timestamp_t last_timestamp;
-};
-
-bool isReadingOver(const std::vector<pallas::ThreadReader>& readers) {
-  for (const auto& reader : readers) {
-    if (!reader.isEndOfTrace()) {
-      return false;
-    }
-  }
-  return true;
-}
 
 /**
  * name is a path for a .pallas trace file. It fills a .csv file with all the timestamps of the trace without any header.
  */
 void getTraceTimepstamps(char* name) {
-  std::cout << name << " - " << "getTraceTimestamp entry" << std::endl;
-  std::cout << name << " - ";
-  fprintf(stdout, "pallas_open_trace entry\n");
+
+  auto* copy = strdup(name);
+  auto* slash = strrchr(copy, '/');
+  if (slash != nullptr)
+    *slash = '\0';
+
   auto trac = pallas_open_trace(name);
   auto trace = *trac;
-  std::cout << name << " - ";
-  fprintf(stdout, "pallas_open_trace exit\n");
-  int counter = 0;
-  int counter2 = 0;
-  std::map<pallas::ThreadReader*, struct thread_data> threads_data;
 
-  auto readers = std::vector<pallas::ThreadReader>();
+  for (uint aid = 0; aid < (uint) trace.nb_archives; aid++) {
+    auto archive = trace.archive_list[aid];
+      for (uint i = 0; i < archive->nb_threads; i++) {
+	    const pallas::Thread *thread = archive->getThreadAt(i);
 
-  auto thread_list = trace.getThreadList();
-  for (auto * thread: thread_list) {
-      counter++;
-      if (thread == nullptr)  continue;
-      if(!(thread_to_print < 0 || thread->id == thread_to_print)) continue;
-      readers.emplace_back(thread->archive, thread->id, PALLAS_READ_FLAG_UNROLL_ALL);
-      threads_data[&readers.back()] = {};
-  }
+        for (unsigned j = 0; j < thread->nb_events; j++) {
+          pallas::EventSummary& e = thread->events[j];
+            auto* timestamps = e.timestamps;
 
-  std::cout << name << " - " << " Threads ok " << counter << std::endl;
-
-  while (!isReadingOver(readers)) {
-    pallas::ThreadReader* min_reader = &readers[0];
-    pallas_timestamp_t min_timestamp = std::numeric_limits<unsigned long>::max(); 
-    for (auto & reader : readers) {
-      if (!reader.isEndOfTrace() && reader.currentState.currentFrame->referential_timestamp < min_timestamp) {
-        min_reader = &reader;
-        min_timestamp = reader.currentState.currentFrame->referential_timestamp;
+            for (size_t k =0; k<timestamps->size; k++){
+              uint64_t t = timestamps->at(k);
+              write_csv_details(copy, t);
+            }
+            timestamps->free_data();
+        }
+      archive->freeThreadAt(i);
       }
-      
-    }
-    auto token = min_reader->pollCurToken();
+  
+      }
+  free(copy);
 
-    if (token.type == pallas::TypeEvent) {
-        auto res = min_reader->getEventOccurence(token, min_reader->currentState.currentFrame->tokenCount[token]);
-        pallas_timestamp_t t1 = get_timestamp(res);
-        auto* copy = strdup(name);
-        auto* slash = strrchr(copy, '/');
-        if (slash != nullptr)
-          *slash = '\0';
-        write_csv_details(copy, t1);
-        free(copy);
-
-    }
-
-    if (! min_reader->getNextToken().isValid()) {
-      pallas_assert(min_reader->isEndOfTrace());
-    }
-}
-
-  trace.archive_list = nullptr;
-  trace.locations.clear();
-
-  delete trac;
-  std::cout << name << " - " << "getTraceTimestamp exit" << std::endl;
-  std::cout.flush();
-_exit(EXIT_SUCCESS);
+  delete trac; 
+ exit(EXIT_SUCCESS);
 }
 
 
