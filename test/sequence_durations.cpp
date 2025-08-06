@@ -83,28 +83,28 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
             s->durations->final_update_mean();
             print_sequence_info(s, thread_writer.thread);
 
-            pallas_assert_always(s->tokens.size() == sequence_number + 1);
-            pallas_assert_always(s->durations->size == INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
+            pallas_assert_equals_always(s->tokens.size(), sequence_number + 1);
+            pallas_assert_equals_always(s->durations->size, INNER_LOOP_SIZE * OUTER_LOOP_SIZE);
             for (size_t i = 0; i < s->durations->size; i++) {
                 auto& t = s->durations->at(i);
-                pallas_assert_always(t == s->size() - 1);
+                pallas_assert_equals_always(t, s->size() - 1);
             }
-            pallas_assert_always(s->durations->min == s->size() - 1);
-            pallas_assert_always(s->durations->max == s->size() - 1);
-            pallas_assert_always(s->durations->mean == s->size() - 1);
+            pallas_assert_equals_always(s->durations->min, s->size() - 1);
+            pallas_assert_equals_always(s->durations->max, s->size() - 1);
+            pallas_assert_equals_always(s->durations->mean, s->size() - 1);
         } else {
             //      pallas_assert_always(s->tokens.size() == )
             //      pallas_assert_always(s->durations->back() == )
         }
     }
-    auto outer_sequence = thread_writer.thread->sequences[thread_writer.thread->nb_sequences - 2];
+    auto outer_sequence = thread_writer.thread->sequences[MAX_SUBSEQUENCE_NUMBER + 1];
     print_sequence_info(outer_sequence, thread_writer.thread);
-    pallas_assert_always(outer_sequence->timestamps->size == OUTER_LOOP_SIZE);
-    pallas_assert_always(outer_sequence->tokens.size() == MAX_SUBSEQUENCE_NUMBER);
-    // theorical_length = INNER_LOOP_SIZE * sum(i=0;MAX_SUBSEQUENCE_NUMBER) { i +  2 }
-    size_t theorical_length = INNER_LOOP_SIZE * (2 * MAX_SUBSEQUENCE_NUMBER + (MAX_SUBSEQUENCE_NUMBER * (MAX_SUBSEQUENCE_NUMBER - 1) / 2) ) - 1;
-    pallas_assert_always(theorical_length == outer_sequence->durations->min);
-    pallas_assert_always(theorical_length == outer_sequence->durations->max);
+    pallas_assert_equals_always(outer_sequence->timestamps->size,OUTER_LOOP_SIZE);
+    pallas_assert_equals_always(outer_sequence->tokens.size(), MAX_SUBSEQUENCE_NUMBER);
+    // theoretical_length = INNER_LOOP_SIZE * sum(i=0;MAX_SUBSEQUENCE_NUMBER) { i +  2 }
+    size_t theoretical_length = INNER_LOOP_SIZE * (2 * MAX_SUBSEQUENCE_NUMBER + (MAX_SUBSEQUENCE_NUMBER * (MAX_SUBSEQUENCE_NUMBER - 1) / 2) ) - 1;
+    pallas_assert_equals_always(theoretical_length, outer_sequence->durations->min);
+    pallas_assert_equals_always(theoretical_length, outer_sequence->durations->max);
 
     return 0;
 }

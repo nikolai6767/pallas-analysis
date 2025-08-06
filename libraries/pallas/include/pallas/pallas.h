@@ -573,8 +573,6 @@ typedef struct Thread {
    * If none of the registered sequence match, register a new Sequence.
    */
   Token getSequenceIdFromArray(Token* token_array, size_t array_len);
-  /** Returns the duration for the last - offset given Sequence.*/
-  pallas_duration_t getLastSequenceDuration(Sequence* sequence, size_t offset = 0) const;
   void finalizeThread();
 
   /** Create a blank new Thread. This is used when reading the trace. */
