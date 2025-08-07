@@ -67,33 +67,39 @@ extern enum PALLAS(DebugLevel) pallas_debug_level_get(void);
 CXX(
 };)
 
-/* -*-
-   mode: c;
-   c-file-style: "k&r";
-   c-basic-offset 2;
-   tab-width 2 ;
-   indent-tabs-mode nil
-   -*- */
 
 
-//Duration structure 
-typedef struct {
+ /**
+  * Functions for performance analysis
+  */  
+
+/* Duration structure */
+  typedef struct {
+  /* Total duration of the program */
 	double total_d;
+  /* Minimal duration of the function */
 	double min_d;
+  /* Maximal duration of the function */
 	double max_d;
+  /* Number of calls */
 	int count;
+  /* size of the details structure */
+  int size;
+  /* Has size blocs and contains all the detailed data */
+  double* durations;
+  /* Has size blocs and contains the (sub-)vector sizes for each duration*/
+  int* sizes;
 } Duration;
 
-//Initialises a duration (all to 0 and DBL_MAX for min)
-void duration_init(Duration* d);
+// //Initialises a duration (all to 0 and DBL_MAX for min)
+// void duration_init(Duration* d);
 
 //Updates the duration d with times start and and
 void update_duration(Duration* d, struct timespec start, struct timespec end);
-
+void update_durations(Duration* d, struct timespec t1, struct timespec t2, int size);
 //writes one duration
 void duration_write_csv(const char* filename, const Duration* d);
-
-
+void write_duration_details(const char* filename, const char* output, const Duration* d);
 //All tracked functions
 enum FunctionIndex {
   PRINT_TIMESTAMP,
@@ -153,3 +159,15 @@ void duration_write_all_csv(const char* filename);
 
 
 void write_csv_details(const char* filename, const char* output, const char* info, struct timespec t1, struct timespec t2);
+
+
+
+
+
+/* -*-
+   mode: c;
+   c-file-style: "k&r";
+   c-basic-offset 2;
+   tab-width 2 ;
+   indent-tabs-mode nil
+   -*- */

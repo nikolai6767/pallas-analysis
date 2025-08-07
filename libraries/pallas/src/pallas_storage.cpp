@@ -100,10 +100,10 @@ static FILE* pallasFileOpen(const char* filename, const char* mode) {
       pallas_error("fwrite failed\n");             \
   } while (0)
 */
-
+int counter =0;
 inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* stream){
-
-  duration_init(durations);
+  counter++;
+  // duration_init(durations);
   struct timespec t1, t2;
   clock_gettime(CLOCK_MONOTONIC, &t1);
 
@@ -112,18 +112,17 @@ inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* strea
 
 
   clock_gettime(CLOCK_MONOTONIC, &t2);
+  update_durations(&durations[WRITE], t1, t2, size*nmemb);
+
   if (TRACK_PERF){
-  update_duration(&durations[WRITE], t1, t2);
   duration_write_csv("write", &durations[WRITE]);
   }
 
-  if (SHOW_DETAILS) {
-    static char info[128];
-    snprintf(info, sizeof(info), "%zu,%zu", size, nmemb);
-    write_csv_details("write", "write_details", info, t1, t2);
-  }
+  // if (SHOW_DETAILS) {
+  //   write_duration_details("write", "write_details", &durations[WRITE]);
+  // }
 
-
+  fprintf(stdout, "%d", counter);
   return ret11; 
 }
 
@@ -1574,6 +1573,9 @@ void pallasStoreGlobalArchive(pallas::GlobalArchive* archive) {
     pallasStoreAdditionalContent(archive->additional_content, file);
 
   file.close();
+  fprintf(stdout, "\n\nGlobal Archive\n\n");
+  write_duration_details("write", "write_details", &durations[WRITE]);
+
 }
 
 
@@ -1607,6 +1609,7 @@ void pallasStoreArchive(pallas::Archive* archive) {
   pallasStoreLocations(archive->locations, file);
     pallasStoreAdditionalContent(archive->additional_content, file);
   file.close();
+  fprintf(stdout, "\n\nArchive\n\n");
 }
 
 static char* pallas_archive_filename(pallas::GlobalArchive* archive, pallas::LocationGroupId id) {
@@ -1702,7 +1705,7 @@ void pallas::GlobalArchive::freeArchive(pallas::LocationGroupId archiveId) {
     if (archive_list[i] != nullptr && archive_list[i]->id == archiveId) {
       delete archive_list[i];
       archive_list[i] = nullptr;
-      return;
+      // return;
     }
   }
 };

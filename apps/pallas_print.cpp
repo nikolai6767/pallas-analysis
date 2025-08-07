@@ -18,7 +18,58 @@
 
 
 
+void duration_write_all_csv(const char* filename) {
+  std::ofstream file(std::string(filename) + ".csv");
+  file << "function,calls,total,min,max,average\n";
 
+  const char* function_names[NB_FUNCTIONS] = {
+  "PRINT_TIMESTAMP",
+  "PRINT_TIMESTAMP_PRECISION",
+  "PRINT_TIMESTAMP_ELSE",
+  "PRINT_TIMESTAMP_HEADER",
+  "PRINT_DURATION",
+  "PRINT_DURATION_HEADER",
+  "PRINT_EVENT",
+  "PRINT_EVENT_PRINT_TIMESTAMP",
+  "PRINT_EVENT_GET_NAME",
+  "PRINT_EVENT_GET_TOKEN_STRING",
+  "PRINT_EVENT_GET_EVENT_STRING",
+  "PRINT_EVENT_GET_PRINT_EV_ATT",
+  "PRINT_EV_ATT",
+  "PRINT_EVENT_ENDL",
+  "PRINT_FLAME",
+  "PRINT_CSV",
+  "PRINT_CSV_BULK",
+  "PRINT_TRACE",
+  "PRINT_TRACE_GET_THREAD_LIST",
+  "GET_THREAD_LIST_GET_ARCHIVE",
+  "GET_THREAD_LIST_GET_THREAD",
+  "PRINT_TRACE_EMPLACE_BACK",
+  "PRINT_TRACE_POLLCURTOKEN",
+  "PRINT_TRACE_PRINT_EVENT",
+  "PRINT_TRACE_GET_EV_OCC",
+  "PRINT_TRACE_GET_NEXT_TOKEN",
+  "STRUCTURE_INDENT", 
+  "STRUCTURE_INDENT_POLLCURTOKEN",
+  "PRINT_THREAD_STRUCTURE",
+  "PRINT_STRUCTURE", 
+  "GET_EVENT_OCC",
+  "GET_TOKEN_IN_CALL_STACK",
+  "ENTER_BLOCK",
+  "PALLAS_PRINT",
+  "OPEN_TRACE",
+  "ZSTD",
+  };
+
+  for (int i = 0; i < NB_FUNCTIONS; ++i) {
+    const Duration& d = durations[i];
+    if (d.count > 0){
+      double avg = d.count ? d.total_d / d.count : 0.0;
+      file << function_names[i] << "," << d.count << "," << d.total_d << "," << d.min_d << "," << d.max_d << "," << avg << "\n";
+    }
+  }
+
+}
 
 
 bool verbose = false;
@@ -601,9 +652,9 @@ int main(const int argc, char* argv[]) {
   struct timespec t3, t4;
   clock_gettime(CLOCK_MONOTONIC, &t3);
 
-  for (int i = 0; i<NB_FUNCTIONS; i++){
-    duration_init(&durations[i]);
-  }
+  // for (int i = 0; i<NB_FUNCTIONS; i++){
+  //   duration_init(&durations[i]);
+  // }
 
 
   int flags = PALLAS_READ_FLAG_UNROLL_ALL;

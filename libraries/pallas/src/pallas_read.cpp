@@ -15,20 +15,54 @@
 #include <fstream>
 
 
-void duration_init(Duration* d) {
-	d->total_d = 0.0;
-	d->min_d = DBL_MAX;
-	d->max_d = 0.0;
-	d-> count = 0;
-}
+// void duration_init(Duration* d) {
+// 	d->total_d = 0.0;
+// 	d->min_d = DBL_MAX;
+// 	d->max_d = 0.0;
+// 	d-> count = 0;
+// }
 
 void update_duration(Duration* d, struct timespec t1, struct timespec t2){
+
 	long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
 	d->total_d += time;
 	if (time < d ->min_d) d->min_d = time;
 	if (time > d -> max_d) d-> max_d = time;
 	d->count++;
+    if (d->size == 0) {
+        d->size = 100000;
+        d->durations = (double*) malloc(d->size * sizeof(double));
+    }
+    if (d->count >= d->size){
+        d->size *= 10;
+        d->durations = (double*) realloc(d->durations,d->size * sizeof(double));
+    }
+    d->durations[d->count] = time;
+
 }
+
+
+void update_durations(Duration* d, struct timespec t1, struct timespec t2, int blocs){
+
+	long time = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
+	d->total_d += time;
+	if (time < d ->min_d) d->min_d = time;
+	if (time > d -> max_d) d-> max_d = time;
+	d->count++;
+    if (d->size == 0) {
+        d->size = 100000;
+        d->durations = (double*) malloc(d->size * sizeof(double));
+        d->sizes = (int*) malloc(d->size * sizeof(int));
+    }    if (d->count >= d->size){
+        d->size *= 10;
+        d->durations = (double*) realloc(d->durations,d->size * sizeof(double));
+        d->sizes = (int*) realloc(d->sizes,d->size * sizeof(int));
+    }
+    d->durations[d->count] = time;
+    d->sizes[d->count] = blocs;
+
+}
+
 
 void duration_write_csv(const char* filename, const Duration* d) {
     std::ofstream file(std::string(filename) + ".csv");
@@ -43,62 +77,19 @@ void write_csv_details(const char* filename, const char* output, const char* inf
     file << std::string(filename) << "," << time << "," << std::string(info) << "\n";
 }
 
-Duration durations[NB_FUNCTIONS] = {};
+Duration durations[NB_FUNCTIONS] = {0};
 
 
-
-void duration_write_all_csv(const char* filename) {
-  std::ofstream file(std::string(filename) + ".csv");
-  file << "function,calls,total,min,max,average\n";
-
-  const char* function_names[NB_FUNCTIONS] = {
-//   "PRINT_TIMESTAMP",
-//   "PRINT_TIMESTAMP_PRECISION",
-//   "PRINT_TIMESTAMP_ELSE",
-//   "PRINT_TIMESTAMP_HEADER",
-//   "PRINT_DURATION",
-//   "PRINT_DURATION_HEADER",
-//   "PRINT_EVENT",
-//   "PRINT_EVENT_PRINT_TIMESTAMP",
-//   "PRINT_EVENT_GET_NAME",
-//   "PRINT_EVENT_GET_TOKEN_STRING",
-//   "PRINT_EVENT_GET_EVENT_STRING",
-//   "PRINT_EVENT_GET_PRINT_EV_ATT",
-//   "PRINT_EV_ATT",
-//   "PRINT_EVENT_ENDL",
-//   "PRINT_FLAME",
-//   "PRINT_CSV",
-//   "PRINT_CSV_BULK",
-//   "PRINT_TRACE",
-//   "PRINT_TRACE_GET_THREAD_LIST",
-//   "GET_THREAD_LIST_GET_ARCHIVE",
-//   "GET_THREAD_LIST_GET_THREAD",
-//   "PRINT_TRACE_EMPLACE_BACK",
-//   "PRINT_TRACE_POLLCURTOKEN",
-//   "PRINT_TRACE_PRINT_EVENT",
-//   "PRINT_TRACE_GET_EV_OCC",
-//   "PRINT_TRACE_GET_NEXT_TOKEN",
-//   "STRUCTURE_INDENT", 
-//   "STRUCTURE_INDENT_POLLCURTOKEN",
-//   "PRINT_THREAD_STRUCTURE",
-//   "PRINT_STRUCTURE", 
-//   "GET_EVENT_OCC",
-//   "GET_TOKEN_IN_CALL_STACK",
-//   "ENTER_BLOCK",
-//   "PALLAS_PRINT",
-//   "OPEN_TRACE",
-  "ZSTD",
-  };
-
-  for (int i = 0; i < NB_FUNCTIONS; ++i) {
-    const Duration& d = durations[i];
-    if (d.count > 0){
-      double avg = d.count ? d.total_d / d.count : 0.0;
-      file << function_names[i] << "," << d.count << "," << d.total_d << "," << d.min_d << "," << d.max_d << "," << avg << "\n";
+void write_duration_details(const char* filename, const char* output, const Duration* d){
+    std::ofstream file(std::string(output) + ".csv", std::ios::app);
+    for (int i = 0; i < d->count; i++){
+        if (d-> sizes != NULL)
+            file << std::string(filename) << "," << d->durations[i] << "," << d->sizes[i] << "\n";
+        else
+            file << std::string(filename) << "," << d->durations[i] << "\n";
     }
-  }
-
 }
+
 
 namespace pallas {
 

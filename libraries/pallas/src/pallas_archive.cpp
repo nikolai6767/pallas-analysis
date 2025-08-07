@@ -329,6 +329,7 @@ GlobalArchive::~GlobalArchive() {
     delete archive_list[i];
   }
   delete[] archive_list;
+  fprintf(stdout,"\n\n OU ALORS LAAAAAAAAA ???\n\n");
 };
 
 Archive::~Archive() {
