@@ -168,36 +168,44 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
     auto& curTokenSeq = getCurrentTokenSequence();
     auto& curIndexSeq = getCurrentIndexSequence();
     bool sequence_existed = false;
-    Token sid;
+    Token loop_sequence_id;
+    // If the configuration is just "S3 S3"
+    // Then we don't need to create S4 = S3, we can just repeat S3
     if (loop_len == 1 && curTokenSeq[index_first_iteration].type == TypeSequence) {
         sequence_existed = true;
-        sid = curTokenSeq[index_first_iteration];
+        loop_sequence_id = curTokenSeq[index_first_iteration];
+
     } else {
-        sid = thread->getSequenceIdFromArray(&curTokenSeq[index_first_iteration], loop_len);
+        loop_sequence_id = thread->getSequenceIdFromArray(&curTokenSeq[index_first_iteration], loop_len);
     }
-    Loop* loop = createLoop(sid);
+    Loop* loop = createLoop(loop_sequence_id);
+    Sequence* loop_sequence = thread->getSequence(loop_sequence_id);
     pallas_assert(loop->repeated_token.isValid());
     pallas_assert(loop->self_id.isValid());
+    pallas_assert_equals(loop_sequence_id.id, loop->repeated_token.id);
+    if (sequence_existed) {
+        pallas_assert(loop_sequence->durations->size >= 2);
+        pallas_assert(loop_sequence->timestamps->size >= 2);
+    }
+
 
     if (!sequence_existed) {
         // We need to go back in the current sequence in order to correctly calculate our durations
         // But only if those are new sequences
-        Sequence* loop_seq = thread->getSequence(loop->repeated_token);
-
         // Compute the durations
-        const pallas_duration_t duration_first_iteration = getLastSequenceDuration(loop_seq, 1);
-        const pallas_duration_t duration_second_iteration = getLastSequenceDuration(loop_seq, 0);
+        const pallas_duration_t duration_first_iteration = getLastSequenceDuration(loop_sequence, 1);
+        const pallas_duration_t duration_second_iteration = getLastSequenceDuration(loop_sequence, 0);
 
-        loop_seq->durations->add(duration_first_iteration);
-        loop_seq->durations->add(duration_second_iteration);
+        loop_sequence->durations->add(duration_first_iteration);
+        loop_sequence->durations->add(duration_second_iteration);
 
         // And add that timestamp to the vectors
-        auto& tokenCount = loop_seq->getTokenCountWriting(thread);
-        auto first_event = getFirstEvent(loop_seq->tokens.front(), thread);
+        auto& tokenCount = loop_sequence->getTokenCountWriting(thread);
+        auto first_event = getFirstEvent(loop_sequence->tokens.front(), thread);
         auto first_token_summary = thread->events[first_event.id];
         size_t nb_first_token = first_token_summary.timestamps->size;
-        loop_seq->timestamps->add(first_token_summary.timestamps->at(nb_first_token- 2 * tokenCount[first_event]));
-        loop_seq->timestamps->add(first_token_summary.timestamps->at(nb_first_token - tokenCount[first_event]));
+        loop_sequence->timestamps->add(first_token_summary.timestamps->at(nb_first_token- 2 * tokenCount[first_event]));
+        loop_sequence->timestamps->add(first_token_summary.timestamps->at(nb_first_token - tokenCount[first_event]));
 
         // The current sequence last_timestamp does not need to be updated
     }
@@ -209,8 +217,9 @@ void ThreadWriter::replaceTokensInLoop(int loop_len, size_t index_first_iteratio
 
     // Index of a loop is the occurrence of the first sequence of the loop
     if (sequence_existed) {
-        auto* sequence = thread->getSequence(sid);
-        curIndexSeq.push_back( sequence->durations->size - 1 - loop->nb_iterations );
+        // Then we know we just saw twice the same sequence, hence - 2
+        auto* sequence = thread->getSequence(loop_sequence_id);
+        curIndexSeq.push_back( sequence->durations->size - 2 );
     } else {
         curIndexSeq.push_back( 0 );
     }
@@ -489,10 +498,11 @@ void ThreadWriter::recordExitFunction() {
     cur_depth--;
     /* upper_seq is the sequence that called cur_seq */
     auto& upperTokenSeq = getCurrentTokenSequence();
-    storeToken(seq_id, seq->timestamps->size - 1);
 
     seq->timestamps->add(sequence_start_timestamp[cur_depth]);
     seq->durations->add(sequence_duration);
+    storeToken(seq_id, seq->timestamps->size - 1);
+
     curTokenSeq.clear();
     index_stack[cur_depth+1].clear();
 
