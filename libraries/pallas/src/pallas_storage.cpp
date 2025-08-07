@@ -100,9 +100,7 @@ static FILE* pallasFileOpen(const char* filename, const char* mode) {
       pallas_error("fwrite failed\n");             \
   } while (0)
 */
-int counter =0;
 inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* stream){
-  counter++;
   // duration_init(durations);
   struct timespec t1, t2;
   clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -122,7 +120,6 @@ inline size_t write_test(const void* ptr, size_t size, size_t nmemb, FILE* strea
   //   write_duration_details("write", "write_details", &durations[WRITE]);
   // }
 
-  fprintf(stdout, "%d", counter);
   return ret11; 
 }
 
@@ -1573,8 +1570,8 @@ void pallasStoreGlobalArchive(pallas::GlobalArchive* archive) {
     pallasStoreAdditionalContent(archive->additional_content, file);
 
   file.close();
-  fprintf(stdout, "\n\nGlobal Archive\n\n");
-  write_duration_details("write", "write_details", &durations[WRITE]);
+  fprintf(stdout, "pallasStoreGlobalArchive - \n");
+  // write_duration_details("write", "write_details", &durations[WRITE]);
 
 }
 

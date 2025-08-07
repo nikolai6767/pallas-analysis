@@ -81,7 +81,7 @@ Duration durations[NB_FUNCTIONS] = {0};
 
 
 void write_duration_details(const char* filename, const char* output, const Duration* d){
-    std::ofstream file(std::string(output) + ".csv", std::ios::app);
+    std::ofstream file(std::string(output) + ".csv");
     for (int i = 0; i < d->count; i++){
         if (d-> sizes != NULL)
             file << std::string(filename) << "," << d->durations[i] << "," << d->sizes[i] << "\n";

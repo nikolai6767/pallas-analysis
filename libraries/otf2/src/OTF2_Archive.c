@@ -5,6 +5,7 @@
 
 #include "otf2/OTF2_Archive.h"
 #include "pallas/pallas_storage.h"
+#include "pallas/pallas_dbg.h"
 OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
                                 const char* archiveName,
                                 const OTF2_FileMode fileMode,
@@ -32,11 +33,14 @@ OTF2_Archive* OTF2_Archive_Open(const char* archivePath,
 }
 
 OTF2_ErrorCode OTF2_Archive_Close(OTF2_Archive* archive) {
+  int k = archive->archive->id;
   pallas_archive_close(archive->archive);
   if (archive->archive->global_archive == NULL) {
     pallas_archive_delete(archive->archive);
     archive->archive = NULL;
   }
+  fprintf(stdout, "\nICICIICIC   %d \n\n", k);
+  write_duration_details("write", "write_details", &durations[WRITE]);
   return OTF2_SUCCESS;
 }
 
@@ -322,6 +326,8 @@ OTF2_ErrorCode OTF2_Archive_CloseGlobalDefWriter(OTF2_Archive* archive, OTF2_Glo
   pallas_global_archive_close(writer->archive);
   pallas_global_archive_delete(writer->archive);
   writer->archive = NULL;
+  fprintf(stdout, "FIIIIIIIIIIIIN222\n\n");
+
   return OTF2_SUCCESS;
 }
 

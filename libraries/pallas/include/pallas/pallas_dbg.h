@@ -73,23 +73,33 @@ CXX(
   * Functions for performance analysis
   */  
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* Duration structure */
   typedef struct {
-  /* Total duration of the program */
-	double total_d;
-  /* Minimal duration of the function */
-	double min_d;
-  /* Maximal duration of the function */
-	double max_d;
-  /* Number of calls */
-	int count;
-  /* size of the details structure */
-  int size;
-  /* Has size blocs and contains all the detailed data */
-  double* durations;
-  /* Has size blocs and contains the (sub-)vector sizes for each duration*/
-  int* sizes;
-} Duration;
+    /* Total duration of the program */
+	  double total_d;
+    /* Minimal duration of the function */
+	  double min_d;
+    /* Maximal duration of the function */
+	  double max_d;
+    /* Number of calls */
+	  int count;
+    /* size of the details structure */
+    int size;
+    /* Has size blocs and contains all the detailed data */
+    double* durations;
+    /* Has size blocs and contains the (sub-)vector sizes for each duration*/
+    int* sizes;
+  } Duration;
+
+  void write_duration_details(const char* filename, const char* output, const Duration* d);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 // //Initialises a duration (all to 0 and DBL_MAX for min)
 // void duration_init(Duration* d);
@@ -97,10 +107,12 @@ CXX(
 //Updates the duration d with times start and and
 void update_duration(Duration* d, struct timespec start, struct timespec end);
 void update_durations(Duration* d, struct timespec t1, struct timespec t2, int size);
+
+
 //writes one duration
 void duration_write_csv(const char* filename, const Duration* d);
-void write_duration_details(const char* filename, const char* output, const Duration* d);
-//All tracked functions
+
+//All tracked function references
 enum FunctionIndex {
   PRINT_TIMESTAMP,
   PRINT_TIMESTAMP_PRECISION,
