@@ -41,6 +41,11 @@ OTF2_ErrorCode OTF2_Archive_Close(OTF2_Archive* archive) {
   }
   fprintf(stdout, "\nICICIICIC   %d \n\n", k);
   write_duration_details("write", "write_details", &durations[WRITE]);
+  write_duration_details("write_duration_vector", "write_duration_vector_details", &durations[WRITE_DUR_VECT]);
+  write_duration_details("write_dur_subvec", "write_dur_subvec_details", &durations[WRITE_DUR_SUBVEC]);
+  write_duration_details("write_subvec", "write_subvec_details", &durations[WRITE_SUBVEC]);
+  write_duration_details("write_vector", "write_vector_details", &durations[WRITE_VECTOR]);
+  write_duration_details("zstd", "zstd_details", &durations[ZSTD]);
   return OTF2_SUCCESS;
 }
 
