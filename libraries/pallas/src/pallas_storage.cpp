@@ -1719,9 +1719,15 @@ pallas::GlobalArchive* pallas_open_trace(const char* trace_filename) {
     pallas_error("This trace uses Pallas ABI version %d, but the current installation only supports version %d\n",
                 abi_version, PALLAS_ABI_VERSION);
   }
+
   if (pallas::parameterHandler == nullptr) {
     pallas::parameterHandler = new pallas::ParameterHandler(file.file);
-  }
+} else {
+  // fseek(file.file, sizeof(pallas::ParameterHandler::compressionAlgorithm) + 
+  // sizeof(pallas::ParameterHandler::encodingAlgorithm) + sizeof(pallas::ParameterHandler::zstdCompressionLevel) + 
+  // sizeof(pallas::ParameterHandler::loopFindingAlgorithm) +  sizeof(pallas::ParameterHandler::maxLoopLength) + sizeof(pallas::ParameterHandler::timestampStorage), SEEK_CUR );
+  fseek(file.file, 32, SEEK_CUR);
+}
   auto* trace = new pallas::GlobalArchive(dir_name, trace_name);
 
   pallas_log(pallas::DebugLevel::Debug, "Reading GlobalArchive {.dir_name='%s', .trace='%s'}\n", trace->dir_name,

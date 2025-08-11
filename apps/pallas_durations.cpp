@@ -67,6 +67,7 @@ void getTraceTimepstamps(char* name) {
       }
   free(copy);
 
+    fprintf(stdout, "TOUT VA BIEN \n");
   delete trac; 
  exit(EXIT_SUCCESS);
 }
@@ -114,6 +115,7 @@ double mean(const char* trace){
  * Returns the statistical result of the R^2 test on these two files.
  */
 double CompareTimestamps(const char* trace1, const char* trace2){
+  fprintf(stdout, "J'ARRIVE");
     FILE* file1 = fopen(trace1, "r");
     FILE* file2 = fopen(trace2, "r");
     if (!file1 || !file2) {
@@ -176,33 +178,35 @@ int main(const int argc, char* argv[]) {
     std::ofstream(trace_csv_1, std::ios::trunc);
     std::ofstream(trace_csv_2, std::ios::trunc);
 
-    pid_t pid1 = fork();
+    // pid_t pid1 = fork();
 
-    if (pid1 == 0){
-      getTraceTimepstamps(argv[1]);
-      exit(EXIT_SUCCESS);
-    }
+    // if (pid1 == 0){
+    //   getTraceTimepstamps(argv[1]);
+    //   exit(EXIT_SUCCESS);
+    // }
 
-    int status1;
-    waitpid(pid1, &status1, 0);
-    if (!WIFEXITED(status1)) {
-        std::cerr << "First process failed" << std::endl;
-        return EXIT_FAILURE;
-    }
+    // int status1;
+    // waitpid(pid1, &status1, 0);
+    // if (!WIFEXITED(status1)) {
+    //     std::cerr << "First process failed" << std::endl;
+    //     return EXIT_FAILURE;
+    // }
 
-    pid_t pid2 = fork();
-    if (pid2 == 0){
-      getTraceTimepstamps(argv[2]);
-      fprintf(stdout, "second trace ok\n");
-      exit(EXIT_SUCCESS);
-    }
+    // pid_t pid2 = fork();
+    // if (pid2 == 0){
+    //   getTraceTimepstamps(argv[2]);
+    //   fprintf(stdout, "second trace ok\n");
+    //   exit(EXIT_SUCCESS);
+    // }
 
-    int status2;
-    waitpid(pid2, &status2, 0);
-    if (!WIFEXITED(status2)) {
-        std::cerr << "Second process failed" << std::endl;
-        return EXIT_FAILURE;
-    }
+    // int status2;
+    // waitpid(pid2, &status2, 0);
+    // if (!WIFEXITED(status2)) {
+    //     std::cerr << "Second process failed" << std::endl;
+    //     return EXIT_FAILURE;
+    // }
+    getTraceTimepstamps(argv[1]);
+    getTraceTimepstamps(argv[2]);
 
     double res = CompareTimestamps(trace_csv_1.c_str(), trace_csv_2.c_str());
 
