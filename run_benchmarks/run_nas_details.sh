@@ -1,7 +1,7 @@
 #!/bin/bash
 
-nas_dir=$PWD/run_nas_benchmark
-bin_dir=$nas_dir/NPB3.4-MPI/bin
+nas_dir=$PWD/run_nas_benchmark/pcw    #MODIFY
+bin_dir=$nas_dir/../NPB3.4-MPI/bin
 log_dir=$nas_dir/log
 traces_dir=$nas_dir/traces
 details_dir=$nas_dir/details
@@ -43,6 +43,13 @@ for i in $(seq $NB_ITER) ; do
         mv $PWD/write_dur_subvec_details.csv ${details_dir}/write_dur_subvec_details_${app_name}.csv
         mv $PWD/write_subvec_details.csv ${details_dir}/write_subvec_details_${app_name}.csv
 
+        mv $PWD/pcw_enc_alg_details.csv ${details_dir}/pcw_enc_alg_details_${app_name}.csv
+        mv $PWD/pcw_details.csv ${details_dir}/pcw_details${app_name}.csv
+        mv $PWD/pcw_comp_alg_details.csv ${details_dir}/pcw_comp_alg_details${app_name}.csv
+        mv $PWD/pcw_write_details.csv ${details_dir}/pcw_write_details${app_name}.csv
+        mv $PWD/write_dur_subvec_ftell_details.csv ${details_dir}/write_dur_subvec_ftell_details${app_name}.csv
+        mv $PWD/write_dur_subvec_pcw_details.csv ${details_dir}/write_dur_subvec_pcw_details${app_name}.csv
+        mv $PWD/write_dur_subvec_delete_details.csv ${details_dir}/write_dur_subvec_delete_details${app_name}.csv
 
         rm $PWD/*.csv
     done

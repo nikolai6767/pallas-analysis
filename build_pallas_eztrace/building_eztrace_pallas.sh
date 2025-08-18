@@ -34,7 +34,7 @@ git clone https://github.com/Pallas-Trace/pallas.git
 cd pallas
 
 ## To work on the last version of pallas
-git checkout dev && git pull
+git checkout nikolai && git pull
 
 mkdir build install
 cd build

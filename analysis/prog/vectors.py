@@ -52,12 +52,7 @@ for file_name in file_names:
         if df.empty:
             continue
 
-        if file_name.startswith(("write_details_", "write_duration_vector")) and df.shape[1] >= 4:
-            sizes = df.iloc[:, 2] * df.iloc[:, 3]
-        elif file_name.startswith("zstd"):
-            sizes = df.iloc[:, 2] * df.iloc[:, 4]
-        else:
-            sizes = df.iloc[:, 2]
+        sizes = df.iloc[:, 2]
         times = df.iloc[:, 1]
 
         color = cmap(i)
@@ -65,7 +60,7 @@ for file_name in file_names:
                    label=sf.split("-")[-1], rasterized=True, zorder=2, color=color)
         ax.scatter(times.mean(), sizes.mean(), s=100, marker='o',
                    edgecolors='black', color=color, zorder=10)
-
+        n = times.notna().sum()
         any_data = True
         func = df.iloc[:, 0].dropna().astype(str).mode()[0]
         alg = sf.split("-")[-1]
@@ -75,6 +70,7 @@ for file_name in file_names:
             "mean_TIME_s": perf.get("TIME_s", pd.NA),
             "mean_MAX_PERF_kB": perf.get("MAX_PERF_kB", pd.NA),
             "median_duration_ns": times.median(),
+            "n": int(n),
         })
 
 
