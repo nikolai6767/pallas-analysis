@@ -1,7 +1,7 @@
 #!/bin.sh
 
 lulesh_dir=$PWD/../../run_benchmarks/run_lulesh
-nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/iter_20
+nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/20_iter
 file=$PWD/../res/trace_size.csv
 
 echo -n > "$file"
@@ -16,11 +16,11 @@ for app in $nas_dir/traces/* ; do
 done
 
 
-for app in $lulesh_dir/traces/* ; do 
-    if [ -d "$app" ]; then
-        app_name=$(basename app)
-        du -sb $app |cut -d' ' -f1 | tr "\t" "," | cut -d '/' -f 1,13 | sed -e 's,/,,g' | cut -d '_' -f 1 >> $file
-    fi
-done
+# for app in $lulesh_dir/traces/* ; do 
+#     if [ -d "$app" ]; then
+#         app_name=$(basename app)
+#         du -sb $app |cut -d' ' -f1 | tr "\t" "," | cut -d '/' -f 1,13 | sed -e 's,/,,g' | cut -d '_' -f 1 >> $file
+#     fi
+# done
 
 # | cut -d '/' -f 1,13 | sed -e 's,/,,g'

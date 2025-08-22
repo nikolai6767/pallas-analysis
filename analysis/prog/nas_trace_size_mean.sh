@@ -1,6 +1,6 @@
 #!/bin/sh
 
-nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/iter_20
+nas_dir=$PWD/../../run_benchmarks/run_nas_benchmark/20_iter
 file=$PWD/../res/trace_size.csv
 
 

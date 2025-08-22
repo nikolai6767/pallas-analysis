@@ -28,6 +28,7 @@ for patch_file in "$patches_dir"/*.patch; do
     traces_dir=$res_patch/traces
     details_dir=$res_patch/details
     mkdir -p "$log_dir" "$traces_dir" "$details_dir"
+    echo 
 
 
     for app in $bin_dir/* ; do 

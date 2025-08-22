@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nas_dir=$PWD/run_nas_benchmark/iter_20
+nas_dir=$PWD/run_nas_benchmark/20_iter
 bin_dir=$nas_dir/../NPB3.4-MPI/bin
 log_dir=$nas_dir/log
 traces_dir=$nas_dir/traces
@@ -11,7 +11,7 @@ mkdir -p $traces_dir
 
 cd $nas_dir
 
-NB_ITER=30
+NB_ITER=20
 NB_RANKS=64
 
 for i in $(seq $NB_ITER) ; do 

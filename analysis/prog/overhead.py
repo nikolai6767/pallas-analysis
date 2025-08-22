@@ -44,12 +44,6 @@ ax.errorbar(ind + width/2, df["MEAN_EZTRACE"],
             yerr=[yerr_lower, yerr_upper],label="_nolegend_",
             fmt='none', ecolor='black', capsize=5)
 
-# yerr_low = (df["MEAN_VANILLA"] - df["MIN_VANILLA"])/df["MEAN_VANILLA"]
-# yerr_up = (df["MAX_VANILLA"] - df["MEAN_VANILLA"])/df["MEAN_VANILLA"]
-# ax.errorbar(ind - width/2, df["MEAN_VANILLA"], 
-#             yerr=[yerr_low, yerr_up],
-#             fmt='none', ecolor='black', capsize=5, label="_nolegend_")
-
 
 for i, row in df.iterrows():
     y_text = row["MAX_EZTRACE"] + 0.03 * max(df["MAX_EZTRACE"]) if 'MAX_EZTRACE' in df.columns else row["MEAN_EZTRACE"] + 0.05 * max(df["MEAN_EZTRACE"])

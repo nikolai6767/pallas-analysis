@@ -1,0 +1,5 @@
+VALUE,None,ZSTD,ZFP_0.1,ZFP_0.2,ZFP_0.5
+R^2,1,1,1,1,1
+trace_size_MB,168,67,93,93,93
+compression_duration_ns,0,1.84647e+09,1.48667e+09,1.50095e+09,1.52376e+09
+write_duration_ns,2.61871e+08,1.56096e+08,1.90319e+08,1.98531e+08,1.96283e+08
