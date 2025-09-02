@@ -52,7 +52,7 @@ for patch_file in "$patches_dir"/*.patch; do
         mv $PWD/zstd_details.csv ${details_dir}/zstd_details_${app_name}.csv
         mv $PWD/write_details.csv ${details_dir}/write_details_${app_name}.csv
         mv $PWD/write_vector_details.csv ${details_dir}/write_vector_details_${app_name}.csv
-        mv $PWD/write_duration_vector_details.csv ${details_dir}/write_duration_vector_details_${app_name}.csv
+        mv $PWD/write_dur_vect_details.csv ${details_dir}/write_dur_vect_details_${app_name}.csv
         mv $PWD/write_dur_subvec_details.csv ${details_dir}/write_dur_subvec_details_${app_name}.csv
         mv $PWD/write_subvec_details.csv ${details_dir}/write_subvec_details_${app_name}.csv
 
